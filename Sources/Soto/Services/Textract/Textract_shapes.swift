@@ -89,7 +89,7 @@ extension Textract {
     }
 
     public enum ValueType: String, CustomStringConvertible, Codable, _SotoSendable {
-        case date = "DATE"
+        case date = "Date"
         public var description: String { return self.rawValue }
     }
 
