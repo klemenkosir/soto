@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS IoTTwinMaker service.
 ///
-/// IoT TwinMaker is a service that enables you to build operational digital twins of physical systems. IoT TwinMaker overlays measurements and analysis from real-world sensors, cameras, and enterprise applications so you can create data visualizations to monitor your physical factory, building, or industrial plant. You can use this real-world data to monitor operations and diagnose and repair errors.
+/// IoT TwinMaker is a service with which you can build operational digital twins of physical systems. IoT TwinMaker overlays measurements and analysis from real-world sensors, cameras, and enterprise applications so you can create data visualizations to monitor your physical factory, building, or industrial plant. You can use this real-world data to monitor operations and diagnose and repair errors.
 public struct IoTTwinMaker: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct IoTTwinMaker: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,192 +54,629 @@ public struct IoTTwinMaker: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "iottwinmaker",
+            serviceName: "IoTTwinMaker",
+            serviceIdentifier: "iottwinmaker",
             serviceProtocol: .restjson,
             apiVersion: "2021-11-29",
             endpoint: endpoint,
+            serviceEndpoints: Self.serviceEndpoints,
+            variantEndpoints: Self.variantEndpoints,
             errorType: IoTTwinMakerErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+    /// custom endpoints for regions
+    static var serviceEndpoints: [String: String] {[
+        "api-ap-northeast-1": "api.iottwinmaker.ap-northeast-1.amazonaws.com",
+        "api-ap-northeast-2": "api.iottwinmaker.ap-northeast-2.amazonaws.com",
+        "api-ap-south-1": "api.iottwinmaker.ap-south-1.amazonaws.com",
+        "api-ap-southeast-1": "api.iottwinmaker.ap-southeast-1.amazonaws.com",
+        "api-ap-southeast-2": "api.iottwinmaker.ap-southeast-2.amazonaws.com",
+        "api-cn-north-1": "api.iottwinmaker.cn-north-1.amazonaws.com.cn",
+        "api-eu-central-1": "api.iottwinmaker.eu-central-1.amazonaws.com",
+        "api-eu-west-1": "api.iottwinmaker.eu-west-1.amazonaws.com",
+        "api-us-east-1": "api.iottwinmaker.us-east-1.amazonaws.com",
+        "api-us-gov-west-1": "api.iottwinmaker.us-gov-west-1.amazonaws.com",
+        "api-us-west-2": "api.iottwinmaker.us-west-2.amazonaws.com",
+        "data-ap-northeast-1": "data.iottwinmaker.ap-northeast-1.amazonaws.com",
+        "data-ap-northeast-2": "data.iottwinmaker.ap-northeast-2.amazonaws.com",
+        "data-ap-south-1": "data.iottwinmaker.ap-south-1.amazonaws.com",
+        "data-ap-southeast-1": "data.iottwinmaker.ap-southeast-1.amazonaws.com",
+        "data-ap-southeast-2": "data.iottwinmaker.ap-southeast-2.amazonaws.com",
+        "data-cn-north-1": "data.iottwinmaker.cn-north-1.amazonaws.com.cn",
+        "data-eu-central-1": "data.iottwinmaker.eu-central-1.amazonaws.com",
+        "data-eu-west-1": "data.iottwinmaker.eu-west-1.amazonaws.com",
+        "data-us-east-1": "data.iottwinmaker.us-east-1.amazonaws.com",
+        "data-us-gov-west-1": "data.iottwinmaker.us-gov-west-1.amazonaws.com",
+        "data-us-west-2": "data.iottwinmaker.us-west-2.amazonaws.com",
+        "fips-api-us-east-1": "api.iottwinmaker-fips.us-east-1.amazonaws.com",
+        "fips-api-us-gov-west-1": "api.iottwinmaker-fips.us-gov-west-1.amazonaws.com",
+        "fips-api-us-west-2": "api.iottwinmaker-fips.us-west-2.amazonaws.com",
+        "fips-data-us-east-1": "data.iottwinmaker-fips.us-east-1.amazonaws.com",
+        "fips-data-us-gov-west-1": "data.iottwinmaker-fips.us-gov-west-1.amazonaws.com",
+        "fips-data-us-west-2": "data.iottwinmaker-fips.us-west-2.amazonaws.com"
+    ]}
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-east-1": "iottwinmaker-fips.us-east-1.amazonaws.com",
+            "us-gov-west-1": "iottwinmaker-fips.us-gov-west-1.amazonaws.com",
+            "us-west-2": "iottwinmaker-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
     /// Sets values for multiple time series properties.
-    public func batchPutPropertyValues(_ input: BatchPutPropertyValuesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<BatchPutPropertyValuesResponse> {
-        return self.client.execute(operation: "BatchPutPropertyValues", path: "/workspaces/{workspaceId}/entity-properties", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "data.", logger: logger, on: eventLoop)
+    @Sendable
+    public func batchPutPropertyValues(_ input: BatchPutPropertyValuesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchPutPropertyValuesResponse {
+        return try await self.client.execute(
+            operation: "BatchPutPropertyValues", 
+            path: "/workspaces/{workspaceId}/entity-properties", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "data.", 
+            logger: logger
+        )
+    }
+
+    /// Cancels the metadata transfer job.
+    @Sendable
+    public func cancelMetadataTransferJob(_ input: CancelMetadataTransferJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CancelMetadataTransferJobResponse {
+        return try await self.client.execute(
+            operation: "CancelMetadataTransferJob", 
+            path: "/metadata-transfer-jobs/{metadataTransferJobId}/cancel", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Creates a component type.
-    public func createComponentType(_ input: CreateComponentTypeRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateComponentTypeResponse> {
-        return self.client.execute(operation: "CreateComponentType", path: "/workspaces/{workspaceId}/component-types/{componentTypeId}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func createComponentType(_ input: CreateComponentTypeRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateComponentTypeResponse {
+        return try await self.client.execute(
+            operation: "CreateComponentType", 
+            path: "/workspaces/{workspaceId}/component-types/{componentTypeId}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Creates an entity.
-    public func createEntity(_ input: CreateEntityRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateEntityResponse> {
-        return self.client.execute(operation: "CreateEntity", path: "/workspaces/{workspaceId}/entities", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func createEntity(_ input: CreateEntityRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateEntityResponse {
+        return try await self.client.execute(
+            operation: "CreateEntity", 
+            path: "/workspaces/{workspaceId}/entities", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
+    }
+
+    /// Creates a new metadata transfer job.
+    @Sendable
+    public func createMetadataTransferJob(_ input: CreateMetadataTransferJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateMetadataTransferJobResponse {
+        return try await self.client.execute(
+            operation: "CreateMetadataTransferJob", 
+            path: "/metadata-transfer-jobs", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Creates a scene.
-    public func createScene(_ input: CreateSceneRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateSceneResponse> {
-        return self.client.execute(operation: "CreateScene", path: "/workspaces/{workspaceId}/scenes", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func createScene(_ input: CreateSceneRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateSceneResponse {
+        return try await self.client.execute(
+            operation: "CreateScene", 
+            path: "/workspaces/{workspaceId}/scenes", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// This action creates a SyncJob.
-    public func createSyncJob(_ input: CreateSyncJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateSyncJobResponse> {
-        return self.client.execute(operation: "CreateSyncJob", path: "/workspaces/{workspaceId}/sync-jobs/{syncSource}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func createSyncJob(_ input: CreateSyncJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateSyncJobResponse {
+        return try await self.client.execute(
+            operation: "CreateSyncJob", 
+            path: "/workspaces/{workspaceId}/sync-jobs/{syncSource}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Creates a workplace.
-    public func createWorkspace(_ input: CreateWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateWorkspaceResponse> {
-        return self.client.execute(operation: "CreateWorkspace", path: "/workspaces/{workspaceId}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func createWorkspace(_ input: CreateWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateWorkspaceResponse {
+        return try await self.client.execute(
+            operation: "CreateWorkspace", 
+            path: "/workspaces/{workspaceId}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Deletes a component type.
-    public func deleteComponentType(_ input: DeleteComponentTypeRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteComponentTypeResponse> {
-        return self.client.execute(operation: "DeleteComponentType", path: "/workspaces/{workspaceId}/component-types/{componentTypeId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteComponentType(_ input: DeleteComponentTypeRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteComponentTypeResponse {
+        return try await self.client.execute(
+            operation: "DeleteComponentType", 
+            path: "/workspaces/{workspaceId}/component-types/{componentTypeId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Deletes an entity.
-    public func deleteEntity(_ input: DeleteEntityRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteEntityResponse> {
-        return self.client.execute(operation: "DeleteEntity", path: "/workspaces/{workspaceId}/entities/{entityId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteEntity(_ input: DeleteEntityRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteEntityResponse {
+        return try await self.client.execute(
+            operation: "DeleteEntity", 
+            path: "/workspaces/{workspaceId}/entities/{entityId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Deletes a scene.
-    public func deleteScene(_ input: DeleteSceneRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteSceneResponse> {
-        return self.client.execute(operation: "DeleteScene", path: "/workspaces/{workspaceId}/scenes/{sceneId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteScene(_ input: DeleteSceneRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteSceneResponse {
+        return try await self.client.execute(
+            operation: "DeleteScene", 
+            path: "/workspaces/{workspaceId}/scenes/{sceneId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Delete the SyncJob.
-    public func deleteSyncJob(_ input: DeleteSyncJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteSyncJobResponse> {
-        return self.client.execute(operation: "DeleteSyncJob", path: "/workspaces/{workspaceId}/sync-jobs/{syncSource}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteSyncJob(_ input: DeleteSyncJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteSyncJobResponse {
+        return try await self.client.execute(
+            operation: "DeleteSyncJob", 
+            path: "/workspaces/{workspaceId}/sync-jobs/{syncSource}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Deletes a workspace.
-    public func deleteWorkspace(_ input: DeleteWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteWorkspaceResponse> {
-        return self.client.execute(operation: "DeleteWorkspace", path: "/workspaces/{workspaceId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteWorkspace(_ input: DeleteWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteWorkspaceResponse {
+        return try await self.client.execute(
+            operation: "DeleteWorkspace", 
+            path: "/workspaces/{workspaceId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
-    /// Run queries to access information from your knowledge graph of entities within individual workspaces.
-    public func executeQuery(_ input: ExecuteQueryRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ExecuteQueryResponse> {
-        return self.client.execute(operation: "ExecuteQuery", path: "/queries/execution", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    /// Run queries to access information from your knowledge graph of entities within individual workspaces.  The ExecuteQuery action only works with Amazon Web Services Java SDK2. ExecuteQuery will not work with any Amazon Web Services Java SDK version &lt; 2.x.
+    @Sendable
+    public func executeQuery(_ input: ExecuteQueryRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ExecuteQueryResponse {
+        return try await self.client.execute(
+            operation: "ExecuteQuery", 
+            path: "/queries/execution", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Retrieves information about a component type.
-    public func getComponentType(_ input: GetComponentTypeRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetComponentTypeResponse> {
-        return self.client.execute(operation: "GetComponentType", path: "/workspaces/{workspaceId}/component-types/{componentTypeId}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func getComponentType(_ input: GetComponentTypeRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetComponentTypeResponse {
+        return try await self.client.execute(
+            operation: "GetComponentType", 
+            path: "/workspaces/{workspaceId}/component-types/{componentTypeId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Retrieves information about an entity.
-    public func getEntity(_ input: GetEntityRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetEntityResponse> {
-        return self.client.execute(operation: "GetEntity", path: "/workspaces/{workspaceId}/entities/{entityId}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func getEntity(_ input: GetEntityRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetEntityResponse {
+        return try await self.client.execute(
+            operation: "GetEntity", 
+            path: "/workspaces/{workspaceId}/entities/{entityId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
+    }
+
+    /// Gets a nmetadata transfer job.
+    @Sendable
+    public func getMetadataTransferJob(_ input: GetMetadataTransferJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetMetadataTransferJobResponse {
+        return try await self.client.execute(
+            operation: "GetMetadataTransferJob", 
+            path: "/metadata-transfer-jobs/{metadataTransferJobId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Gets the pricing plan.
-    public func getPricingPlan(_ input: GetPricingPlanRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetPricingPlanResponse> {
-        return self.client.execute(operation: "GetPricingPlan", path: "/pricingplan", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func getPricingPlan(_ input: GetPricingPlanRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetPricingPlanResponse {
+        return try await self.client.execute(
+            operation: "GetPricingPlan", 
+            path: "/pricingplan", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Gets the property values for a component, component type, entity, or workspace. You must specify a value for either componentName, componentTypeId, entityId, or workspaceId.
-    public func getPropertyValue(_ input: GetPropertyValueRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetPropertyValueResponse> {
-        return self.client.execute(operation: "GetPropertyValue", path: "/workspaces/{workspaceId}/entity-properties/value", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "data.", logger: logger, on: eventLoop)
+    @Sendable
+    public func getPropertyValue(_ input: GetPropertyValueRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetPropertyValueResponse {
+        return try await self.client.execute(
+            operation: "GetPropertyValue", 
+            path: "/workspaces/{workspaceId}/entity-properties/value", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "data.", 
+            logger: logger
+        )
     }
 
-    /// Retrieves information about the history of a time series property value for a component, component type, entity, or workspace. You must specify a value for workspaceId. For entity-specific queries, specify values for componentName and  entityId. For cross-entity quries, specify a value for componentTypeId.
-    public func getPropertyValueHistory(_ input: GetPropertyValueHistoryRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetPropertyValueHistoryResponse> {
-        return self.client.execute(operation: "GetPropertyValueHistory", path: "/workspaces/{workspaceId}/entity-properties/history", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "data.", logger: logger, on: eventLoop)
+    /// Retrieves information about the history of a time series property value for a component, component type, entity, or workspace. You must specify a value for workspaceId. For entity-specific queries, specify values for componentName and entityId. For cross-entity quries, specify a value for componentTypeId.
+    @Sendable
+    public func getPropertyValueHistory(_ input: GetPropertyValueHistoryRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetPropertyValueHistoryResponse {
+        return try await self.client.execute(
+            operation: "GetPropertyValueHistory", 
+            path: "/workspaces/{workspaceId}/entity-properties/history", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "data.", 
+            logger: logger
+        )
     }
 
     /// Retrieves information about a scene.
-    public func getScene(_ input: GetSceneRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetSceneResponse> {
-        return self.client.execute(operation: "GetScene", path: "/workspaces/{workspaceId}/scenes/{sceneId}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func getScene(_ input: GetSceneRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetSceneResponse {
+        return try await self.client.execute(
+            operation: "GetScene", 
+            path: "/workspaces/{workspaceId}/scenes/{sceneId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Gets the SyncJob.
-    public func getSyncJob(_ input: GetSyncJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetSyncJobResponse> {
-        return self.client.execute(operation: "GetSyncJob", path: "/sync-jobs/{syncSource}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func getSyncJob(_ input: GetSyncJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetSyncJobResponse {
+        return try await self.client.execute(
+            operation: "GetSyncJob", 
+            path: "/sync-jobs/{syncSource}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Retrieves information about a workspace.
-    public func getWorkspace(_ input: GetWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetWorkspaceResponse> {
-        return self.client.execute(operation: "GetWorkspace", path: "/workspaces/{workspaceId}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func getWorkspace(_ input: GetWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetWorkspaceResponse {
+        return try await self.client.execute(
+            operation: "GetWorkspace", 
+            path: "/workspaces/{workspaceId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Lists all component types in a workspace.
-    public func listComponentTypes(_ input: ListComponentTypesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListComponentTypesResponse> {
-        return self.client.execute(operation: "ListComponentTypes", path: "/workspaces/{workspaceId}/component-types-list", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listComponentTypes(_ input: ListComponentTypesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListComponentTypesResponse {
+        return try await self.client.execute(
+            operation: "ListComponentTypes", 
+            path: "/workspaces/{workspaceId}/component-types-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
+    }
+
+    /// This API lists the components of an entity.
+    @Sendable
+    public func listComponents(_ input: ListComponentsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListComponentsResponse {
+        return try await self.client.execute(
+            operation: "ListComponents", 
+            path: "/workspaces/{workspaceId}/entities/{entityId}/components-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Lists all entities in a workspace.
-    public func listEntities(_ input: ListEntitiesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListEntitiesResponse> {
-        return self.client.execute(operation: "ListEntities", path: "/workspaces/{workspaceId}/entities-list", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listEntities(_ input: ListEntitiesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListEntitiesResponse {
+        return try await self.client.execute(
+            operation: "ListEntities", 
+            path: "/workspaces/{workspaceId}/entities-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
+    }
+
+    /// Lists the metadata transfer jobs.
+    @Sendable
+    public func listMetadataTransferJobs(_ input: ListMetadataTransferJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListMetadataTransferJobsResponse {
+        return try await self.client.execute(
+            operation: "ListMetadataTransferJobs", 
+            path: "/metadata-transfer-jobs-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
+    }
+
+    /// This API lists the properties of a component.
+    @Sendable
+    public func listProperties(_ input: ListPropertiesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListPropertiesResponse {
+        return try await self.client.execute(
+            operation: "ListProperties", 
+            path: "/workspaces/{workspaceId}/properties-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Lists all scenes in a workspace.
-    public func listScenes(_ input: ListScenesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListScenesResponse> {
-        return self.client.execute(operation: "ListScenes", path: "/workspaces/{workspaceId}/scenes-list", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listScenes(_ input: ListScenesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListScenesResponse {
+        return try await self.client.execute(
+            operation: "ListScenes", 
+            path: "/workspaces/{workspaceId}/scenes-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// List all SyncJobs.
-    public func listSyncJobs(_ input: ListSyncJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListSyncJobsResponse> {
-        return self.client.execute(operation: "ListSyncJobs", path: "/workspaces/{workspaceId}/sync-jobs-list", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listSyncJobs(_ input: ListSyncJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListSyncJobsResponse {
+        return try await self.client.execute(
+            operation: "ListSyncJobs", 
+            path: "/workspaces/{workspaceId}/sync-jobs-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Lists the sync resources.
-    public func listSyncResources(_ input: ListSyncResourcesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListSyncResourcesResponse> {
-        return self.client.execute(operation: "ListSyncResources", path: "/workspaces/{workspaceId}/sync-jobs/{syncSource}/resources-list", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listSyncResources(_ input: ListSyncResourcesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListSyncResourcesResponse {
+        return try await self.client.execute(
+            operation: "ListSyncResources", 
+            path: "/workspaces/{workspaceId}/sync-jobs/{syncSource}/resources-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Lists all tags associated with a resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags-list", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Retrieves information about workspaces in the current account.
-    public func listWorkspaces(_ input: ListWorkspacesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListWorkspacesResponse> {
-        return self.client.execute(operation: "ListWorkspaces", path: "/workspaces-list", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listWorkspaces(_ input: ListWorkspacesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListWorkspacesResponse {
+        return try await self.client.execute(
+            operation: "ListWorkspaces", 
+            path: "/workspaces-list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Adds tags to a resource.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/tags", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Removes tags from a resource.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/tags", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Updates information in a component type.
-    public func updateComponentType(_ input: UpdateComponentTypeRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateComponentTypeResponse> {
-        return self.client.execute(operation: "UpdateComponentType", path: "/workspaces/{workspaceId}/component-types/{componentTypeId}", httpMethod: .PUT, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateComponentType(_ input: UpdateComponentTypeRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateComponentTypeResponse {
+        return try await self.client.execute(
+            operation: "UpdateComponentType", 
+            path: "/workspaces/{workspaceId}/component-types/{componentTypeId}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Updates an entity.
-    public func updateEntity(_ input: UpdateEntityRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateEntityResponse> {
-        return self.client.execute(operation: "UpdateEntity", path: "/workspaces/{workspaceId}/entities/{entityId}", httpMethod: .PUT, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateEntity(_ input: UpdateEntityRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateEntityResponse {
+        return try await self.client.execute(
+            operation: "UpdateEntity", 
+            path: "/workspaces/{workspaceId}/entities/{entityId}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Update the pricing plan.
-    public func updatePricingPlan(_ input: UpdatePricingPlanRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdatePricingPlanResponse> {
-        return self.client.execute(operation: "UpdatePricingPlan", path: "/pricingplan", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func updatePricingPlan(_ input: UpdatePricingPlanRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdatePricingPlanResponse {
+        return try await self.client.execute(
+            operation: "UpdatePricingPlan", 
+            path: "/pricingplan", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Updates a scene.
-    public func updateScene(_ input: UpdateSceneRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateSceneResponse> {
-        return self.client.execute(operation: "UpdateScene", path: "/workspaces/{workspaceId}/scenes/{sceneId}", httpMethod: .PUT, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateScene(_ input: UpdateSceneRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateSceneResponse {
+        return try await self.client.execute(
+            operation: "UpdateScene", 
+            path: "/workspaces/{workspaceId}/scenes/{sceneId}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Updates a workspace.
-    public func updateWorkspace(_ input: UpdateWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateWorkspaceResponse> {
-        return self.client.execute(operation: "UpdateWorkspace", path: "/workspaces/{workspaceId}", httpMethod: .PUT, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateWorkspace(_ input: UpdateWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateWorkspaceResponse {
+        return try await self.client.execute(
+            operation: "UpdateWorkspace", 
+            path: "/workspaces/{workspaceId}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 }
 
 extension IoTTwinMaker {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: IoTTwinMaker, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -245,481 +686,233 @@ extension IoTTwinMaker {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension IoTTwinMaker {
-    ///  Run queries to access information from your knowledge graph of entities within individual workspaces.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func executeQueryPaginator<Result>(
-        _ input: ExecuteQueryRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ExecuteQueryResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.executeQuery,
-            inputKey: \ExecuteQueryRequest.nextToken,
-            outputKey: \ExecuteQueryResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Run queries to access information from your knowledge graph of entities within individual workspaces.  The ExecuteQuery action only works with Amazon Web Services Java SDK2. ExecuteQuery will not work with any Amazon Web Services Java SDK version &lt; 2.x.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func executeQueryPaginator(
         _ input: ExecuteQueryRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ExecuteQueryResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ExecuteQueryRequest, ExecuteQueryResponse> {
+        return .init(
             input: input,
             command: self.executeQuery,
             inputKey: \ExecuteQueryRequest.nextToken,
             outputKey: \ExecuteQueryResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Gets the property values for a component, component type, entity, or workspace. You must specify a value for either componentName, componentTypeId, entityId, or workspaceId.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func getPropertyValuePaginator<Result>(
-        _ input: GetPropertyValueRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, GetPropertyValueResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.getPropertyValue,
-            inputKey: \GetPropertyValueRequest.nextToken,
-            outputKey: \GetPropertyValueResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Gets the property values for a component, component type, entity, or workspace. You must specify a value for either componentName, componentTypeId, entityId, or workspaceId.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func getPropertyValuePaginator(
         _ input: GetPropertyValueRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (GetPropertyValueResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<GetPropertyValueRequest, GetPropertyValueResponse> {
+        return .init(
             input: input,
             command: self.getPropertyValue,
             inputKey: \GetPropertyValueRequest.nextToken,
             outputKey: \GetPropertyValueResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves information about the history of a time series property value for a component, component type, entity, or workspace. You must specify a value for workspaceId. For entity-specific queries, specify values for componentName and  entityId. For cross-entity quries, specify a value for componentTypeId.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func getPropertyValueHistoryPaginator<Result>(
-        _ input: GetPropertyValueHistoryRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, GetPropertyValueHistoryResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.getPropertyValueHistory,
-            inputKey: \GetPropertyValueHistoryRequest.nextToken,
-            outputKey: \GetPropertyValueHistoryResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves information about the history of a time series property value for a component, component type, entity, or workspace. You must specify a value for workspaceId. For entity-specific queries, specify values for componentName and entityId. For cross-entity quries, specify a value for componentTypeId.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func getPropertyValueHistoryPaginator(
         _ input: GetPropertyValueHistoryRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (GetPropertyValueHistoryResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<GetPropertyValueHistoryRequest, GetPropertyValueHistoryResponse> {
+        return .init(
             input: input,
             command: self.getPropertyValueHistory,
             inputKey: \GetPropertyValueHistoryRequest.nextToken,
             outputKey: \GetPropertyValueHistoryResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all component types in a workspace.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listComponentTypesPaginator<Result>(
-        _ input: ListComponentTypesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListComponentTypesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listComponentTypes,
-            inputKey: \ListComponentTypesRequest.nextToken,
-            outputKey: \ListComponentTypesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists all component types in a workspace.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listComponentTypesPaginator(
         _ input: ListComponentTypesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListComponentTypesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListComponentTypesRequest, ListComponentTypesResponse> {
+        return .init(
             input: input,
             command: self.listComponentTypes,
             inputKey: \ListComponentTypesRequest.nextToken,
             outputKey: \ListComponentTypesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all entities in a workspace.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listEntitiesPaginator<Result>(
-        _ input: ListEntitiesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListEntitiesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listEntities,
-            inputKey: \ListEntitiesRequest.nextToken,
-            outputKey: \ListEntitiesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// This API lists the components of an entity.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listComponentsPaginator(
+        _ input: ListComponentsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListComponentsRequest, ListComponentsResponse> {
+        return .init(
+            input: input,
+            command: self.listComponents,
+            inputKey: \ListComponentsRequest.nextToken,
+            outputKey: \ListComponentsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists all entities in a workspace.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listEntitiesPaginator(
         _ input: ListEntitiesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListEntitiesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListEntitiesRequest, ListEntitiesResponse> {
+        return .init(
             input: input,
             command: self.listEntities,
             inputKey: \ListEntitiesRequest.nextToken,
             outputKey: \ListEntitiesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all scenes in a workspace.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listScenesPaginator<Result>(
-        _ input: ListScenesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListScenesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listScenes,
-            inputKey: \ListScenesRequest.nextToken,
-            outputKey: \ListScenesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the metadata transfer jobs.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listMetadataTransferJobsPaginator(
+        _ input: ListMetadataTransferJobsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListMetadataTransferJobsRequest, ListMetadataTransferJobsResponse> {
+        return .init(
+            input: input,
+            command: self.listMetadataTransferJobs,
+            inputKey: \ListMetadataTransferJobsRequest.nextToken,
+            outputKey: \ListMetadataTransferJobsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// This API lists the properties of a component.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listPropertiesPaginator(
+        _ input: ListPropertiesRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListPropertiesRequest, ListPropertiesResponse> {
+        return .init(
+            input: input,
+            command: self.listProperties,
+            inputKey: \ListPropertiesRequest.nextToken,
+            outputKey: \ListPropertiesResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists all scenes in a workspace.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listScenesPaginator(
         _ input: ListScenesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListScenesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListScenesRequest, ListScenesResponse> {
+        return .init(
             input: input,
             command: self.listScenes,
             inputKey: \ListScenesRequest.nextToken,
             outputKey: \ListScenesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List all SyncJobs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listSyncJobsPaginator<Result>(
-        _ input: ListSyncJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListSyncJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listSyncJobs,
-            inputKey: \ListSyncJobsRequest.nextToken,
-            outputKey: \ListSyncJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List all SyncJobs.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listSyncJobsPaginator(
         _ input: ListSyncJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListSyncJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListSyncJobsRequest, ListSyncJobsResponse> {
+        return .init(
             input: input,
             command: self.listSyncJobs,
             inputKey: \ListSyncJobsRequest.nextToken,
             outputKey: \ListSyncJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the sync resources.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listSyncResourcesPaginator<Result>(
-        _ input: ListSyncResourcesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListSyncResourcesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listSyncResources,
-            inputKey: \ListSyncResourcesRequest.nextToken,
-            outputKey: \ListSyncResourcesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the sync resources.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listSyncResourcesPaginator(
         _ input: ListSyncResourcesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListSyncResourcesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListSyncResourcesRequest, ListSyncResourcesResponse> {
+        return .init(
             input: input,
             command: self.listSyncResources,
             inputKey: \ListSyncResourcesRequest.nextToken,
             outputKey: \ListSyncResourcesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves information about workspaces in the current account.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listWorkspacesPaginator<Result>(
-        _ input: ListWorkspacesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListWorkspacesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listWorkspaces,
-            inputKey: \ListWorkspacesRequest.nextToken,
-            outputKey: \ListWorkspacesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves information about workspaces in the current account.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listWorkspacesPaginator(
         _ input: ListWorkspacesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListWorkspacesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListWorkspacesRequest, ListWorkspacesResponse> {
+        return .init(
             input: input,
             command: self.listWorkspaces,
             inputKey: \ListWorkspacesRequest.nextToken,
             outputKey: \ListWorkspacesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
@@ -739,6 +932,7 @@ extension IoTTwinMaker.GetPropertyValueHistoryRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> IoTTwinMaker.GetPropertyValueHistoryRequest {
         return .init(
             componentName: self.componentName,
+            componentPath: self.componentPath,
             componentTypeId: self.componentTypeId,
             endTime: self.endTime,
             entityId: self.entityId,
@@ -758,6 +952,7 @@ extension IoTTwinMaker.GetPropertyValueRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> IoTTwinMaker.GetPropertyValueRequest {
         return .init(
             componentName: self.componentName,
+            componentPath: self.componentPath,
             componentTypeId: self.componentTypeId,
             entityId: self.entityId,
             maxResults: self.maxResults,
@@ -781,10 +976,47 @@ extension IoTTwinMaker.ListComponentTypesRequest: AWSPaginateToken {
     }
 }
 
+extension IoTTwinMaker.ListComponentsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> IoTTwinMaker.ListComponentsRequest {
+        return .init(
+            componentPath: self.componentPath,
+            entityId: self.entityId,
+            maxResults: self.maxResults,
+            nextToken: token,
+            workspaceId: self.workspaceId
+        )
+    }
+}
+
 extension IoTTwinMaker.ListEntitiesRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> IoTTwinMaker.ListEntitiesRequest {
         return .init(
             filters: self.filters,
+            maxResults: self.maxResults,
+            nextToken: token,
+            workspaceId: self.workspaceId
+        )
+    }
+}
+
+extension IoTTwinMaker.ListMetadataTransferJobsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> IoTTwinMaker.ListMetadataTransferJobsRequest {
+        return .init(
+            destinationType: self.destinationType,
+            filters: self.filters,
+            maxResults: self.maxResults,
+            nextToken: token,
+            sourceType: self.sourceType
+        )
+    }
+}
+
+extension IoTTwinMaker.ListPropertiesRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> IoTTwinMaker.ListPropertiesRequest {
+        return .init(
+            componentName: self.componentName,
+            componentPath: self.componentPath,
+            entityId: self.entityId,
             maxResults: self.maxResults,
             nextToken: token,
             workspaceId: self.workspaceId

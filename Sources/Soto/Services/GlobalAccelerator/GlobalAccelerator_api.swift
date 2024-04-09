@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,49 +19,33 @@
 
 /// Service object for interacting with AWS GlobalAccelerator service.
 ///
-/// Global Accelerator
-/// 	        This is the Global Accelerator API Reference. This guide is for developers who need detailed information about
+/// Global Accelerator This is the Global Accelerator API Reference. This guide is for developers who need detailed information about
 /// 		    Global Accelerator API actions, data types, and errors. For more information about Global Accelerator features, see the
-/// 	    	Global Accelerator Developer Guide.
-/// 	        Global Accelerator is a service in which you create accelerators to improve the performance
+/// 	    	Global Accelerator Developer Guide. Global Accelerator is a service in which you create accelerators to improve the performance
 /// 			of your applications for local and global users. Depending on the type of accelerator you choose, you can
-/// 			gain additional benefits.
-/// 		         By using a standard accelerator, you can improve availability of your internet applications
+/// 			gain additional benefits.    By using a standard accelerator, you can improve availability of your internet applications
 /// 			    that are used by a global audience. With a standard accelerator, Global Accelerator directs traffic to optimal endpoints over the Amazon Web Services
 /// 				global network.    For other scenarios, you might choose a custom routing accelerator. With a custom routing accelerator, you
-/// 				can use application logic to directly map one or more users to a specific endpoint among many endpoints.
-///
-/// 		          Global Accelerator is a global service that supports endpoints in multiple Amazon Web Services Regions but you must specify the
+/// 				can use application logic to directly map one or more users to a specific endpoint among many endpoints.    Global Accelerator is a global service that supports endpoints in multiple Amazon Web Services Regions but you must specify the
 /// 		    	US West (Oregon) Region to create, update, or otherwise work with accelerators.  That is, for example, specify --region us-west-2
-/// 		    	on AWS CLI commands.
-///
-///
-///
-/// 		       By default, Global Accelerator provides you with static IP addresses that you associate with your accelerator. The static IP addresses
+/// 		    	on Amazon Web Services CLI commands.  By default, Global Accelerator provides you with static IP addresses that you associate with your accelerator. The static IP addresses
 /// 			are anycast from the Amazon Web Services edge network. For IPv4, Global Accelerator provides two static IPv4 addresses. For dual-stack,
 /// 			Global Accelerator provides a total of four addresses: two static IPv4 addresses and two static IPv6 addresses.
 /// 			With a standard accelerator for IPv4, instead of using the addresses that Global Accelerator provides, you can configure
-/// 			these entry points to be IPv4 addresses from your own IP address ranges that you bring toGlobal Accelerator (BYOIP).
-///
-///
-/// 	        For a standard accelerator,
+/// 			these entry points to be IPv4 addresses from your own IP address ranges that you bring to Global Accelerator (BYOIP).  For a standard accelerator,
 /// 	        they distribute incoming application traffic across multiple endpoint resources in multiple Amazon Web Services Regions , which increases
 /// 			the availability of your applications. Endpoints for standard accelerators can be Network Load Balancers, Application Load Balancers,
 /// 	    	Amazon EC2 instances, or Elastic IP addresses that are located in one Amazon Web Services Region or multiple Amazon Web Services Regions. For custom routing
 /// 	        accelerators, you map traffic that arrives to the static IP addresses to specific Amazon EC2 servers in endpoints that
-/// 			are virtual private cloud (VPC) subnets.
-///
-/// 		        The static IP addresses remain assigned to your accelerator for as long as it exists, even if you
+/// 			are virtual private cloud (VPC) subnets.  The static IP addresses remain assigned to your accelerator for as long as it exists, even if you
 /// 				disable the accelerator and it no longer accepts or routes traffic. However, when you
 /// 					delete an accelerator, you lose the static IP addresses that
 /// 				are assigned to it, so you can no longer route traffic by using them. You can use
 /// 				IAM policies like tag-based permissions with Global Accelerator to limit the users who have
-/// 				permissions to delete an accelerator. For more information, see Tag-based policies.
-/// 	        For standard accelerators, Global Accelerator uses the Amazon Web Services global network to route traffic to the optimal regional endpoint based
+/// 				permissions to delete an accelerator. For more information, see Tag-based policies.  For standard accelerators, Global Accelerator uses the Amazon Web Services global network to route traffic to the optimal regional endpoint based
 /// 			on health, client location, and policies that you configure. The service reacts instantly to
 /// 			changes in health or configuration to ensure that internet traffic from clients is always
-/// 			directed to healthy endpoints.
-/// 		       For more information about understanding and using Global Accelerator, see the
+/// 			directed to healthy endpoints. For more information about understanding and using Global Accelerator, see the
 /// 			Global Accelerator Developer Guide.
 public struct GlobalAccelerator: AWSService {
     // MARK: Member variables
@@ -79,12 +63,16 @@ public struct GlobalAccelerator: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -94,139 +82,261 @@ public struct GlobalAccelerator: AWSService {
             region: region,
             partition: region?.partition ?? partition,
             amzTarget: "GlobalAccelerator_V20180706",
-            service: "globalaccelerator",
+            serviceName: "GlobalAccelerator",
+            serviceIdentifier: "globalaccelerator",
             serviceProtocol: .json(version: "1.1"),
             apiVersion: "2018-08-08",
             endpoint: endpoint,
             errorType: GlobalAcceleratorErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
-    /// Associate a virtual private cloud (VPC) subnet endpoint with your custom routing accelerator.
-    /// 	        The listener port range must be large enough to support the number of IP addresses that can be
+    /// Associate a virtual private cloud (VPC) subnet endpoint with your custom routing accelerator. The listener port range must be large enough to support the number of IP addresses that can be
     /// 		specified in your subnet. The number of ports required is: subnet size times the number
     /// 		of ports per destination EC2 instances. For example, a subnet defined as /24 requires a listener
-    /// 		port range of at least 255 ports.
-    /// 	        Note: You must have enough remaining listener ports available to
-    /// 		map to the subnet ports, or the call will fail with a LimitExceededException.
-    /// 	        By default, all destinations in a subnet in a custom routing accelerator cannot receive traffic. To enable all
+    /// 		port range of at least 255 ports.  Note: You must have enough remaining listener ports available to
+    /// 		map to the subnet ports, or the call will fail with a LimitExceededException. By default, all destinations in a subnet in a custom routing accelerator cannot receive traffic. To enable all
     /// 			destinations to receive traffic, or to specify individual port mappings that can receive
     /// 			traffic, see the
     /// 				AllowCustomRoutingTraffic operation.
-    public func addCustomRoutingEndpoints(_ input: AddCustomRoutingEndpointsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AddCustomRoutingEndpointsResponse> {
-        return self.client.execute(operation: "AddCustomRoutingEndpoints", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func addCustomRoutingEndpoints(_ input: AddCustomRoutingEndpointsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AddCustomRoutingEndpointsResponse {
+        return try await self.client.execute(
+            operation: "AddCustomRoutingEndpoints", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Add endpoints to an endpoint group. The AddEndpoints API operation is the recommended option for adding endpoints. The
     /// 			alternative options are to add endpoints when you create an endpoint group (with the
     /// 			CreateEndpointGroup API)
     /// 			or when you update an endpoint group (with the
-    /// 			UpdateEndpointGroup API).
-    /// 		       There are two advantages to using AddEndpoints to add endpoints:
-    /// 			        It's faster, because Global Accelerator only has to resolve the new endpoints that
-    /// 					you're adding.   It's more convenient, because you don't need to specify all of the current
-    /// 					endpoints that are already in the endpoint group in addition to the new endpoints that you want to add.
-    public func addEndpoints(_ input: AddEndpointsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AddEndpointsResponse> {
-        return self.client.execute(operation: "AddEndpoints", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// 			UpdateEndpointGroup API).  There are two advantages to using AddEndpoints to add endpoints in Global Accelerator:   It's faster, because Global Accelerator only has to resolve the new endpoints that
+    /// 					you're adding, rather than resolving new and existing endpoints.   It's more convenient, because you don't need to specify the current
+    /// 					endpoints that are already in the endpoint group, in addition to the new endpoints that
+    /// 					you want to add.   For information about endpoint types and requirements for endpoints that you can add
+    /// 			to Global Accelerator, see
+    /// 				Endpoints for standard accelerators in the Global Accelerator Developer Guide.
+    @Sendable
+    public func addEndpoints(_ input: AddEndpointsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AddEndpointsResponse {
+        return try await self.client.execute(
+            operation: "AddEndpoints", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Advertises an IPv4 address range that is provisioned for use with your Amazon Web Services resources
     /// 			through bring your own IP addresses (BYOIP). It can take a few minutes before traffic to
-    /// 			the specified addresses starts routing to Amazon Web Services because of propagation delays.
-    /// 		       To stop advertising the BYOIP address range, use
-    /// 			WithdrawByoipCidr.
-    /// 		       For more information, see Bring your own
+    /// 			the specified addresses starts routing to Amazon Web Services because of propagation delays.  To stop advertising the BYOIP address range, use
+    /// 			WithdrawByoipCidr. For more information, see Bring your own
     /// 		    IP addresses (BYOIP) in the Global Accelerator Developer Guide.
-    public func advertiseByoipCidr(_ input: AdvertiseByoipCidrRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AdvertiseByoipCidrResponse> {
-        return self.client.execute(operation: "AdvertiseByoipCidr", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func advertiseByoipCidr(_ input: AdvertiseByoipCidrRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AdvertiseByoipCidrResponse {
+        return try await self.client.execute(
+            operation: "AdvertiseByoipCidr", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Specify the Amazon EC2 instance (destination) IP addresses and ports for a VPC subnet endpoint that can receive traffic
     /// 			for a custom routing accelerator. You can allow traffic to all destinations in the subnet endpoint, or allow traffic to a
     /// 			specified list of destination IP addresses and ports in the subnet. Note that you cannot specify IP addresses or ports
-    /// 			outside of the range that you configured for the endpoint group.
-    /// 		       After you make changes, you can verify that the updates are complete by checking the status of your
+    /// 			outside of the range that you configured for the endpoint group. After you make changes, you can verify that the updates are complete by checking the status of your
     /// 			accelerator: the status changes from IN_PROGRESS to DEPLOYED.
-    @discardableResult public func allowCustomRoutingTraffic(_ input: AllowCustomRoutingTrafficRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "AllowCustomRoutingTraffic", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func allowCustomRoutingTraffic(_ input: AllowCustomRoutingTrafficRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "AllowCustomRoutingTraffic", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Create an accelerator. An accelerator includes one or more listeners that process inbound connections and direct traffic
-    /// 			to one or more endpoint groups, each of which includes endpoints, such as Network Load Balancers.
-    ///
-    /// 			         Global Accelerator is a global service that supports endpoints in multiple Amazon Web Services Regions but you must specify the
+    /// 			to one or more endpoint groups, each of which includes endpoints, such as Network Load Balancers.   Global Accelerator is a global service that supports endpoints in multiple Amazon Web Services Regions but you must specify the
     /// 				US West (Oregon) Region to create, update, or otherwise work with accelerators.  That is, for example, specify --region us-west-2
-    /// 				on AWS CLI commands.
-    ///
-    public func createAccelerator(_ input: CreateAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateAcceleratorResponse> {
-        return self.client.execute(operation: "CreateAccelerator", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// 				on Amazon Web Services CLI commands.
+    @Sendable
+    public func createAccelerator(_ input: CreateAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAcceleratorResponse {
+        return try await self.client.execute(
+            operation: "CreateAccelerator", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Create a cross-account attachment in Global Accelerator. You create a cross-account attachment to
+    /// 			specify the principals who have permission to work with resources
+    /// 			in accelerators in their own account. You specify, in the same attachment, the resources that are shared. A principal can be an Amazon Web Services account number or the Amazon Resource Name (ARN) for an
+    /// 			accelerator. For account numbers that are listed as principals, to work with a resource listed in the attachment,
+    /// 			you must sign in to an account specified as a principal. Then, you can work with resources that are listed,
+    /// 			with any of your accelerators. If an accelerator ARN is listed in the cross-account attachment as a principal,
+    /// 			anyone with permission to make updates to the accelerator can work with resources that are listed in the
+    /// 			attachment.  Specify each principal and resource separately. To specify two CIDR address pools, list
+    /// 			them individually under Resources, and so on. For a command line operation, for example,
+    /// 			you might use a statement like the following:  "Resources": [{"Cidr": "169.254.60.0/24"},{"Cidr": "169.254.59.0/24"}]  For more information, see
+    /// 			Working with cross-account attachments and resources in Global Accelerator in the
+    /// 				Global Accelerator Developer Guide.
+    @Sendable
+    public func createCrossAccountAttachment(_ input: CreateCrossAccountAttachmentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCrossAccountAttachmentResponse {
+        return try await self.client.execute(
+            operation: "CreateCrossAccountAttachment", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Create a custom routing accelerator. A custom routing accelerator directs traffic to one of possibly thousands
-    /// 	    of Amazon EC2 instance destinations running in a single or multiple virtual private clouds (VPC) subnet endpoints.
-    /// 	        Be aware that, by default, all destination EC2 instances in a VPC subnet endpoint cannot receive
+    /// 	    of Amazon EC2 instance destinations running in a single or multiple virtual private clouds (VPC) subnet endpoints. Be aware that, by default, all destination EC2 instances in a VPC subnet endpoint cannot receive
     /// 			traffic. To enable all destinations to receive traffic, or to specify individual port
     /// 			mappings that can receive traffic, see the
-    /// 				AllowCustomRoutingTraffic operation.
-    ///
-    /// 		          Global Accelerator is a global service that supports endpoints in multiple Amazon Web Services Regions but you must specify the
+    /// 				AllowCustomRoutingTraffic operation.  Global Accelerator is a global service that supports endpoints in multiple Amazon Web Services Regions but you must specify the
     /// 			US West (Oregon) Region to create, update, or otherwise work with accelerators.  That is, for example, specify --region us-west-2
-    /// 			on AWS CLI commands.
-    ///
-    public func createCustomRoutingAccelerator(_ input: CreateCustomRoutingAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateCustomRoutingAcceleratorResponse> {
-        return self.client.execute(operation: "CreateCustomRoutingAccelerator", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// 			on Amazon Web Services CLI commands.
+    @Sendable
+    public func createCustomRoutingAccelerator(_ input: CreateCustomRoutingAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCustomRoutingAcceleratorResponse {
+        return try await self.client.execute(
+            operation: "CreateCustomRoutingAccelerator", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Create an endpoint group for the specified listener for a custom routing accelerator.
     /// 	    An endpoint group is a collection of endpoints in one Amazon Web Services
     /// 		Region.
-    public func createCustomRoutingEndpointGroup(_ input: CreateCustomRoutingEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateCustomRoutingEndpointGroupResponse> {
-        return self.client.execute(operation: "CreateCustomRoutingEndpointGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createCustomRoutingEndpointGroup(_ input: CreateCustomRoutingEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCustomRoutingEndpointGroupResponse {
+        return try await self.client.execute(
+            operation: "CreateCustomRoutingEndpointGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Create a listener to process inbound connections from clients to a custom routing accelerator.
     /// 			Connections arrive to assigned static IP addresses on the port range that you specify.
-    public func createCustomRoutingListener(_ input: CreateCustomRoutingListenerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateCustomRoutingListenerResponse> {
-        return self.client.execute(operation: "CreateCustomRoutingListener", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createCustomRoutingListener(_ input: CreateCustomRoutingListenerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCustomRoutingListenerResponse {
+        return try await self.client.execute(
+            operation: "CreateCustomRoutingListener", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Create an endpoint group for the specified listener. An endpoint group is a collection of endpoints in one Amazon Web Services
-    /// 			Region. A resource must be valid and active when you add it as an endpoint.
-    public func createEndpointGroup(_ input: CreateEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateEndpointGroupResponse> {
-        return self.client.execute(operation: "CreateEndpointGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// 			Region. A resource must be valid and active when you add it as an endpoint. For more information about endpoint types and requirements for endpoints that you can add
+    /// 				to Global Accelerator, see
+    /// 					Endpoints for standard accelerators in the Global Accelerator Developer Guide.
+    @Sendable
+    public func createEndpointGroup(_ input: CreateEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateEndpointGroupResponse {
+        return try await self.client.execute(
+            operation: "CreateEndpointGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Create a listener to process inbound connections from clients to an accelerator. Connections arrive to assigned static
     /// 			IP addresses on a port, port range, or list of port ranges that you specify.
-    public func createListener(_ input: CreateListenerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateListenerResponse> {
-        return self.client.execute(operation: "CreateListener", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createListener(_ input: CreateListenerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateListenerResponse {
+        return try await self.client.execute(
+            operation: "CreateListener", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Delete an accelerator. Before you can delete an accelerator, you must disable it and remove all dependent resources
-    /// 			(listeners and endpoint groups). To disable the accelerator, update the accelerator to set Enabled to false.
-    /// 	         When you create an accelerator, by default, Global Accelerator provides you with a set of two static IP addresses.
+    /// 			(listeners and endpoint groups). To disable the accelerator, update the accelerator to set Enabled to false.  When you create an accelerator, by default, Global Accelerator provides you with a set of two static IP addresses.
     /// 	        Alternatively, you can bring your own IP address ranges to Global Accelerator and assign IP addresses from those ranges.
-    ///
-    /// 		          The IP addresses are assigned to your accelerator for as long as it exists, even if you disable the accelerator and
+    /// 		 The IP addresses are assigned to your accelerator for as long as it exists, even if you disable the accelerator and
     /// 			it no longer accepts or routes traffic. However, when you delete an accelerator, you lose the
     /// 			static IP addresses that are assigned to the accelerator, so you can no longer route traffic by using them.
     /// 			As a best practice, ensure that you have permissions in place to avoid inadvertently deleting accelerators. You
     /// 			can use IAM policies with Global Accelerator to limit the users who have permissions to delete an accelerator. For more information,
     /// 			see Identity and access management in
     /// 		    the Global Accelerator Developer Guide.
-    @discardableResult public func deleteAccelerator(_ input: DeleteAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteAccelerator", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteAccelerator(_ input: DeleteAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteAccelerator", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Delete a cross-account attachment. When you delete an attachment, Global Accelerator revokes the permission
+    /// 			to use the resources in the attachment from all principals in the list of principals. Global Accelerator
+    /// 			revokes the permission for specific resources. For more information, see
+    /// 			Working with cross-account attachments and resources in Global Accelerator in the
+    /// 				Global Accelerator Developer Guide.
+    @Sendable
+    public func deleteCrossAccountAttachment(_ input: DeleteCrossAccountAttachmentRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteCrossAccountAttachment", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Delete a custom routing accelerator. Before you can delete an accelerator, you must disable it and remove all dependent resources
     /// 		(listeners and endpoint groups). To disable the accelerator, update the accelerator to set Enabled to false.  When you create a custom routing accelerator, by default, Global Accelerator provides you with a set of two static IP addresses.
-    ///
-    /// 		          The IP
+    /// 	 The IP
     /// 			addresses are assigned to your accelerator for as long as it exists, even if you disable the accelerator and
     /// 			it no longer accepts or routes traffic. However, when you delete an accelerator, you lose the
     /// 			static IP addresses that are assigned to the accelerator, so you can no longer route traffic by using them.
@@ -234,252 +344,613 @@ public struct GlobalAccelerator: AWSService {
     /// 			can use IAM policies with Global Accelerator to limit the users who have permissions to delete an accelerator. For more information,
     /// 			see Identity and access management in
     /// 		    the Global Accelerator Developer Guide.
-    @discardableResult public func deleteCustomRoutingAccelerator(_ input: DeleteCustomRoutingAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteCustomRoutingAccelerator", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteCustomRoutingAccelerator(_ input: DeleteCustomRoutingAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteCustomRoutingAccelerator", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Delete an endpoint group from a listener for a custom routing accelerator.
-    @discardableResult public func deleteCustomRoutingEndpointGroup(_ input: DeleteCustomRoutingEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteCustomRoutingEndpointGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteCustomRoutingEndpointGroup(_ input: DeleteCustomRoutingEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteCustomRoutingEndpointGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Delete a listener for a custom routing accelerator.
-    @discardableResult public func deleteCustomRoutingListener(_ input: DeleteCustomRoutingListenerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteCustomRoutingListener", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteCustomRoutingListener(_ input: DeleteCustomRoutingListenerRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteCustomRoutingListener", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Delete an endpoint group from a listener.
-    @discardableResult public func deleteEndpointGroup(_ input: DeleteEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteEndpointGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteEndpointGroup(_ input: DeleteEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteEndpointGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Delete a listener from an accelerator.
-    @discardableResult public func deleteListener(_ input: DeleteListenerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteListener", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteListener(_ input: DeleteListenerRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteListener", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Specify the Amazon EC2 instance (destination) IP addresses and ports for a VPC subnet endpoint that cannot receive traffic
     /// 			for a custom routing accelerator. You can deny traffic to all destinations in the VPC endpoint, or deny traffic to a
     /// 			specified list of destination IP addresses and ports. Note that you cannot specify IP addresses
-    /// 			or ports outside of the range that you configured for the endpoint group.
-    /// 		       After you make changes, you can verify that the updates are complete by checking the status of your
+    /// 			or ports outside of the range that you configured for the endpoint group. After you make changes, you can verify that the updates are complete by checking the status of your
     /// 			accelerator: the status changes from IN_PROGRESS to DEPLOYED.
-    @discardableResult public func denyCustomRoutingTraffic(_ input: DenyCustomRoutingTrafficRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DenyCustomRoutingTraffic", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func denyCustomRoutingTraffic(_ input: DenyCustomRoutingTrafficRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DenyCustomRoutingTraffic", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Releases the specified address range that you provisioned to use with your Amazon Web Services resources
-    /// 			through bring your own IP addresses (BYOIP) and deletes the corresponding address pool.
-    /// 		       Before you can release an address range, you must stop advertising it by using WithdrawByoipCidr and you must not have
+    /// 			through bring your own IP addresses (BYOIP) and deletes the corresponding address pool.  Before you can release an address range, you must stop advertising it by using WithdrawByoipCidr and you must not have
     /// 			any accelerators that are using static IP addresses allocated from its address range.
-    ///
-    /// 		       For more information, see Bring
+    /// 		 For more information, see Bring
     /// 			your own IP addresses (BYOIP) in the Global Accelerator Developer Guide.
-    public func deprovisionByoipCidr(_ input: DeprovisionByoipCidrRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeprovisionByoipCidrResponse> {
-        return self.client.execute(operation: "DeprovisionByoipCidr", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deprovisionByoipCidr(_ input: DeprovisionByoipCidrRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeprovisionByoipCidrResponse {
+        return try await self.client.execute(
+            operation: "DeprovisionByoipCidr", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describe an accelerator.
-    public func describeAccelerator(_ input: DescribeAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeAcceleratorResponse> {
-        return self.client.execute(operation: "DescribeAccelerator", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeAccelerator(_ input: DescribeAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeAcceleratorResponse {
+        return try await self.client.execute(
+            operation: "DescribeAccelerator", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describe the attributes of an accelerator.
     ///
-    public func describeAcceleratorAttributes(_ input: DescribeAcceleratorAttributesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeAcceleratorAttributesResponse> {
-        return self.client.execute(operation: "DescribeAcceleratorAttributes", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeAcceleratorAttributes(_ input: DescribeAcceleratorAttributesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeAcceleratorAttributesResponse {
+        return try await self.client.execute(
+            operation: "DescribeAcceleratorAttributes", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Gets configuration information about a cross-account attachment.
+    @Sendable
+    public func describeCrossAccountAttachment(_ input: DescribeCrossAccountAttachmentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeCrossAccountAttachmentResponse {
+        return try await self.client.execute(
+            operation: "DescribeCrossAccountAttachment", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describe a custom routing accelerator.
-    public func describeCustomRoutingAccelerator(_ input: DescribeCustomRoutingAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeCustomRoutingAcceleratorResponse> {
-        return self.client.execute(operation: "DescribeCustomRoutingAccelerator", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCustomRoutingAccelerator(_ input: DescribeCustomRoutingAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeCustomRoutingAcceleratorResponse {
+        return try await self.client.execute(
+            operation: "DescribeCustomRoutingAccelerator", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describe the attributes of a custom routing accelerator.
-    public func describeCustomRoutingAcceleratorAttributes(_ input: DescribeCustomRoutingAcceleratorAttributesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeCustomRoutingAcceleratorAttributesResponse> {
-        return self.client.execute(operation: "DescribeCustomRoutingAcceleratorAttributes", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCustomRoutingAcceleratorAttributes(_ input: DescribeCustomRoutingAcceleratorAttributesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeCustomRoutingAcceleratorAttributesResponse {
+        return try await self.client.execute(
+            operation: "DescribeCustomRoutingAcceleratorAttributes", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describe an endpoint group for a custom routing accelerator.
-    public func describeCustomRoutingEndpointGroup(_ input: DescribeCustomRoutingEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeCustomRoutingEndpointGroupResponse> {
-        return self.client.execute(operation: "DescribeCustomRoutingEndpointGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCustomRoutingEndpointGroup(_ input: DescribeCustomRoutingEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeCustomRoutingEndpointGroupResponse {
+        return try await self.client.execute(
+            operation: "DescribeCustomRoutingEndpointGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// The description of a listener for a custom routing accelerator.
-    public func describeCustomRoutingListener(_ input: DescribeCustomRoutingListenerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeCustomRoutingListenerResponse> {
-        return self.client.execute(operation: "DescribeCustomRoutingListener", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCustomRoutingListener(_ input: DescribeCustomRoutingListenerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeCustomRoutingListenerResponse {
+        return try await self.client.execute(
+            operation: "DescribeCustomRoutingListener", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describe an endpoint group.
-    public func describeEndpointGroup(_ input: DescribeEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeEndpointGroupResponse> {
-        return self.client.execute(operation: "DescribeEndpointGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeEndpointGroup(_ input: DescribeEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeEndpointGroupResponse {
+        return try await self.client.execute(
+            operation: "DescribeEndpointGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describe a listener.
-    public func describeListener(_ input: DescribeListenerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeListenerResponse> {
-        return self.client.execute(operation: "DescribeListener", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeListener(_ input: DescribeListenerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeListenerResponse {
+        return try await self.client.execute(
+            operation: "DescribeListener", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List the accelerators for an Amazon Web Services account.
-    public func listAccelerators(_ input: ListAcceleratorsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListAcceleratorsResponse> {
-        return self.client.execute(operation: "ListAccelerators", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listAccelerators(_ input: ListAcceleratorsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAcceleratorsResponse {
+        return try await self.client.execute(
+            operation: "ListAccelerators", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the IP address ranges that were specified in calls to ProvisionByoipCidr, including
     /// 			the current state and a history of state changes.
-    public func listByoipCidrs(_ input: ListByoipCidrsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListByoipCidrsResponse> {
-        return self.client.execute(operation: "ListByoipCidrs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listByoipCidrs(_ input: ListByoipCidrsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListByoipCidrsResponse {
+        return try await self.client.execute(
+            operation: "ListByoipCidrs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List the cross-account attachments that have been created in Global Accelerator.
+    @Sendable
+    public func listCrossAccountAttachments(_ input: ListCrossAccountAttachmentsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCrossAccountAttachmentsResponse {
+        return try await self.client.execute(
+            operation: "ListCrossAccountAttachments", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List the accounts that have cross-account resources. For more information, see
+    /// 			Working with cross-account attachments and resources in Global Accelerator in the
+    /// 				Global Accelerator Developer Guide.
+    @Sendable
+    public func listCrossAccountResourceAccounts(_ input: ListCrossAccountResourceAccountsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCrossAccountResourceAccountsResponse {
+        return try await self.client.execute(
+            operation: "ListCrossAccountResourceAccounts", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List the cross-account resources available to work with.
+    @Sendable
+    public func listCrossAccountResources(_ input: ListCrossAccountResourcesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCrossAccountResourcesResponse {
+        return try await self.client.execute(
+            operation: "ListCrossAccountResources", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List the custom routing accelerators for an Amazon Web Services account.
-    public func listCustomRoutingAccelerators(_ input: ListCustomRoutingAcceleratorsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListCustomRoutingAcceleratorsResponse> {
-        return self.client.execute(operation: "ListCustomRoutingAccelerators", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listCustomRoutingAccelerators(_ input: ListCustomRoutingAcceleratorsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCustomRoutingAcceleratorsResponse {
+        return try await self.client.execute(
+            operation: "ListCustomRoutingAccelerators", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List the endpoint groups that are associated with a listener for a custom routing accelerator.
-    public func listCustomRoutingEndpointGroups(_ input: ListCustomRoutingEndpointGroupsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListCustomRoutingEndpointGroupsResponse> {
-        return self.client.execute(operation: "ListCustomRoutingEndpointGroups", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listCustomRoutingEndpointGroups(_ input: ListCustomRoutingEndpointGroupsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCustomRoutingEndpointGroupsResponse {
+        return try await self.client.execute(
+            operation: "ListCustomRoutingEndpointGroups", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List the listeners for a custom routing accelerator.
-    public func listCustomRoutingListeners(_ input: ListCustomRoutingListenersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListCustomRoutingListenersResponse> {
-        return self.client.execute(operation: "ListCustomRoutingListeners", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listCustomRoutingListeners(_ input: ListCustomRoutingListenersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCustomRoutingListenersResponse {
+        return try await self.client.execute(
+            operation: "ListCustomRoutingListeners", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Provides a complete mapping from the public accelerator IP address and port to destination EC2 instance
     /// 		IP addresses and ports in the virtual public cloud (VPC) subnet endpoint for a custom routing accelerator.
     /// 		For each subnet endpoint that you add, Global Accelerator creates a new static port mapping for the accelerator. The port
-    /// 	    mappings don't change after Global Accelerator generates them, so you can retrieve and cache the full mapping on your servers.  If you remove a subnet from your accelerator, Global Accelerator removes (reclaims) the port mappings. If you add a subnet to  your accelerator, Global Accelerator creates new port mappings (the existing ones don't change). If you add or remove EC2 instances in your subnet, the port mappings don't change, because the mappings are created when you add the subnet to Global Accelerator.
-    /// 	        The mappings also include a flag for each destination denoting which destination IP addresses and
+    /// 	    mappings don't change after Global Accelerator generates them, so you can retrieve and cache the full mapping on your servers.  If you remove a subnet from your accelerator, Global Accelerator removes (reclaims) the port mappings. If you add a subnet to  your accelerator, Global Accelerator creates new port mappings (the existing ones don't change). If you add or remove EC2 instances in your subnet, the port mappings don't change, because the mappings are created when you add the subnet to Global Accelerator. The mappings also include a flag for each destination denoting which destination IP addresses and
     /// 		ports are allowed or denied traffic.
-    public func listCustomRoutingPortMappings(_ input: ListCustomRoutingPortMappingsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListCustomRoutingPortMappingsResponse> {
-        return self.client.execute(operation: "ListCustomRoutingPortMappings", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listCustomRoutingPortMappings(_ input: ListCustomRoutingPortMappingsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCustomRoutingPortMappingsResponse {
+        return try await self.client.execute(
+            operation: "ListCustomRoutingPortMappings", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List the port mappings for a specific EC2 instance (destination) in a VPC subnet endpoint. The
     /// 			response is the mappings for one destination IP address. This is useful when your subnet endpoint has mappings that
     /// 			span multiple custom routing accelerators in your account, or for scenarios where you only want to
     /// 			list the port mappings for a specific destination instance.
-    public func listCustomRoutingPortMappingsByDestination(_ input: ListCustomRoutingPortMappingsByDestinationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListCustomRoutingPortMappingsByDestinationResponse> {
-        return self.client.execute(operation: "ListCustomRoutingPortMappingsByDestination", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listCustomRoutingPortMappingsByDestination(_ input: ListCustomRoutingPortMappingsByDestinationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCustomRoutingPortMappingsByDestinationResponse {
+        return try await self.client.execute(
+            operation: "ListCustomRoutingPortMappingsByDestination", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List the endpoint groups that are associated with a listener.
-    public func listEndpointGroups(_ input: ListEndpointGroupsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListEndpointGroupsResponse> {
-        return self.client.execute(operation: "ListEndpointGroups", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listEndpointGroups(_ input: ListEndpointGroupsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListEndpointGroupsResponse {
+        return try await self.client.execute(
+            operation: "ListEndpointGroups", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List the listeners for an accelerator.
-    public func listListeners(_ input: ListListenersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListListenersResponse> {
-        return self.client.execute(operation: "ListListeners", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listListeners(_ input: ListListenersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListListenersResponse {
+        return try await self.client.execute(
+            operation: "ListListeners", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// List all tags for an accelerator.
-    /// 		       For more information, see Tagging
+    /// List all tags for an accelerator.  For more information, see Tagging
     /// 		    in Global Accelerator in the Global Accelerator Developer Guide.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Provisions an IP address range to use with your Amazon Web Services resources through bring your own IP
     /// 			addresses (BYOIP) and creates a corresponding address pool. After the address range is provisioned,
     /// 			it is ready to be advertised using
-    /// 			AdvertiseByoipCidr.
-    /// 		       For more information, see Bring your own
+    /// 			AdvertiseByoipCidr. For more information, see Bring your own
     /// 			IP addresses (BYOIP) in the Global Accelerator Developer Guide.
-    public func provisionByoipCidr(_ input: ProvisionByoipCidrRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ProvisionByoipCidrResponse> {
-        return self.client.execute(operation: "ProvisionByoipCidr", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func provisionByoipCidr(_ input: ProvisionByoipCidrRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ProvisionByoipCidrResponse {
+        return try await self.client.execute(
+            operation: "ProvisionByoipCidr", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Remove endpoints from a custom routing accelerator.
-    @discardableResult public func removeCustomRoutingEndpoints(_ input: RemoveCustomRoutingEndpointsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "RemoveCustomRoutingEndpoints", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func removeCustomRoutingEndpoints(_ input: RemoveCustomRoutingEndpointsRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "RemoveCustomRoutingEndpoints", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Remove endpoints from an endpoint group.
-    /// 		       The RemoveEndpoints API operation is the recommended option for removing endpoints. The alternative is to remove
+    /// Remove endpoints from an endpoint group.  The RemoveEndpoints API operation is the recommended option for removing endpoints. The alternative is to remove
     /// 			endpoints by updating an endpoint group by using the
     /// 			UpdateEndpointGroup
-    /// 			API operation. There are two advantages to using AddEndpoints to remove endpoints instead:
-    /// 		         It's more convenient, because you only need to specify the endpoints that you want to remove. With the
+    /// 			API operation. There are two advantages to using AddEndpoints to remove endpoints instead:   It's more convenient, because you only need to specify the endpoints that you want to remove. With the
     /// 				UpdateEndpointGroup API operation, you must specify all of the endpoints in the
     /// 				endpoint group except the ones that you want to remove from the group.   It's faster, because Global Accelerator doesn't need to resolve any endpoints. With the
     /// 				UpdateEndpointGroup API operation, Global Accelerator must resolve all of the endpoints that
     /// 				remain in the group.
-    @discardableResult public func removeEndpoints(_ input: RemoveEndpointsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "RemoveEndpoints", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func removeEndpoints(_ input: RemoveEndpointsRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "RemoveEndpoints", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Add tags to an accelerator resource.
-    /// 		       For more information, see Tagging
+    /// Add tags to an accelerator resource.  For more information, see Tagging
     /// 		    in Global Accelerator in the Global Accelerator Developer Guide.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Remove tags from a Global Accelerator resource. When you specify a tag key, the action removes both that key and its associated value.
-    /// 			The operation succeeds even if you attempt to remove tags from an accelerator that was already removed.
-    /// 		       For more information, see Tagging
+    /// 			The operation succeeds even if you attempt to remove tags from an accelerator that was already removed. For more information, see Tagging
     /// 		    in Global Accelerator in the Global Accelerator Developer Guide.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Update an accelerator.
-    ///
-    ///
-    /// 			         Global Accelerator is a global service that supports endpoints in multiple Amazon Web Services Regions but you must specify the
+    /// Update an accelerator to make changes, such as the following:    Change the name of the accelerator.   Disable the accelerator so that it no longer accepts or routes traffic, or so that you can delete it.   Enable the accelerator, if it is disabled.   Change the IP address type to dual-stack if it is IPv4, or change the IP address type to IPv4 if it's dual-stack.   Be aware that static IP addresses remain assigned to your accelerator for as long as it exists, even if you disable the accelerator and it no
+    /// 			longer accepts or routes traffic. However, when you delete the accelerator, you lose the static IP addresses that are assigned to it, so you
+    /// 			can no longer route traffic by using them.  Global Accelerator is a global service that supports endpoints in multiple Amazon Web Services Regions but you must specify the
     /// 				US West (Oregon) Region to create, update, or otherwise work with accelerators.  That is, for example, specify --region us-west-2
-    /// 				on AWS CLI commands.
-    ///
-    public func updateAccelerator(_ input: UpdateAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateAcceleratorResponse> {
-        return self.client.execute(operation: "UpdateAccelerator", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// 				on Amazon Web Services CLI commands.
+    @Sendable
+    public func updateAccelerator(_ input: UpdateAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateAcceleratorResponse {
+        return try await self.client.execute(
+            operation: "UpdateAccelerator", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Update the attributes for an accelerator.
-    public func updateAcceleratorAttributes(_ input: UpdateAcceleratorAttributesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateAcceleratorAttributesResponse> {
-        return self.client.execute(operation: "UpdateAcceleratorAttributes", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateAcceleratorAttributes(_ input: UpdateAcceleratorAttributesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateAcceleratorAttributesResponse {
+        return try await self.client.execute(
+            operation: "UpdateAcceleratorAttributes", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Update a cross-account attachment to add or remove principals or resources. When you update
+    /// 			an attachment to remove a principal (account ID or accelerator) or a resource, Global Accelerator
+    /// 			revokes the permission for specific resources.  For more information, see
+    /// 			Working with cross-account attachments and resources in Global Accelerator in the
+    /// 				Global Accelerator Developer Guide.
+    @Sendable
+    public func updateCrossAccountAttachment(_ input: UpdateCrossAccountAttachmentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateCrossAccountAttachmentResponse {
+        return try await self.client.execute(
+            operation: "UpdateCrossAccountAttachment", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Update a custom routing accelerator.
-    public func updateCustomRoutingAccelerator(_ input: UpdateCustomRoutingAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateCustomRoutingAcceleratorResponse> {
-        return self.client.execute(operation: "UpdateCustomRoutingAccelerator", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateCustomRoutingAccelerator(_ input: UpdateCustomRoutingAcceleratorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateCustomRoutingAcceleratorResponse {
+        return try await self.client.execute(
+            operation: "UpdateCustomRoutingAccelerator", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Update the attributes for a custom routing accelerator.
-    public func updateCustomRoutingAcceleratorAttributes(_ input: UpdateCustomRoutingAcceleratorAttributesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateCustomRoutingAcceleratorAttributesResponse> {
-        return self.client.execute(operation: "UpdateCustomRoutingAcceleratorAttributes", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateCustomRoutingAcceleratorAttributes(_ input: UpdateCustomRoutingAcceleratorAttributesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateCustomRoutingAcceleratorAttributesResponse {
+        return try await self.client.execute(
+            operation: "UpdateCustomRoutingAcceleratorAttributes", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Update a listener for a custom routing accelerator.
-    public func updateCustomRoutingListener(_ input: UpdateCustomRoutingListenerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateCustomRoutingListenerResponse> {
-        return self.client.execute(operation: "UpdateCustomRoutingListener", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateCustomRoutingListener(_ input: UpdateCustomRoutingListenerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateCustomRoutingListenerResponse {
+        return try await self.client.execute(
+            operation: "UpdateCustomRoutingListener", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Update an endpoint group. A resource must be valid and active when you add it as an endpoint.
-    public func updateEndpointGroup(_ input: UpdateEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateEndpointGroupResponse> {
-        return self.client.execute(operation: "UpdateEndpointGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateEndpointGroup(_ input: UpdateEndpointGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateEndpointGroupResponse {
+        return try await self.client.execute(
+            operation: "UpdateEndpointGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Update a listener.
-    public func updateListener(_ input: UpdateListenerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateListenerResponse> {
-        return self.client.execute(operation: "UpdateListener", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateListener(_ input: UpdateListenerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateListenerResponse {
+        return try await self.client.execute(
+            operation: "UpdateListener", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Stops advertising an address range that is provisioned as an address pool.
     /// 			You can perform this operation at most once every 10 seconds, even if you specify different address
-    /// 			ranges each time.
-    /// 	        It can take a few minutes before traffic to the specified addresses stops routing to Amazon Web Services because of
-    /// 			propagation delays.
-    /// 		       For more information, see Bring your own
+    /// 			ranges each time. It can take a few minutes before traffic to the specified addresses stops routing to Amazon Web Services because of
+    /// 			propagation delays. For more information, see Bring your own
     /// 			IP addresses (BYOIP) in the Global Accelerator Developer Guide.
-    public func withdrawByoipCidr(_ input: WithdrawByoipCidrRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<WithdrawByoipCidrResponse> {
-        return self.client.execute(operation: "WithdrawByoipCidr", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func withdrawByoipCidr(_ input: WithdrawByoipCidrRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> WithdrawByoipCidrResponse {
+        return try await self.client.execute(
+            operation: "WithdrawByoipCidr", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension GlobalAccelerator {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: GlobalAccelerator, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -489,490 +960,222 @@ extension GlobalAccelerator {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension GlobalAccelerator {
-    ///  List the accelerators for an Amazon Web Services account.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listAcceleratorsPaginator<Result>(
-        _ input: ListAcceleratorsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListAcceleratorsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listAccelerators,
-            inputKey: \ListAcceleratorsRequest.nextToken,
-            outputKey: \ListAcceleratorsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List the accelerators for an Amazon Web Services account.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listAcceleratorsPaginator(
         _ input: ListAcceleratorsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListAcceleratorsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAcceleratorsRequest, ListAcceleratorsResponse> {
+        return .init(
             input: input,
             command: self.listAccelerators,
             inputKey: \ListAcceleratorsRequest.nextToken,
             outputKey: \ListAcceleratorsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the IP address ranges that were specified in calls to ProvisionByoipCidr, including
-    ///  			the current state and a history of state changes.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listByoipCidrsPaginator<Result>(
-        _ input: ListByoipCidrsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListByoipCidrsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listByoipCidrs,
-            inputKey: \ListByoipCidrsRequest.nextToken,
-            outputKey: \ListByoipCidrsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the IP address ranges that were specified in calls to ProvisionByoipCidr, including
+    /// 			the current state and a history of state changes.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listByoipCidrsPaginator(
         _ input: ListByoipCidrsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListByoipCidrsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListByoipCidrsRequest, ListByoipCidrsResponse> {
+        return .init(
             input: input,
             command: self.listByoipCidrs,
             inputKey: \ListByoipCidrsRequest.nextToken,
             outputKey: \ListByoipCidrsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List the custom routing accelerators for an Amazon Web Services account.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listCustomRoutingAcceleratorsPaginator<Result>(
-        _ input: ListCustomRoutingAcceleratorsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListCustomRoutingAcceleratorsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listCustomRoutingAccelerators,
-            inputKey: \ListCustomRoutingAcceleratorsRequest.nextToken,
-            outputKey: \ListCustomRoutingAcceleratorsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List the cross-account attachments that have been created in Global Accelerator.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listCrossAccountAttachmentsPaginator(
+        _ input: ListCrossAccountAttachmentsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCrossAccountAttachmentsRequest, ListCrossAccountAttachmentsResponse> {
+        return .init(
+            input: input,
+            command: self.listCrossAccountAttachments,
+            inputKey: \ListCrossAccountAttachmentsRequest.nextToken,
+            outputKey: \ListCrossAccountAttachmentsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// List the cross-account resources available to work with.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listCrossAccountResourcesPaginator(
+        _ input: ListCrossAccountResourcesRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCrossAccountResourcesRequest, ListCrossAccountResourcesResponse> {
+        return .init(
+            input: input,
+            command: self.listCrossAccountResources,
+            inputKey: \ListCrossAccountResourcesRequest.nextToken,
+            outputKey: \ListCrossAccountResourcesResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// List the custom routing accelerators for an Amazon Web Services account.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listCustomRoutingAcceleratorsPaginator(
         _ input: ListCustomRoutingAcceleratorsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListCustomRoutingAcceleratorsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCustomRoutingAcceleratorsRequest, ListCustomRoutingAcceleratorsResponse> {
+        return .init(
             input: input,
             command: self.listCustomRoutingAccelerators,
             inputKey: \ListCustomRoutingAcceleratorsRequest.nextToken,
             outputKey: \ListCustomRoutingAcceleratorsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List the endpoint groups that are associated with a listener for a custom routing accelerator.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listCustomRoutingEndpointGroupsPaginator<Result>(
-        _ input: ListCustomRoutingEndpointGroupsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListCustomRoutingEndpointGroupsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listCustomRoutingEndpointGroups,
-            inputKey: \ListCustomRoutingEndpointGroupsRequest.nextToken,
-            outputKey: \ListCustomRoutingEndpointGroupsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List the endpoint groups that are associated with a listener for a custom routing accelerator.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listCustomRoutingEndpointGroupsPaginator(
         _ input: ListCustomRoutingEndpointGroupsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListCustomRoutingEndpointGroupsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCustomRoutingEndpointGroupsRequest, ListCustomRoutingEndpointGroupsResponse> {
+        return .init(
             input: input,
             command: self.listCustomRoutingEndpointGroups,
             inputKey: \ListCustomRoutingEndpointGroupsRequest.nextToken,
             outputKey: \ListCustomRoutingEndpointGroupsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List the listeners for a custom routing accelerator.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listCustomRoutingListenersPaginator<Result>(
-        _ input: ListCustomRoutingListenersRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListCustomRoutingListenersResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listCustomRoutingListeners,
-            inputKey: \ListCustomRoutingListenersRequest.nextToken,
-            outputKey: \ListCustomRoutingListenersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List the listeners for a custom routing accelerator.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listCustomRoutingListenersPaginator(
         _ input: ListCustomRoutingListenersRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListCustomRoutingListenersResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCustomRoutingListenersRequest, ListCustomRoutingListenersResponse> {
+        return .init(
             input: input,
             command: self.listCustomRoutingListeners,
             inputKey: \ListCustomRoutingListenersRequest.nextToken,
             outputKey: \ListCustomRoutingListenersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Provides a complete mapping from the public accelerator IP address and port to destination EC2 instance
-    ///  		IP addresses and ports in the virtual public cloud (VPC) subnet endpoint for a custom routing accelerator.
-    ///  		For each subnet endpoint that you add, Global Accelerator creates a new static port mapping for the accelerator. The port
-    ///  	    mappings don't change after Global Accelerator generates them, so you can retrieve and cache the full mapping on your servers.  If you remove a subnet from your accelerator, Global Accelerator removes (reclaims) the port mappings. If you add a subnet to  your accelerator, Global Accelerator creates new port mappings (the existing ones don't change). If you add or remove EC2 instances in your subnet, the port mappings don't change, because the mappings are created when you add the subnet to Global Accelerator.
-    ///  	        The mappings also include a flag for each destination denoting which destination IP addresses and
-    ///  		ports are allowed or denied traffic.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listCustomRoutingPortMappingsPaginator<Result>(
-        _ input: ListCustomRoutingPortMappingsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListCustomRoutingPortMappingsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listCustomRoutingPortMappings,
-            inputKey: \ListCustomRoutingPortMappingsRequest.nextToken,
-            outputKey: \ListCustomRoutingPortMappingsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Provides a complete mapping from the public accelerator IP address and port to destination EC2 instance
+    /// 		IP addresses and ports in the virtual public cloud (VPC) subnet endpoint for a custom routing accelerator.
+    /// 		For each subnet endpoint that you add, Global Accelerator creates a new static port mapping for the accelerator. The port
+    /// 	    mappings don't change after Global Accelerator generates them, so you can retrieve and cache the full mapping on your servers.  If you remove a subnet from your accelerator, Global Accelerator removes (reclaims) the port mappings. If you add a subnet to  your accelerator, Global Accelerator creates new port mappings (the existing ones don't change). If you add or remove EC2 instances in your subnet, the port mappings don't change, because the mappings are created when you add the subnet to Global Accelerator. The mappings also include a flag for each destination denoting which destination IP addresses and
+    /// 		ports are allowed or denied traffic.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listCustomRoutingPortMappingsPaginator(
         _ input: ListCustomRoutingPortMappingsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListCustomRoutingPortMappingsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCustomRoutingPortMappingsRequest, ListCustomRoutingPortMappingsResponse> {
+        return .init(
             input: input,
             command: self.listCustomRoutingPortMappings,
             inputKey: \ListCustomRoutingPortMappingsRequest.nextToken,
             outputKey: \ListCustomRoutingPortMappingsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List the port mappings for a specific EC2 instance (destination) in a VPC subnet endpoint. The
-    ///  			response is the mappings for one destination IP address. This is useful when your subnet endpoint has mappings that
-    ///  			span multiple custom routing accelerators in your account, or for scenarios where you only want to
-    ///  			list the port mappings for a specific destination instance.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listCustomRoutingPortMappingsByDestinationPaginator<Result>(
-        _ input: ListCustomRoutingPortMappingsByDestinationRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListCustomRoutingPortMappingsByDestinationResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listCustomRoutingPortMappingsByDestination,
-            inputKey: \ListCustomRoutingPortMappingsByDestinationRequest.nextToken,
-            outputKey: \ListCustomRoutingPortMappingsByDestinationResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List the port mappings for a specific EC2 instance (destination) in a VPC subnet endpoint. The
+    /// 			response is the mappings for one destination IP address. This is useful when your subnet endpoint has mappings that
+    /// 			span multiple custom routing accelerators in your account, or for scenarios where you only want to
+    /// 			list the port mappings for a specific destination instance.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listCustomRoutingPortMappingsByDestinationPaginator(
         _ input: ListCustomRoutingPortMappingsByDestinationRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListCustomRoutingPortMappingsByDestinationResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCustomRoutingPortMappingsByDestinationRequest, ListCustomRoutingPortMappingsByDestinationResponse> {
+        return .init(
             input: input,
             command: self.listCustomRoutingPortMappingsByDestination,
             inputKey: \ListCustomRoutingPortMappingsByDestinationRequest.nextToken,
             outputKey: \ListCustomRoutingPortMappingsByDestinationResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List the endpoint groups that are associated with a listener.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listEndpointGroupsPaginator<Result>(
-        _ input: ListEndpointGroupsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListEndpointGroupsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listEndpointGroups,
-            inputKey: \ListEndpointGroupsRequest.nextToken,
-            outputKey: \ListEndpointGroupsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List the endpoint groups that are associated with a listener.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listEndpointGroupsPaginator(
         _ input: ListEndpointGroupsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListEndpointGroupsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListEndpointGroupsRequest, ListEndpointGroupsResponse> {
+        return .init(
             input: input,
             command: self.listEndpointGroups,
             inputKey: \ListEndpointGroupsRequest.nextToken,
             outputKey: \ListEndpointGroupsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List the listeners for an accelerator.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listListenersPaginator<Result>(
-        _ input: ListListenersRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListListenersResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listListeners,
-            inputKey: \ListListenersRequest.nextToken,
-            outputKey: \ListListenersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List the listeners for an accelerator.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listListenersPaginator(
         _ input: ListListenersRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListListenersResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListListenersRequest, ListListenersResponse> {
+        return .init(
             input: input,
             command: self.listListeners,
             inputKey: \ListListenersRequest.nextToken,
             outputKey: \ListListenersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
@@ -991,6 +1194,26 @@ extension GlobalAccelerator.ListByoipCidrsRequest: AWSPaginateToken {
         return .init(
             maxResults: self.maxResults,
             nextToken: token
+        )
+    }
+}
+
+extension GlobalAccelerator.ListCrossAccountAttachmentsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> GlobalAccelerator.ListCrossAccountAttachmentsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension GlobalAccelerator.ListCrossAccountResourcesRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> GlobalAccelerator.ListCrossAccountResourcesRequest {
+        return .init(
+            acceleratorArn: self.acceleratorArn,
+            maxResults: self.maxResults,
+            nextToken: token,
+            resourceOwnerAwsAccountId: self.resourceOwnerAwsAccountId
         )
     }
 }

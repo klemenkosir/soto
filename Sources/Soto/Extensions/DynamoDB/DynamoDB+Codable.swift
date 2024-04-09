@@ -12,6 +12,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+import SotoCore
+
 extension DynamoDB {
     // MARK: Codable API
 
@@ -24,9 +26,8 @@ extension DynamoDB {
     /// Invalid Requests with empty values will be rejected with a `ValidationException` exception.</p> <note> <p>To prevent a new item from replacing an existing item, use a conditional expression that contains the `attribute_not_exists` function with the name of the attribute being used as the partition key for the table. Since every record must contain that attribute, the `attribute_not_exists` function will only succeed if no matching item exists.</p> </note> <p>For more information about `PutItem`, see <a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html">Working with Items</a> in the <i>Amazon DynamoDB Developer Guide</i>.
     public func putItem<T: Encodable>(
         _ input: PutItemCodableInput<T>,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<PutItemOutput> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> PutItemOutput {
         do {
             let item = try DynamoDBEncoder().encode(input.item)
             let request = DynamoDB.PutItemInput(
@@ -39,10 +40,7 @@ extension DynamoDB {
                 returnValues: input.returnValues,
                 tableName: input.tableName
             )
-            return self.putItem(request, logger: logger, on: eventLoop)
-        } catch {
-            let eventLoop = eventLoop ?? client.eventLoopGroup.next()
-            return eventLoop.makeFailedFuture(error)
+            return try await self.putItem(request, logger: logger)
         }
     }
 
@@ -52,17 +50,14 @@ extension DynamoDB {
     public func getItem<T: Decodable>(
         _ input: GetItemInput,
         type: T.Type,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<GetItemCodableOutput<T>> {
-        return self.getItem(input, logger: logger, on: eventLoop)
-            .flatMapThrowing { response -> GetItemCodableOutput<T> in
-                let item = try response.item.map { try DynamoDBDecoder().decode(T.self, from: $0) }
-                return GetItemCodableOutput(
-                    consumedCapacity: response.consumedCapacity,
-                    item: item
-                )
-            }
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> GetItemCodableOutput<T> {
+        let response = try await self.getItem(input, logger: logger)
+        let item = try response.item.map { try DynamoDBDecoder().decode(T.self, from: $0) }
+        return GetItemCodableOutput(
+            consumedCapacity: response.consumedCapacity,
+            item: item
+        )
     }
 
     /// Edits an existing item's attributes, or adds a new item to the table if it does not already exist. You can put, delete, or add attribute values. You can also perform a conditional update on an existing item (insert a new attribute name-value pair if it doesn't exist, or replace an existing name-value pair if it has certain expected attribute values).
@@ -70,16 +65,9 @@ extension DynamoDB {
     /// You can also return the item's attribute values in the same `UpdateItem` operation using the `ReturnValues` parameter.
     public func updateItem<T: Encodable>(
         _ input: UpdateItemCodableInput<T>,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<UpdateItemOutput> {
-        do {
-            let updateInput = try input.createUpdateItemInput()
-            return self.updateItem(updateInput, logger: logger, on: eventLoop)
-        } catch {
-            let eventLoop = eventLoop ?? client.eventLoopGroup.next()
-            return eventLoop.makeFailedFuture(error)
-        }
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> UpdateItemOutput {
+        return try await self.updateItem(input.createUpdateItemInput(), logger: logger)
     }
 
     /// The `Query` operation finds items based on primary key values. You can query any table or secondary index that has a composite primary key (a partition key and a sort key).
@@ -94,20 +82,17 @@ extension DynamoDB {
     public func query<T: Decodable>(
         _ input: QueryInput,
         type: T.Type,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<QueryCodableOutput<T>> {
-        return self.query(input, logger: logger, on: eventLoop)
-            .flatMapThrowing { response -> QueryCodableOutput<T> in
-                let items = try response.items.map { try $0.map { try DynamoDBDecoder().decode(T.self, from: $0) } }
-                return QueryCodableOutput(
-                    consumedCapacity: response.consumedCapacity,
-                    count: response.count,
-                    items: items,
-                    lastEvaluatedKey: response.lastEvaluatedKey,
-                    scannedCount: response.scannedCount
-                )
-            }
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> QueryCodableOutput<T> {
+        let response = try await self.query(input, logger: logger)
+        let items = try response.items.map { try $0.map { try DynamoDBDecoder().decode(T.self, from: $0) } }
+        return QueryCodableOutput(
+            consumedCapacity: response.consumedCapacity,
+            count: response.count,
+            items: items,
+            lastEvaluatedKey: response.lastEvaluatedKey,
+            scannedCount: response.scannedCount
+        )
     }
 
     /// The `Scan` operation returns one or more items and item attributes by accessing every item in a table or a secondary index. To have DynamoDB return fewer items, you can provide a `FilterExpression` operation.
@@ -122,20 +107,17 @@ extension DynamoDB {
     public func scan<T: Decodable>(
         _ input: ScanInput,
         type: T.Type,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<ScanCodableOutput<T>> {
-        return self.scan(input, logger: logger, on: eventLoop)
-            .flatMapThrowing { response -> ScanCodableOutput<T> in
-                let items = try response.items.map { try $0.map { try DynamoDBDecoder().decode(T.self, from: $0) } }
-                return ScanCodableOutput(
-                    consumedCapacity: response.consumedCapacity,
-                    count: response.count,
-                    items: items,
-                    lastEvaluatedKey: response.lastEvaluatedKey,
-                    scannedCount: response.scannedCount
-                )
-            }
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws -> ScanCodableOutput<T> {
+        let response = try await self.scan(input, logger: logger)
+        let items = try response.items.map { try $0.map { try DynamoDBDecoder().decode(T.self, from: $0) } }
+        return ScanCodableOutput(
+            consumedCapacity: response.consumedCapacity,
+            count: response.count,
+            items: items,
+            lastEvaluatedKey: response.lastEvaluatedKey,
+            scannedCount: response.scannedCount
+        )
     }
 
     // MARK: Codable Paginators
@@ -149,66 +131,18 @@ extension DynamoDB {
     ///  A single `Query` operation will read up to the maximum number of items set (if using the `Limit` parameter) or a maximum of 1 MB of data and then apply any filtering to the results using `FilterExpression`. If `LastEvaluatedKey` is present in the response, you will need to paginate the result set. For more information, see <a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Pagination">Paginating the Results</a> in the <i>Amazon DynamoDB Developer Guide</i>.
     ///
     ///  `FilterExpression` is applied after a `Query` finishes, but before the results are returned. A `FilterExpression` cannot contain partition key or sort key attributes. You need to specify those attributes in the `KeyConditionExpression`. </p> <note> <p> A `Query` operation can return an empty result set and a `LastEvaluatedKey` if all the items read for the page of results are filtered out. </p> </note> <p>You can query a table, a local secondary index, or a global secondary index. For a query on a table or on a local secondary index, you can set the `ConsistentRead` parameter to `true` and obtain a strongly consistent result. Global secondary indexes support eventually consistent reads only, so do not specify `ConsistentRead` when querying a global secondary index.
-    public func queryPaginator<T: Decodable, Result>(
-        _ input: QueryInput,
-        _ initialValue: Result,
-        type: T.Type,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, QueryCodableOutput<T>, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.query,
-            tokenKey: \QueryOutput.lastEvaluatedKey,
-            logger: logger,
-            on: eventLoop
-        ) { result, response, eventLoop -> EventLoopFuture<(Bool, Result)> in
-            do {
-                let items = try response.items.map { try $0.map { try DynamoDBDecoder().decode(T.self, from: $0) } }
-                let queryOutput = QueryCodableOutput(
-                    consumedCapacity: response.consumedCapacity,
-                    count: response.count,
-                    items: items,
-                    lastEvaluatedKey: response.lastEvaluatedKey,
-                    scannedCount: response.scannedCount
-                )
-                return onPage(result, queryOutput, eventLoop)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
-        }
-    }
-
     public func queryPaginator<T: Decodable>(
         _ input: QueryInput,
         type: T.Type,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (QueryCodableOutput<T>, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<QueryInput, QueryCodableOutput<T>> {
+        return .init(
             input: input,
-            command: self.query,
-            tokenKey: \QueryOutput.lastEvaluatedKey,
-            logger: logger,
-            on: eventLoop
-        ) { response, eventLoop -> EventLoopFuture<Bool> in
-            do {
-                let items = try response.items.map { try $0.map { try DynamoDBDecoder().decode(T.self, from: $0) } }
-                let queryOutput = QueryCodableOutput(
-                    consumedCapacity: response.consumedCapacity,
-                    count: response.count,
-                    items: items,
-                    lastEvaluatedKey: response.lastEvaluatedKey,
-                    scannedCount: response.scannedCount
-                )
-                return onPage(queryOutput, eventLoop)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
-        }
+            command: { input, logger in try await self.query(input, type: T.self, logger: logger) },
+            inputKey: \QueryInput.exclusiveStartKey,
+            outputKey: \QueryCodableOutput<T>.lastEvaluatedKey,
+            logger: logger
+        )
     }
 
     /// The `Scan` operation returns one or more items and item attributes by accessing every item in a table or a secondary index. To have DynamoDB return fewer items, you can provide a `FilterExpression` operation.
@@ -220,66 +154,18 @@ extension DynamoDB {
     ///  `Scan` operations proceed sequentially; however, for faster performance on a large table or secondary index, applications can request a parallel `Scan` operation by providing the `Segment` and `TotalSegments` parameters. For more information, see <a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html#Scan.ParallelScan">Parallel Scan</a> in the <i>Amazon DynamoDB Developer Guide</i>.
     ///
     ///  `Scan` uses eventually consistent reads when accessing the data in a table; therefore, the result set might not include the changes to data in the table immediately before the operation began. If you need a consistent copy of the data, as of the time that the `Scan` begins, you can set the `ConsistentRead` parameter to `true`.
-    public func scanPaginator<T: Decodable, Result>(
-        _ input: ScanInput,
-        _ initialValue: Result,
-        type: T.Type,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ScanCodableOutput<T>, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.scan,
-            tokenKey: \ScanOutput.lastEvaluatedKey,
-            logger: logger,
-            on: eventLoop
-        ) { result, response, eventLoop -> EventLoopFuture<(Bool, Result)> in
-            do {
-                let items = try response.items.map { try $0.map { try DynamoDBDecoder().decode(T.self, from: $0) } }
-                let scanOutput = ScanCodableOutput(
-                    consumedCapacity: response.consumedCapacity,
-                    count: response.count,
-                    items: items,
-                    lastEvaluatedKey: response.lastEvaluatedKey,
-                    scannedCount: response.scannedCount
-                )
-                return onPage(result, scanOutput, eventLoop)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
-        }
-    }
-
     public func scanPaginator<T: Decodable>(
         _ input: ScanInput,
         type: T.Type,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ScanCodableOutput<T>, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ScanInput, ScanCodableOutput<T>> {
+        return .init(
             input: input,
-            command: self.scan,
-            tokenKey: \ScanOutput.lastEvaluatedKey,
-            logger: logger,
-            on: eventLoop
-        ) { response, eventLoop -> EventLoopFuture<Bool> in
-            do {
-                let items = try response.items.map { try $0.map { try DynamoDBDecoder().decode(T.self, from: $0) } }
-                let scanOutput = ScanCodableOutput(
-                    consumedCapacity: response.consumedCapacity,
-                    count: response.count,
-                    items: items,
-                    lastEvaluatedKey: response.lastEvaluatedKey,
-                    scannedCount: response.scannedCount
-                )
-                return onPage(scanOutput, eventLoop)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
-        }
+            command: { input, logger in try await self.scan(input, type: T.self, logger: logger) },
+            inputKey: \ScanInput.exclusiveStartKey,
+            outputKey: \ScanCodableOutput<T>.lastEvaluatedKey,
+            logger: logger
+        )
     }
 
     // MARK: Codable Shapes
@@ -326,7 +212,11 @@ extension DynamoDB {
         }
     }
 
-    public struct UpdateItemCodableInput<T: Encodable & _SotoSendable>: AWSEncodableShape {
+    public struct UpdateItemCodableInput<T: Encodable & Sendable>: AWSEncodableShape {
+        /// In case expressionAttributeNames is nil, the content of additionalAttributeNames is merged with the generated expressionAttributeNames dictionary and will override existing values. This can be used to specify complex conditionExpression with not auto-generated attribute names.
+        public let additionalAttributeNames: [String: String]?
+        /// The content of additionalAttributeValues is merged with expressionAttributeValues dictionary and will override existing values. This can be used to specify complex conditionExpression with not auto-generated attribute values.
+        public let additionalAttributeValues: [String: AttributeValue]?
         /// A condition that must be satisfied in order for a conditional update to succeed. An expression can contain any of the following:   Functions: attribute_exists | attribute_not_exists | attribute_type | contains | begins_with | size  These function names are case-sensitive.   Comparison operators: = | &lt;&gt; | &lt; | &gt; | &lt;= | &gt;= | BETWEEN | IN      Logical operators: AND | OR | NOT    For more information about condition expressions, see Specifying Conditions in the Amazon DynamoDB Developer Guide.
         public let conditionExpression: String?
         /// One or more substitution tokens for attribute names in an expression. The following are some use cases for using ExpressionAttributeNames:   To access an attribute whose name conflicts with a DynamoDB reserved word.   To create a placeholder for repeating occurrences of an attribute name in an expression.   To prevent special characters in an attribute name from being misinterpreted in an expression.   Use the # character in an expression to dereference an attribute name. For example, consider the following attribute name:    Percentile    The name of this attribute conflicts with a reserved word, so it cannot be used directly in an expression. (For the complete list of reserved words, see Reserved Words in the Amazon DynamoDB Developer Guide.) To work around this, you could specify the following for ExpressionAttributeNames:    {"#P":"Percentile"}    You could then use this substitution in an expression, as in this example:    #P = :val     Tokens that begin with the : character are expression attribute values, which are placeholders for the actual value at runtime.  For more information about expression attribute names, see Specifying Item Attributes in the Amazon DynamoDB Developer Guide.
@@ -346,6 +236,8 @@ extension DynamoDB {
         public let updateItem: T
 
         public init(conditionExpression: String? = nil, expressionAttributeNames: [String: String]? = nil, key: [String], returnConsumedCapacity: ReturnConsumedCapacity? = nil, returnItemCollectionMetrics: ReturnItemCollectionMetrics? = nil, returnValues: ReturnValue? = nil, tableName: String, updateExpression: String? = nil, updateItem: T) {
+            self.additionalAttributeNames = nil
+            self.additionalAttributeValues = nil
             self.conditionExpression = conditionExpression
             self.expressionAttributeNames = expressionAttributeNames
             self.key = key
@@ -354,6 +246,21 @@ extension DynamoDB {
             self.returnValues = returnValues
             self.tableName = tableName
             self.updateExpression = updateExpression
+            self.updateItem = updateItem
+        }
+
+        public init<AdditionalAttributes: Encodable>(additionalAttributes: AdditionalAttributes, conditionExpression: String? = nil, key: [String], returnConsumedCapacity: ReturnConsumedCapacity? = nil, returnItemCollectionMetrics: ReturnItemCollectionMetrics? = nil, returnValues: ReturnValue? = nil, tableName: String, updateItem: T) throws {
+            let attributes = try DynamoDBEncoder().encode(additionalAttributes)
+            self.additionalAttributeNames = .init(key.map { ("#\($0)", $0) }) { first, _ in return first }
+            self.additionalAttributeValues = .init(attributes.map { (":\($0.key)", $0.value) }) { first, _ in return first }
+            self.conditionExpression = conditionExpression
+            self.expressionAttributeNames = nil
+            self.key = key
+            self.returnConsumedCapacity = returnConsumedCapacity
+            self.returnItemCollectionMetrics = returnItemCollectionMetrics
+            self.returnValues = returnValues
+            self.tableName = tableName
+            self.updateExpression = nil
             self.updateItem = updateItem
         }
 
@@ -371,10 +278,20 @@ extension DynamoDB {
             let expressionAttributeNames: [String: String]
             if let names = self.expressionAttributeNames, self.updateExpression != nil {
                 expressionAttributeNames = names
+            } else if let additionalAttributeNames = additionalAttributeNames {
+                let tmpAttributeNames: [String: String] = .init(item.keys.map { ("#\($0)", $0) }) { first, _ in return first }
+                expressionAttributeNames = tmpAttributeNames.merging(additionalAttributeNames, uniquingKeysWith: { _, new in new })
             } else {
                 expressionAttributeNames = .init(item.keys.map { ("#\($0)", $0) }) { first, _ in return first }
             }
-            let expressionAttributeValues: [String: AttributeValue] = .init(item.map { (":\($0.key)", $0.value) }) { first, _ in return first }
+
+            let expressionAttributeValues: [String: AttributeValue]
+            if let additionalAttributeValues = additionalAttributeValues {
+                let tmpExpressionAttributeValues: [String: AttributeValue] = .init(item.map { (":\($0.key)", $0.value) }) { first, _ in return first }
+                expressionAttributeValues = tmpExpressionAttributeValues.merging(additionalAttributeValues, uniquingKeysWith: { _, new in new })
+            } else {
+                expressionAttributeValues = .init(item.map { (":\($0.key)", $0.value) }) { first, _ in return first }
+            }
             // construct update expression, if one if not already supplied
             let updateExpression: String
             if let inputUpdateExpression = self.updateExpression {
@@ -397,7 +314,7 @@ extension DynamoDB {
         }
     }
 
-    public struct QueryCodableOutput<T: Decodable & _SotoSendable>: AWSShape {
+    public struct QueryCodableOutput<T: Decodable & Sendable>: AWSShape {
         /// The capacity units consumed by the Query operation. The data returned includes the total provisioned throughput consumed, along with statistics for the table and any indexes involved in the operation. ConsumedCapacity is only returned if the ReturnConsumedCapacity parameter was specified. For more information, see Provisioned Throughput in the Amazon DynamoDB Developer Guide.
         public let consumedCapacity: ConsumedCapacity?
         /// The number of items in the response. If you used a QueryFilter in the request, then Count is the number of items returned after the filter was applied, and ScannedCount is the number of matching items before the filter was applied. If you did not use a filter in the request, then Count and ScannedCount are the same.
@@ -410,7 +327,7 @@ extension DynamoDB {
         public let scannedCount: Int?
     }
 
-    public struct ScanCodableOutput<T: Decodable & _SotoSendable>: AWSShape {
+    public struct ScanCodableOutput<T: Decodable & Sendable>: AWSShape {
         /// The capacity units consumed by the Scan operation. The data returned includes the total provisioned throughput consumed, along with statistics for the table and any indexes involved in the operation. ConsumedCapacity is only returned if the ReturnConsumedCapacity parameter was specified. For more information, see Provisioned Throughput in the Amazon DynamoDB Developer Guide.
         public let consumedCapacity: ConsumedCapacity?
         /// The number of items in the response. If you set ScanFilter in the request, then Count is the number of items returned after the filter was applied, and ScannedCount is the number of matching items before the filter was applied. If you did not use a filter in the request, then Count is the same as ScannedCount.

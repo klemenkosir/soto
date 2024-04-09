@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS MWAA service.
 ///
-/// Amazon Managed Workflows for Apache Airflow This section contains the Amazon Managed Workflows for Apache Airflow (MWAA) API reference documentation. For more information, see What Is Amazon MWAA?.  Endpoints     api.airflow.{region}.amazonaws.com - This endpoint is used for environment management.    CreateEnvironment     DeleteEnvironment     GetEnvironment     ListEnvironments     ListTagsForResource     TagResource     UntagResource     UpdateEnvironment       env.airflow.{region}.amazonaws.com - This endpoint is used to operate the Airflow environment.     CreateCliToken     CreateWebLoginToken       ops.airflow.{region}.amazonaws.com - This endpoint is used to push environment metrics that track environment health.     PublishMetrics       Regions  For a list of regions that Amazon MWAA supports, see Region availability in the Amazon MWAA User Guide.
+/// Amazon Managed Workflows for Apache Airflow This section contains the Amazon Managed Workflows for Apache Airflow (MWAA) API reference documentation. For more information, see What is Amazon MWAA?.  Endpoints     api.airflow.{region}.amazonaws.com - This endpoint is used for environment management.    CreateEnvironment     DeleteEnvironment     GetEnvironment     ListEnvironments     ListTagsForResource     TagResource     UntagResource     UpdateEnvironment       env.airflow.{region}.amazonaws.com - This endpoint is used to operate the Airflow environment.    CreateCliToken     CreateWebLoginToken       Regions  For a list of supported regions, see Amazon MWAA endpoints and quotas in the Amazon Web Services General Reference.
 public struct MWAA: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct MWAA: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,77 +54,183 @@ public struct MWAA: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "airflow",
+            serviceName: "MWAA",
+            serviceIdentifier: "airflow",
             serviceProtocol: .restjson,
             apiVersion: "2020-07-01",
             endpoint: endpoint,
             errorType: MWAAErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
     /// Creates a CLI token for the Airflow CLI. To learn more, see Creating an Apache Airflow CLI token.
-    public func createCliToken(_ input: CreateCliTokenRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateCliTokenResponse> {
-        return self.client.execute(operation: "CreateCliToken", path: "/clitoken/{Name}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "env.", logger: logger, on: eventLoop)
+    @Sendable
+    public func createCliToken(_ input: CreateCliTokenRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCliTokenResponse {
+        return try await self.client.execute(
+            operation: "CreateCliToken", 
+            path: "/clitoken/{Name}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "env.", 
+            logger: logger
+        )
     }
 
     /// Creates an Amazon Managed Workflows for Apache Airflow (MWAA) environment.
-    public func createEnvironment(_ input: CreateEnvironmentInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateEnvironmentOutput> {
-        return self.client.execute(operation: "CreateEnvironment", path: "/environments/{Name}", httpMethod: .PUT, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func createEnvironment(_ input: CreateEnvironmentInput, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateEnvironmentOutput {
+        return try await self.client.execute(
+            operation: "CreateEnvironment", 
+            path: "/environments/{Name}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Creates a web login token for the Airflow Web UI. To learn more, see Creating an Apache Airflow web login token.
-    public func createWebLoginToken(_ input: CreateWebLoginTokenRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateWebLoginTokenResponse> {
-        return self.client.execute(operation: "CreateWebLoginToken", path: "/webtoken/{Name}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "env.", logger: logger, on: eventLoop)
+    @Sendable
+    public func createWebLoginToken(_ input: CreateWebLoginTokenRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateWebLoginTokenResponse {
+        return try await self.client.execute(
+            operation: "CreateWebLoginToken", 
+            path: "/webtoken/{Name}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "env.", 
+            logger: logger
+        )
     }
 
     /// Deletes an Amazon Managed Workflows for Apache Airflow (MWAA) environment.
-    public func deleteEnvironment(_ input: DeleteEnvironmentInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteEnvironmentOutput> {
-        return self.client.execute(operation: "DeleteEnvironment", path: "/environments/{Name}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteEnvironment(_ input: DeleteEnvironmentInput, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteEnvironmentOutput {
+        return try await self.client.execute(
+            operation: "DeleteEnvironment", 
+            path: "/environments/{Name}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Describes an Amazon Managed Workflows for Apache Airflow (MWAA) environment.
-    public func getEnvironment(_ input: GetEnvironmentInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetEnvironmentOutput> {
-        return self.client.execute(operation: "GetEnvironment", path: "/environments/{Name}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func getEnvironment(_ input: GetEnvironmentInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetEnvironmentOutput {
+        return try await self.client.execute(
+            operation: "GetEnvironment", 
+            path: "/environments/{Name}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Lists the Amazon Managed Workflows for Apache Airflow (MWAA) environments.
-    public func listEnvironments(_ input: ListEnvironmentsInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListEnvironmentsOutput> {
-        return self.client.execute(operation: "ListEnvironments", path: "/environments", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listEnvironments(_ input: ListEnvironmentsInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListEnvironmentsOutput {
+        return try await self.client.execute(
+            operation: "ListEnvironments", 
+            path: "/environments", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Lists the key-value tag pairs associated to the Amazon Managed Workflows for Apache Airflow (MWAA) environment. For example, "Environment": "Staging".
-    public func listTagsForResource(_ input: ListTagsForResourceInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceOutput> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{ResourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceOutput {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     ///  Internal only. Publishes environment health metrics to Amazon CloudWatch.
-    public func publishMetrics(_ input: PublishMetricsInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<PublishMetricsOutput> {
-        return self.client.execute(operation: "PublishMetrics", path: "/metrics/environments/{EnvironmentName}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "ops.", logger: logger, on: eventLoop)
+    @available(*, deprecated, message: "This API is for internal use and not meant for public use, and is no longer available.")
+    @Sendable
+    public func publishMetrics(_ input: PublishMetricsInput, logger: Logger = AWSClient.loggingDisabled) async throws -> PublishMetricsOutput {
+        return try await self.client.execute(
+            operation: "PublishMetrics", 
+            path: "/metrics/environments/{EnvironmentName}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "ops.", 
+            logger: logger
+        )
     }
 
     /// Associates key-value tag pairs to your Amazon Managed Workflows for Apache Airflow (MWAA) environment.
-    public func tagResource(_ input: TagResourceInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceOutput> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{ResourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceInput, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceOutput {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Removes key-value tag pairs associated to your Amazon Managed Workflows for Apache Airflow (MWAA) environment. For example, "Environment": "Staging".
-    public func untagResource(_ input: UntagResourceInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceOutput> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{ResourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceInput, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceOutput {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 
     /// Updates an Amazon Managed Workflows for Apache Airflow (MWAA) environment.
-    public func updateEnvironment(_ input: UpdateEnvironmentInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateEnvironmentOutput> {
-        return self.client.execute(operation: "UpdateEnvironment", path: "/environments/{Name}", httpMethod: .PATCH, serviceConfig: self.config, input: input, hostPrefix: "api.", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateEnvironment(_ input: UpdateEnvironmentInput, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateEnvironmentOutput {
+        return try await self.client.execute(
+            operation: "UpdateEnvironment", 
+            path: "/environments/{Name}", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "api.", 
+            logger: logger
+        )
     }
 }
 
 extension MWAA {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: MWAA, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -130,57 +240,24 @@ extension MWAA {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension MWAA {
-    ///  Lists the Amazon Managed Workflows for Apache Airflow (MWAA) environments.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listEnvironmentsPaginator<Result>(
-        _ input: ListEnvironmentsInput,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListEnvironmentsOutput, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listEnvironments,
-            inputKey: \ListEnvironmentsInput.nextToken,
-            outputKey: \ListEnvironmentsOutput.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the Amazon Managed Workflows for Apache Airflow (MWAA) environments.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listEnvironmentsPaginator(
         _ input: ListEnvironmentsInput,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListEnvironmentsOutput, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListEnvironmentsInput, ListEnvironmentsOutput> {
+        return .init(
             input: input,
             command: self.listEnvironments,
             inputKey: \ListEnvironmentsInput.nextToken,
             outputKey: \ListEnvironmentsOutput.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }

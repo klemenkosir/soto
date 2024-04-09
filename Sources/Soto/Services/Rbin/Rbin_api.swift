@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS Rbin service.
 ///
-/// This is the Recycle Bin API Reference. This documentation provides  descriptions and syntax for each of the actions and data types in Recycle Bin.  Recycle Bin is a resource recovery feature that enables you to restore accidentally  deleted snapshots and EBS-backed AMIs. When using Recycle Bin, if your resources are  deleted, they are retained in the Recycle Bin for a time period that you specify.   You can restore a resource from the Recycle Bin at any time before its retention period  expires. After you restore a resource from the Recycle Bin, the resource is removed from the  Recycle Bin, and you can then use it in the same way you use any other resource of that type  in your account. If the retention period expires and the resource is not restored, the resource  is permanently deleted from the Recycle Bin and is no longer available for recovery. For more  information about Recycle Bin, see  Recycle Bin in the Amazon Elastic Compute Cloud User Guide.
+/// This is the Recycle Bin API Reference. This documentation provides  descriptions and syntax for each of the actions and data types in Recycle Bin. Recycle Bin is a resource recovery feature that enables you to restore accidentally  deleted snapshots and EBS-backed AMIs. When using Recycle Bin, if your resources are  deleted, they are retained in the Recycle Bin for a time period that you specify. You can restore a resource from the Recycle Bin at any time before its retention period  expires. After you restore a resource from the Recycle Bin, the resource is removed from the  Recycle Bin, and you can then use it in the same way you use any other resource of that type  in your account. If the retention period expires and the resource is not restored, the resource  is permanently deleted from the Recycle Bin and is no longer available for recovery. For more  information about Recycle Bin, see  Recycle Bin in the Amazon Elastic Compute Cloud User Guide.
 public struct Rbin: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct Rbin: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,83 +54,175 @@ public struct Rbin: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "rbin",
+            serviceName: "Rbin",
+            serviceIdentifier: "rbin",
             serviceProtocol: .restjson,
             apiVersion: "2021-06-15",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "ca-central-1": "rbin-fips.ca-central-1.amazonaws.com",
-                    "us-east-1": "rbin-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "rbin-fips.us-east-2.amazonaws.com",
-                    "us-gov-east-1": "rbin-fips.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "rbin-fips.us-gov-west-1.amazonaws.com",
-                    "us-west-1": "rbin-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "rbin-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: RbinErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "rbin-fips.ca-central-1.amazonaws.com",
+            "ca-west-1": "rbin-fips.ca-west-1.amazonaws.com",
+            "us-east-1": "rbin-fips.us-east-1.amazonaws.com",
+            "us-east-2": "rbin-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "rbin-fips.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "rbin-fips.us-gov-west-1.amazonaws.com",
+            "us-iso-east-1": "rbin-fips.us-iso-east-1.c2s.ic.gov",
+            "us-iso-west-1": "rbin-fips.us-iso-west-1.c2s.ic.gov",
+            "us-isob-east-1": "rbin-fips.us-isob-east-1.sc2s.sgov.gov",
+            "us-west-1": "rbin-fips.us-west-1.amazonaws.com",
+            "us-west-2": "rbin-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
     /// Creates a Recycle Bin retention rule. For more information, see  Create Recycle Bin retention rules in the Amazon Elastic Compute Cloud User Guide.
-    public func createRule(_ input: CreateRuleRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateRuleResponse> {
-        return self.client.execute(operation: "CreateRule", path: "/rules", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createRule(_ input: CreateRuleRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateRuleResponse {
+        return try await self.client.execute(
+            operation: "CreateRule", 
+            path: "/rules", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a Recycle Bin retention rule. For more information, see  Delete Recycle Bin retention rules in the Amazon Elastic Compute Cloud User Guide.
-    public func deleteRule(_ input: DeleteRuleRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteRuleResponse> {
-        return self.client.execute(operation: "DeleteRule", path: "/rules/{Identifier}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteRule(_ input: DeleteRuleRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteRuleResponse {
+        return try await self.client.execute(
+            operation: "DeleteRule", 
+            path: "/rules/{Identifier}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets information about a Recycle Bin retention rule.
-    public func getRule(_ input: GetRuleRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetRuleResponse> {
-        return self.client.execute(operation: "GetRule", path: "/rules/{Identifier}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getRule(_ input: GetRuleRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetRuleResponse {
+        return try await self.client.execute(
+            operation: "GetRule", 
+            path: "/rules/{Identifier}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the Recycle Bin retention rules in the Region.
-    public func listRules(_ input: ListRulesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListRulesResponse> {
-        return self.client.execute(operation: "ListRules", path: "/list-rules", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listRules(_ input: ListRulesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRulesResponse {
+        return try await self.client.execute(
+            operation: "ListRules", 
+            path: "/list-rules", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the tags assigned to a retention rule.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{ResourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Locks a retention rule. A locked retention rule can't be modified or deleted.
-    public func lockRule(_ input: LockRuleRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<LockRuleResponse> {
-        return self.client.execute(operation: "LockRule", path: "/rules/{Identifier}/lock", httpMethod: .PATCH, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func lockRule(_ input: LockRuleRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> LockRuleResponse {
+        return try await self.client.execute(
+            operation: "LockRule", 
+            path: "/rules/{Identifier}/lock", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Assigns tags to the specified retention rule.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{ResourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Unlocks a retention rule. After a retention rule is unlocked, it can be modified or deleted  only after the unlock delay period expires.
-    public func unlockRule(_ input: UnlockRuleRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UnlockRuleResponse> {
-        return self.client.execute(operation: "UnlockRule", path: "/rules/{Identifier}/unlock", httpMethod: .PATCH, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func unlockRule(_ input: UnlockRuleRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UnlockRuleResponse {
+        return try await self.client.execute(
+            operation: "UnlockRule", 
+            path: "/rules/{Identifier}/unlock", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Unassigns a tag from a retention rule.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{ResourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates an existing Recycle Bin retention rule. You can update a retention rule's description,  resource tags, and retention period at any time after creation. You can't update a retention rule's  resource type after creation. For more information, see  Update Recycle Bin retention rules in the Amazon Elastic Compute Cloud User Guide.
-    public func updateRule(_ input: UpdateRuleRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateRuleResponse> {
-        return self.client.execute(operation: "UpdateRule", path: "/rules/{Identifier}", httpMethod: .PATCH, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateRule(_ input: UpdateRuleRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateRuleResponse {
+        return try await self.client.execute(
+            operation: "UpdateRule", 
+            path: "/rules/{Identifier}", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Rbin {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Rbin, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -136,57 +232,24 @@ extension Rbin {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Rbin {
-    ///  Lists the Recycle Bin retention rules in the Region.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listRulesPaginator<Result>(
-        _ input: ListRulesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListRulesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listRules,
-            inputKey: \ListRulesRequest.nextToken,
-            outputKey: \ListRulesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the Recycle Bin retention rules in the Region.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listRulesPaginator(
         _ input: ListRulesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListRulesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRulesRequest, ListRulesResponse> {
+        return .init(
             input: input,
             command: self.listRules,
             inputKey: \ListRulesRequest.nextToken,
             outputKey: \ListRulesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }

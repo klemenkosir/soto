@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct MediaPackageVod: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,107 +54,249 @@ public struct MediaPackageVod: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "mediapackage-vod",
+            serviceName: "MediaPackageVod",
+            serviceIdentifier: "mediapackage-vod",
             serviceProtocol: .restjson,
             apiVersion: "2018-11-07",
             endpoint: endpoint,
             errorType: MediaPackageVodErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
     /// Changes the packaging group's properities to configure log subscription
-    public func configureLogs(_ input: ConfigureLogsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ConfigureLogsResponse> {
-        return self.client.execute(operation: "ConfigureLogs", path: "/packaging_groups/{Id}/configure_logs", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func configureLogs(_ input: ConfigureLogsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ConfigureLogsResponse {
+        return try await self.client.execute(
+            operation: "ConfigureLogs", 
+            path: "/packaging_groups/{Id}/configure_logs", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new MediaPackage VOD Asset resource.
-    public func createAsset(_ input: CreateAssetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateAssetResponse> {
-        return self.client.execute(operation: "CreateAsset", path: "/assets", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createAsset(_ input: CreateAssetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAssetResponse {
+        return try await self.client.execute(
+            operation: "CreateAsset", 
+            path: "/assets", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new MediaPackage VOD PackagingConfiguration resource.
-    public func createPackagingConfiguration(_ input: CreatePackagingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreatePackagingConfigurationResponse> {
-        return self.client.execute(operation: "CreatePackagingConfiguration", path: "/packaging_configurations", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createPackagingConfiguration(_ input: CreatePackagingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreatePackagingConfigurationResponse {
+        return try await self.client.execute(
+            operation: "CreatePackagingConfiguration", 
+            path: "/packaging_configurations", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new MediaPackage VOD PackagingGroup resource.
-    public func createPackagingGroup(_ input: CreatePackagingGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreatePackagingGroupResponse> {
-        return self.client.execute(operation: "CreatePackagingGroup", path: "/packaging_groups", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createPackagingGroup(_ input: CreatePackagingGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreatePackagingGroupResponse {
+        return try await self.client.execute(
+            operation: "CreatePackagingGroup", 
+            path: "/packaging_groups", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes an existing MediaPackage VOD Asset resource.
-    public func deleteAsset(_ input: DeleteAssetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteAssetResponse> {
-        return self.client.execute(operation: "DeleteAsset", path: "/assets/{Id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteAsset(_ input: DeleteAssetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteAssetResponse {
+        return try await self.client.execute(
+            operation: "DeleteAsset", 
+            path: "/assets/{Id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a MediaPackage VOD PackagingConfiguration resource.
-    public func deletePackagingConfiguration(_ input: DeletePackagingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeletePackagingConfigurationResponse> {
-        return self.client.execute(operation: "DeletePackagingConfiguration", path: "/packaging_configurations/{Id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deletePackagingConfiguration(_ input: DeletePackagingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeletePackagingConfigurationResponse {
+        return try await self.client.execute(
+            operation: "DeletePackagingConfiguration", 
+            path: "/packaging_configurations/{Id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a MediaPackage VOD PackagingGroup resource.
-    public func deletePackagingGroup(_ input: DeletePackagingGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeletePackagingGroupResponse> {
-        return self.client.execute(operation: "DeletePackagingGroup", path: "/packaging_groups/{Id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deletePackagingGroup(_ input: DeletePackagingGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeletePackagingGroupResponse {
+        return try await self.client.execute(
+            operation: "DeletePackagingGroup", 
+            path: "/packaging_groups/{Id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a description of a MediaPackage VOD Asset resource.
-    public func describeAsset(_ input: DescribeAssetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeAssetResponse> {
-        return self.client.execute(operation: "DescribeAsset", path: "/assets/{Id}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeAsset(_ input: DescribeAssetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeAssetResponse {
+        return try await self.client.execute(
+            operation: "DescribeAsset", 
+            path: "/assets/{Id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a description of a MediaPackage VOD PackagingConfiguration resource.
-    public func describePackagingConfiguration(_ input: DescribePackagingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribePackagingConfigurationResponse> {
-        return self.client.execute(operation: "DescribePackagingConfiguration", path: "/packaging_configurations/{Id}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describePackagingConfiguration(_ input: DescribePackagingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribePackagingConfigurationResponse {
+        return try await self.client.execute(
+            operation: "DescribePackagingConfiguration", 
+            path: "/packaging_configurations/{Id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a description of a MediaPackage VOD PackagingGroup resource.
-    public func describePackagingGroup(_ input: DescribePackagingGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribePackagingGroupResponse> {
-        return self.client.execute(operation: "DescribePackagingGroup", path: "/packaging_groups/{Id}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describePackagingGroup(_ input: DescribePackagingGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribePackagingGroupResponse {
+        return try await self.client.execute(
+            operation: "DescribePackagingGroup", 
+            path: "/packaging_groups/{Id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a collection of MediaPackage VOD Asset resources.
-    public func listAssets(_ input: ListAssetsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListAssetsResponse> {
-        return self.client.execute(operation: "ListAssets", path: "/assets", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listAssets(_ input: ListAssetsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAssetsResponse {
+        return try await self.client.execute(
+            operation: "ListAssets", 
+            path: "/assets", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a collection of MediaPackage VOD PackagingConfiguration resources.
-    public func listPackagingConfigurations(_ input: ListPackagingConfigurationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListPackagingConfigurationsResponse> {
-        return self.client.execute(operation: "ListPackagingConfigurations", path: "/packaging_configurations", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listPackagingConfigurations(_ input: ListPackagingConfigurationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListPackagingConfigurationsResponse {
+        return try await self.client.execute(
+            operation: "ListPackagingConfigurations", 
+            path: "/packaging_configurations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a collection of MediaPackage VOD PackagingGroup resources.
-    public func listPackagingGroups(_ input: ListPackagingGroupsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListPackagingGroupsResponse> {
-        return self.client.execute(operation: "ListPackagingGroups", path: "/packaging_groups", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listPackagingGroups(_ input: ListPackagingGroupsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListPackagingGroupsResponse {
+        return try await self.client.execute(
+            operation: "ListPackagingGroups", 
+            path: "/packaging_groups", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of the tags assigned to the specified resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{ResourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Adds tags to the specified resource. You can specify one or more tags to add.
-    @discardableResult public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{ResourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Removes tags from the specified resource. You can specify one or more tags to remove.
-    @discardableResult public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{ResourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{ResourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates a specific packaging group. You can't change the id attribute or any other system-generated attributes.
-    public func updatePackagingGroup(_ input: UpdatePackagingGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdatePackagingGroupResponse> {
-        return self.client.execute(operation: "UpdatePackagingGroup", path: "/packaging_groups/{Id}", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updatePackagingGroup(_ input: UpdatePackagingGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdatePackagingGroupResponse {
+        return try await self.client.execute(
+            operation: "UpdatePackagingGroup", 
+            path: "/packaging_groups/{Id}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension MediaPackageVod {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: MediaPackageVod, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -160,163 +306,62 @@ extension MediaPackageVod {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension MediaPackageVod {
-    ///  Returns a collection of MediaPackage VOD Asset resources.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listAssetsPaginator<Result>(
-        _ input: ListAssetsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListAssetsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listAssets,
-            inputKey: \ListAssetsRequest.nextToken,
-            outputKey: \ListAssetsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a collection of MediaPackage VOD Asset resources.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listAssetsPaginator(
         _ input: ListAssetsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListAssetsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAssetsRequest, ListAssetsResponse> {
+        return .init(
             input: input,
             command: self.listAssets,
             inputKey: \ListAssetsRequest.nextToken,
             outputKey: \ListAssetsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a collection of MediaPackage VOD PackagingConfiguration resources.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listPackagingConfigurationsPaginator<Result>(
-        _ input: ListPackagingConfigurationsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListPackagingConfigurationsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listPackagingConfigurations,
-            inputKey: \ListPackagingConfigurationsRequest.nextToken,
-            outputKey: \ListPackagingConfigurationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a collection of MediaPackage VOD PackagingConfiguration resources.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listPackagingConfigurationsPaginator(
         _ input: ListPackagingConfigurationsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListPackagingConfigurationsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListPackagingConfigurationsRequest, ListPackagingConfigurationsResponse> {
+        return .init(
             input: input,
             command: self.listPackagingConfigurations,
             inputKey: \ListPackagingConfigurationsRequest.nextToken,
             outputKey: \ListPackagingConfigurationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a collection of MediaPackage VOD PackagingGroup resources.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listPackagingGroupsPaginator<Result>(
-        _ input: ListPackagingGroupsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListPackagingGroupsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listPackagingGroups,
-            inputKey: \ListPackagingGroupsRequest.nextToken,
-            outputKey: \ListPackagingGroupsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a collection of MediaPackage VOD PackagingGroup resources.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listPackagingGroupsPaginator(
         _ input: ListPackagingGroupsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListPackagingGroupsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListPackagingGroupsRequest, ListPackagingGroupsResponse> {
+        return .init(
             input: input,
             command: self.listPackagingGroups,
             inputKey: \ListPackagingGroupsRequest.nextToken,
             outputKey: \ListPackagingGroupsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }

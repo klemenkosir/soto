@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct ConnectContactLens: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,28 +54,42 @@ public struct ConnectContactLens: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "contact-lens",
+            serviceName: "ConnectContactLens",
+            serviceIdentifier: "contact-lens",
             signingName: "connect",
             serviceProtocol: .restjson,
             apiVersion: "2020-08-21",
             endpoint: endpoint,
             errorType: ConnectContactLensErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
     /// Provides a list of analysis segments for a real-time analysis session.
-    public func listRealtimeContactAnalysisSegments(_ input: ListRealtimeContactAnalysisSegmentsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListRealtimeContactAnalysisSegmentsResponse> {
-        return self.client.execute(operation: "ListRealtimeContactAnalysisSegments", path: "/realtime-contact-analysis/analysis-segments", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listRealtimeContactAnalysisSegments(_ input: ListRealtimeContactAnalysisSegmentsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRealtimeContactAnalysisSegmentsResponse {
+        return try await self.client.execute(
+            operation: "ListRealtimeContactAnalysisSegments", 
+            path: "/realtime-contact-analysis/analysis-segments", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension ConnectContactLens {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: ConnectContactLens, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -81,57 +99,24 @@ extension ConnectContactLens {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension ConnectContactLens {
-    ///  Provides a list of analysis segments for a real-time analysis session.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listRealtimeContactAnalysisSegmentsPaginator<Result>(
-        _ input: ListRealtimeContactAnalysisSegmentsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListRealtimeContactAnalysisSegmentsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listRealtimeContactAnalysisSegments,
-            inputKey: \ListRealtimeContactAnalysisSegmentsRequest.nextToken,
-            outputKey: \ListRealtimeContactAnalysisSegmentsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Provides a list of analysis segments for a real-time analysis session.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listRealtimeContactAnalysisSegmentsPaginator(
         _ input: ListRealtimeContactAnalysisSegmentsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListRealtimeContactAnalysisSegmentsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRealtimeContactAnalysisSegmentsRequest, ListRealtimeContactAnalysisSegmentsResponse> {
+        return .init(
             input: input,
             command: self.listRealtimeContactAnalysisSegments,
             inputKey: \ListRealtimeContactAnalysisSegmentsRequest.nextToken,
             outputKey: \ListRealtimeContactAnalysisSegmentsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }

@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS AppConfigData service.
 ///
-/// AppConfig Data provides the data plane APIs your application uses to retrieve configuration data. Here's how it works: Your application retrieves configuration data by first establishing a configuration session using the AppConfig Data StartConfigurationSession API action. Your session's client then makes periodic calls to GetLatestConfiguration to check for and retrieve the latest data available. When calling StartConfigurationSession, your code sends the following information:   Identifiers (ID or name) of an AppConfig application, environment, and configuration profile that the session tracks.   (Optional) The minimum amount of time the session's client must wait between calls to GetLatestConfiguration.   In response, AppConfig provides an InitialConfigurationToken to be given to the session's client and used the first time it calls GetLatestConfiguration for that session. When calling GetLatestConfiguration, your client code sends the most recent ConfigurationToken value it has and receives in response:    NextPollConfigurationToken: the ConfigurationToken value to use on the next call to GetLatestConfiguration.    NextPollIntervalInSeconds: the duration the client should wait before making its next call to GetLatestConfiguration. This duration may vary over the course of the session, so it should be used instead of the value sent on the StartConfigurationSession call.   The configuration: the latest data intended for the session. This may be empty if the client already has the latest version of the configuration.   For more information and to view example CLI commands that show how to retrieve a configuration using the AppConfig Data StartConfigurationSession and GetLatestConfiguration API actions, see Receiving the configuration in the AppConfig User Guide.
+/// AppConfig Data provides the data plane APIs your application uses to retrieve configuration data. Here's how it works: Your application retrieves configuration data by first establishing a configuration session using the AppConfig Data StartConfigurationSession API action. Your session's client then makes periodic calls to GetLatestConfiguration to check for and retrieve the latest data available. When calling StartConfigurationSession, your code sends the following information:   Identifiers (ID or name) of an AppConfig application, environment, and configuration profile that the session tracks.   (Optional) The minimum amount of time the session's client must wait between calls to GetLatestConfiguration.   In response, AppConfig provides an InitialConfigurationToken to be given to the session's client and used the first time it calls GetLatestConfiguration for that session.  This token should only be used once in your first call to GetLatestConfiguration. You must use the new token in the GetLatestConfiguration response (NextPollConfigurationToken) in each subsequent call to GetLatestConfiguration.  When calling GetLatestConfiguration, your client code sends the most recent ConfigurationToken value it has and receives in response:    NextPollConfigurationToken: the ConfigurationToken value to use on the next call to GetLatestConfiguration.    NextPollIntervalInSeconds: the duration the client should wait before making its next call to GetLatestConfiguration. This duration may vary over the course of the session, so it should be used instead of the value sent on the StartConfigurationSession call.   The configuration: the latest data intended for the session. This may be empty if the client already has the latest version of the configuration.    The InitialConfigurationToken and NextPollConfigurationToken should only be used once. To support long poll use cases, the tokens are valid for up to 24 hours. If a GetLatestConfiguration call uses an expired token, the system returns BadRequestException.  For more information and to view example CLI commands that show how to retrieve a configuration using the AppConfig Data StartConfigurationSession and GetLatestConfiguration API actions, see Retrieving the configuration in the AppConfig User Guide.
 public struct AppConfigData: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct AppConfigData: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,33 +54,63 @@ public struct AppConfigData: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "appconfigdata",
+            serviceName: "AppConfigData",
+            serviceIdentifier: "appconfigdata",
             signingName: "appconfig",
             serviceProtocol: .restjson,
             apiVersion: "2021-11-11",
             endpoint: endpoint,
+            variantEndpoints: Self.variantEndpoints,
             errorType: AppConfigDataErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-gov-east-1": "appconfigdata.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "appconfigdata.us-gov-west-1.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
-    /// Retrieves the latest deployed configuration. This API may return empty configuration data if the client already has the latest version. For more information about this API action and to view example CLI commands that show how to use it with the StartConfigurationSession API action, see Receiving the configuration in the AppConfig User Guide.   Note the following important information.   Each configuration token is only valid for one call to GetLatestConfiguration. The GetLatestConfiguration response includes a NextPollConfigurationToken that should always replace the token used for the just-completed call in preparation for the next one.     GetLatestConfiguration is a priced call. For more information, see Pricing.
-    public func getLatestConfiguration(_ input: GetLatestConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetLatestConfigurationResponse> {
-        return self.client.execute(operation: "GetLatestConfiguration", path: "/configuration", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Retrieves the latest deployed configuration. This API may return empty configuration data if the client already has the latest version. For more information about this API action and to view example CLI commands that show how to use it with the StartConfigurationSession API action, see Retrieving the configuration in the AppConfig User Guide.   Note the following important information.   Each configuration token is only valid for one call to GetLatestConfiguration. The GetLatestConfiguration response includes a NextPollConfigurationToken that should always replace the token used for the just-completed call in preparation for the next one.     GetLatestConfiguration is a priced call. For more information, see Pricing.
+    @Sendable
+    public func getLatestConfiguration(_ input: GetLatestConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetLatestConfigurationResponse {
+        return try await self.client.execute(
+            operation: "GetLatestConfiguration", 
+            path: "/configuration", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Starts a configuration session used to retrieve a deployed configuration. For more information about this API action and to view example CLI commands that show how to use it with the GetLatestConfiguration API action, see Receiving the configuration in the AppConfig User Guide.
-    public func startConfigurationSession(_ input: StartConfigurationSessionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartConfigurationSessionResponse> {
-        return self.client.execute(operation: "StartConfigurationSession", path: "/configurationsessions", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Starts a configuration session used to retrieve a deployed configuration. For more information about this API action and to view example CLI commands that show how to use it with the GetLatestConfiguration API action, see Retrieving the configuration in the AppConfig User Guide.
+    @Sendable
+    public func startConfigurationSession(_ input: StartConfigurationSessionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartConfigurationSessionResponse {
+        return try await self.client.execute(
+            operation: "StartConfigurationSession", 
+            path: "/configurationsessions", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension AppConfigData {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: AppConfigData, patch: AWSServiceConfig.Patch) {
         self.client = from.client

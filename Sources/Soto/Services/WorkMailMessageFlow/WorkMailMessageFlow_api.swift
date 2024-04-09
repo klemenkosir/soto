@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct WorkMailMessageFlow: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,39 +54,54 @@ public struct WorkMailMessageFlow: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "workmailmessageflow",
+            serviceName: "WorkMailMessageFlow",
+            serviceIdentifier: "workmailmessageflow",
             serviceProtocol: .restjson,
             apiVersion: "2019-05-01",
             endpoint: endpoint,
             errorType: WorkMailMessageFlowErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
     /// Retrieves the raw content of an in-transit email message, in MIME format.
-    public func getRawMessageContent(_ input: GetRawMessageContentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetRawMessageContentResponse> {
-        return self.client.execute(operation: "GetRawMessageContent", path: "/messages/{messageId}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getRawMessageContent(_ input: GetRawMessageContentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetRawMessageContentResponse {
+        return try await self.client.execute(
+            operation: "GetRawMessageContent", 
+            path: "/messages/{messageId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Updates the raw content of an in-transit email message, in MIME format. This example describes how to update in-transit email message. For more information and examples for using this API, see   Updating message content with AWS Lambda.    Updates to an in-transit message only appear when you call PutRawMessageContent from an AWS Lambda function  configured with a  synchronous  Run Lambda rule. If you call PutRawMessageContent on a delivered or sent message, the message remains unchanged, even though GetRawMessageContent returns an updated  message.
-    public func putRawMessageContent(_ input: PutRawMessageContentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<PutRawMessageContentResponse> {
-        return self.client.execute(operation: "PutRawMessageContent", path: "/messages/{messageId}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
-    }
-
-    // MARK: Streaming API Calls
-
-    /// Retrieves the raw content of an in-transit email message, in MIME format.
-    public func getRawMessageContentStreaming(_ input: GetRawMessageContentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil, _ stream: @escaping (ByteBuffer, EventLoop) -> EventLoopFuture<Void>) -> EventLoopFuture<GetRawMessageContentResponse> {
-        return self.client.execute(operation: "GetRawMessageContent", path: "/messages/{messageId}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop, stream: stream)
+    /// Updates the raw content of an in-transit email message, in MIME format. This example describes how to update in-transit email message. For more information and examples for using this API, see   Updating message content with AWS Lambda.  Updates to an in-transit message only appear when you call PutRawMessageContent from an AWS Lambda function  configured with a  synchronous  Run Lambda rule. If you call PutRawMessageContent on a delivered or sent message, the message remains unchanged, even though GetRawMessageContent returns an updated  message.
+    @Sendable
+    public func putRawMessageContent(_ input: PutRawMessageContentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> PutRawMessageContentResponse {
+        return try await self.client.execute(
+            operation: "PutRawMessageContent", 
+            path: "/messages/{messageId}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension WorkMailMessageFlow {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: WorkMailMessageFlow, patch: AWSServiceConfig.Patch) {
         self.client = from.client

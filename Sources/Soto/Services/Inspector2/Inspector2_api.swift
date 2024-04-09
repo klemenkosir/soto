@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS Inspector2 service.
 ///
-/// Amazon Inspector is a vulnerability discovery service that automates continuous scanning for security vulnerabilities within your Amazon EC2 and Amazon ECR environments.
+/// Amazon Inspector is a vulnerability discovery service that automates continuous scanning for security vulnerabilities within your Amazon EC2, Amazon ECR, and Amazon Web Services Lambda environments.
 public struct Inspector2: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct Inspector2: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,182 +54,807 @@ public struct Inspector2: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "inspector2",
+            serviceName: "Inspector2",
+            serviceIdentifier: "inspector2",
             serviceProtocol: .restjson,
             apiVersion: "2020-06-08",
             endpoint: endpoint,
+            variantEndpoints: Self.variantEndpoints,
             errorType: Inspector2ErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-east-1": "inspector2-fips.us-east-1.amazonaws.com",
+            "us-east-2": "inspector2-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "inspector2-fips.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "inspector2-fips.us-gov-west-1.amazonaws.com",
+            "us-west-1": "inspector2-fips.us-west-1.amazonaws.com",
+            "us-west-2": "inspector2-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
-    /// Associates an Amazon Web Services account with an Amazon Inspector delegated administrator.
-    public func associateMember(_ input: AssociateMemberRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AssociateMemberResponse> {
-        return self.client.execute(operation: "AssociateMember", path: "/members/associate", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Associates an Amazon Web Services account with an Amazon Inspector delegated administrator.   An HTTP 200 response indicates the association was successfully started, but doesn’t indicate whether it was completed. You can check if the association completed by using ListMembers for multiple accounts or GetMembers for a single account.
+    @Sendable
+    public func associateMember(_ input: AssociateMemberRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AssociateMemberResponse {
+        return try await self.client.execute(
+            operation: "AssociateMember", 
+            path: "/members/associate", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves the Amazon Inspector status of multiple Amazon Web Services accounts within your environment.
-    public func batchGetAccountStatus(_ input: BatchGetAccountStatusRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<BatchGetAccountStatusResponse> {
-        return self.client.execute(operation: "BatchGetAccountStatus", path: "/status/batch/get", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func batchGetAccountStatus(_ input: BatchGetAccountStatusRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchGetAccountStatusResponse {
+        return try await self.client.execute(
+            operation: "BatchGetAccountStatus", 
+            path: "/status/batch/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieves code snippets from findings that Amazon Inspector detected code vulnerabilities in.
+    @Sendable
+    public func batchGetCodeSnippet(_ input: BatchGetCodeSnippetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchGetCodeSnippetResponse {
+        return try await self.client.execute(
+            operation: "BatchGetCodeSnippet", 
+            path: "/codesnippet/batchget", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Gets vulnerability details for findings.
+    @Sendable
+    public func batchGetFindingDetails(_ input: BatchGetFindingDetailsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchGetFindingDetailsResponse {
+        return try await self.client.execute(
+            operation: "BatchGetFindingDetails", 
+            path: "/findings/details/batch/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets free trial status for multiple Amazon Web Services accounts.
-    public func batchGetFreeTrialInfo(_ input: BatchGetFreeTrialInfoRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<BatchGetFreeTrialInfoResponse> {
-        return self.client.execute(operation: "BatchGetFreeTrialInfo", path: "/freetrialinfo/batchget", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func batchGetFreeTrialInfo(_ input: BatchGetFreeTrialInfoRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchGetFreeTrialInfoResponse {
+        return try await self.client.execute(
+            operation: "BatchGetFreeTrialInfo", 
+            path: "/freetrialinfo/batchget", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieves Amazon Inspector deep inspection activation status of multiple member accounts within your organization. You must be the delegated administrator of an organization in Amazon Inspector to use this API.
+    @Sendable
+    public func batchGetMemberEc2DeepInspectionStatus(_ input: BatchGetMemberEc2DeepInspectionStatusRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchGetMemberEc2DeepInspectionStatusResponse {
+        return try await self.client.execute(
+            operation: "BatchGetMemberEc2DeepInspectionStatus", 
+            path: "/ec2deepinspectionstatus/member/batch/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Activates or deactivates Amazon Inspector deep inspection for the provided member accounts in your organization. You must be the delegated administrator of an organization in Amazon Inspector to use this API.
+    @Sendable
+    public func batchUpdateMemberEc2DeepInspectionStatus(_ input: BatchUpdateMemberEc2DeepInspectionStatusRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchUpdateMemberEc2DeepInspectionStatusResponse {
+        return try await self.client.execute(
+            operation: "BatchUpdateMemberEc2DeepInspectionStatus", 
+            path: "/ec2deepinspectionstatus/member/batch/update", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Cancels the given findings report.
-    public func cancelFindingsReport(_ input: CancelFindingsReportRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CancelFindingsReportResponse> {
-        return self.client.execute(operation: "CancelFindingsReport", path: "/reporting/cancel", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func cancelFindingsReport(_ input: CancelFindingsReportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CancelFindingsReportResponse {
+        return try await self.client.execute(
+            operation: "CancelFindingsReport", 
+            path: "/reporting/cancel", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates a filter resource using specified filter criteria.
-    public func createFilter(_ input: CreateFilterRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateFilterResponse> {
-        return self.client.execute(operation: "CreateFilter", path: "/filters/create", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Cancels a software bill of materials (SBOM) report.
+    @Sendable
+    public func cancelSbomExport(_ input: CancelSbomExportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CancelSbomExportResponse {
+        return try await self.client.execute(
+            operation: "CancelSbomExport", 
+            path: "/sbomexport/cancel", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates a finding report.
-    public func createFindingsReport(_ input: CreateFindingsReportRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateFindingsReportResponse> {
-        return self.client.execute(operation: "CreateFindingsReport", path: "/reporting/create", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a CIS scan configuration.
+    @Sendable
+    public func createCisScanConfiguration(_ input: CreateCisScanConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCisScanConfigurationResponse {
+        return try await self.client.execute(
+            operation: "CreateCisScanConfiguration", 
+            path: "/cis/scan-configuration/create", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates a filter resource using specified filter criteria. When the filter action is set to SUPPRESS this action creates a suppression rule.
+    @Sendable
+    public func createFilter(_ input: CreateFilterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateFilterResponse {
+        return try await self.client.execute(
+            operation: "CreateFilter", 
+            path: "/filters/create", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates a finding report. By default only ACTIVE findings are returned in the report. To see SUPRESSED or CLOSED findings you must specify a value for the findingStatus filter criteria.
+    @Sendable
+    public func createFindingsReport(_ input: CreateFindingsReportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateFindingsReportResponse {
+        return try await self.client.execute(
+            operation: "CreateFindingsReport", 
+            path: "/reporting/create", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates a software bill of materials (SBOM) report.
+    @Sendable
+    public func createSbomExport(_ input: CreateSbomExportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateSbomExportResponse {
+        return try await self.client.execute(
+            operation: "CreateSbomExport", 
+            path: "/sbomexport/create", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes a CIS scan configuration.
+    @Sendable
+    public func deleteCisScanConfiguration(_ input: DeleteCisScanConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteCisScanConfigurationResponse {
+        return try await self.client.execute(
+            operation: "DeleteCisScanConfiguration", 
+            path: "/cis/scan-configuration/delete", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a filter resource.
-    public func deleteFilter(_ input: DeleteFilterRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteFilterResponse> {
-        return self.client.execute(operation: "DeleteFilter", path: "/filters/delete", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteFilter(_ input: DeleteFilterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteFilterResponse {
+        return try await self.client.execute(
+            operation: "DeleteFilter", 
+            path: "/filters/delete", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describe Amazon Inspector configuration settings for an Amazon Web Services organization.
-    public func describeOrganizationConfiguration(_ input: DescribeOrganizationConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeOrganizationConfigurationResponse> {
-        return self.client.execute(operation: "DescribeOrganizationConfiguration", path: "/organizationconfiguration/describe", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeOrganizationConfiguration(_ input: DescribeOrganizationConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeOrganizationConfigurationResponse {
+        return try await self.client.execute(
+            operation: "DescribeOrganizationConfiguration", 
+            path: "/organizationconfiguration/describe", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Disables Amazon Inspector scans for one or more Amazon Web Services accounts. Disabling all scan types in an account disables the Amazon Inspector service.
-    public func disable(_ input: DisableRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DisableResponse> {
-        return self.client.execute(operation: "Disable", path: "/disable", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func disable(_ input: DisableRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DisableResponse {
+        return try await self.client.execute(
+            operation: "Disable", 
+            path: "/disable", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Disables the Amazon Inspector delegated administrator for your organization.
-    public func disableDelegatedAdminAccount(_ input: DisableDelegatedAdminAccountRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DisableDelegatedAdminAccountResponse> {
-        return self.client.execute(operation: "DisableDelegatedAdminAccount", path: "/delegatedadminaccounts/disable", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func disableDelegatedAdminAccount(_ input: DisableDelegatedAdminAccountRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DisableDelegatedAdminAccountResponse {
+        return try await self.client.execute(
+            operation: "DisableDelegatedAdminAccount", 
+            path: "/delegatedadminaccounts/disable", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Disassociates a member account from an Amazon Inspector delegated administrator.
-    public func disassociateMember(_ input: DisassociateMemberRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DisassociateMemberResponse> {
-        return self.client.execute(operation: "DisassociateMember", path: "/members/disassociate", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func disassociateMember(_ input: DisassociateMemberRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DisassociateMemberResponse {
+        return try await self.client.execute(
+            operation: "DisassociateMember", 
+            path: "/members/disassociate", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Enables Amazon Inspector scans for one or more Amazon Web Services accounts.
-    public func enable(_ input: EnableRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<EnableResponse> {
-        return self.client.execute(operation: "Enable", path: "/enable", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func enable(_ input: EnableRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> EnableResponse {
+        return try await self.client.execute(
+            operation: "Enable", 
+            path: "/enable", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Enables the Amazon Inspector delegated administrator for your Organizations organization.
-    public func enableDelegatedAdminAccount(_ input: EnableDelegatedAdminAccountRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<EnableDelegatedAdminAccountResponse> {
-        return self.client.execute(operation: "EnableDelegatedAdminAccount", path: "/delegatedadminaccounts/enable", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func enableDelegatedAdminAccount(_ input: EnableDelegatedAdminAccountRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> EnableDelegatedAdminAccountResponse {
+        return try await self.client.execute(
+            operation: "EnableDelegatedAdminAccount", 
+            path: "/delegatedadminaccounts/enable", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieves a CIS scan report.
+    @Sendable
+    public func getCisScanReport(_ input: GetCisScanReportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetCisScanReportResponse {
+        return try await self.client.execute(
+            operation: "GetCisScanReport", 
+            path: "/cis/scan/report/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieves CIS scan result details.
+    @Sendable
+    public func getCisScanResultDetails(_ input: GetCisScanResultDetailsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetCisScanResultDetailsResponse {
+        return try await self.client.execute(
+            operation: "GetCisScanResultDetails", 
+            path: "/cis/scan-result/details/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves setting configurations for Inspector scans.
-    public func getConfiguration(_ input: GetConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetConfigurationResponse> {
-        return self.client.execute(operation: "GetConfiguration", path: "/configuration/get", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getConfiguration(_ input: GetConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetConfigurationResponse {
+        return try await self.client.execute(
+            operation: "GetConfiguration", 
+            path: "/configuration/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves information about the Amazon Inspector delegated administrator for your organization.
-    public func getDelegatedAdminAccount(_ input: GetDelegatedAdminAccountRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetDelegatedAdminAccountResponse> {
-        return self.client.execute(operation: "GetDelegatedAdminAccount", path: "/delegatedadminaccounts/get", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getDelegatedAdminAccount(_ input: GetDelegatedAdminAccountRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetDelegatedAdminAccountResponse {
+        return try await self.client.execute(
+            operation: "GetDelegatedAdminAccount", 
+            path: "/delegatedadminaccounts/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieves the activation status of Amazon Inspector deep inspection and custom paths associated with your account.
+    @Sendable
+    public func getEc2DeepInspectionConfiguration(_ input: GetEc2DeepInspectionConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetEc2DeepInspectionConfigurationResponse {
+        return try await self.client.execute(
+            operation: "GetEc2DeepInspectionConfiguration", 
+            path: "/ec2deepinspectionconfiguration/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Gets an encryption key.
+    @Sendable
+    public func getEncryptionKey(_ input: GetEncryptionKeyRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetEncryptionKeyResponse {
+        return try await self.client.execute(
+            operation: "GetEncryptionKey", 
+            path: "/encryptionkey/get", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets the status of a findings report.
-    public func getFindingsReportStatus(_ input: GetFindingsReportStatusRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetFindingsReportStatusResponse> {
-        return self.client.execute(operation: "GetFindingsReportStatus", path: "/reporting/status/get", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getFindingsReportStatus(_ input: GetFindingsReportStatusRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetFindingsReportStatusResponse {
+        return try await self.client.execute(
+            operation: "GetFindingsReportStatus", 
+            path: "/reporting/status/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets member information for your organization.
-    public func getMember(_ input: GetMemberRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetMemberResponse> {
-        return self.client.execute(operation: "GetMember", path: "/members/get", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getMember(_ input: GetMemberRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetMemberResponse {
+        return try await self.client.execute(
+            operation: "GetMember", 
+            path: "/members/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Gets details of a software bill of materials (SBOM) report.
+    @Sendable
+    public func getSbomExport(_ input: GetSbomExportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetSbomExportResponse {
+        return try await self.client.execute(
+            operation: "GetSbomExport", 
+            path: "/sbomexport/get", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the permissions an account has to configure Amazon Inspector.
-    public func listAccountPermissions(_ input: ListAccountPermissionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListAccountPermissionsResponse> {
-        return self.client.execute(operation: "ListAccountPermissions", path: "/accountpermissions/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listAccountPermissions(_ input: ListAccountPermissionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAccountPermissionsResponse {
+        return try await self.client.execute(
+            operation: "ListAccountPermissions", 
+            path: "/accountpermissions/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists CIS scan configurations.
+    @Sendable
+    public func listCisScanConfigurations(_ input: ListCisScanConfigurationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCisScanConfigurationsResponse {
+        return try await self.client.execute(
+            operation: "ListCisScanConfigurations", 
+            path: "/cis/scan-configuration/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists scan results aggregated by checks.
+    @Sendable
+    public func listCisScanResultsAggregatedByChecks(_ input: ListCisScanResultsAggregatedByChecksRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCisScanResultsAggregatedByChecksResponse {
+        return try await self.client.execute(
+            operation: "ListCisScanResultsAggregatedByChecks", 
+            path: "/cis/scan-result/check/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists scan results aggregated by a target resource.
+    @Sendable
+    public func listCisScanResultsAggregatedByTargetResource(_ input: ListCisScanResultsAggregatedByTargetResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCisScanResultsAggregatedByTargetResourceResponse {
+        return try await self.client.execute(
+            operation: "ListCisScanResultsAggregatedByTargetResource", 
+            path: "/cis/scan-result/resource/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a CIS scan list.
+    @Sendable
+    public func listCisScans(_ input: ListCisScansRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCisScansResponse {
+        return try await self.client.execute(
+            operation: "ListCisScans", 
+            path: "/cis/scan/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists coverage details for you environment.
-    public func listCoverage(_ input: ListCoverageRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListCoverageResponse> {
-        return self.client.execute(operation: "ListCoverage", path: "/coverage/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listCoverage(_ input: ListCoverageRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCoverageResponse {
+        return try await self.client.execute(
+            operation: "ListCoverage", 
+            path: "/coverage/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists Amazon Inspector coverage statistics for your environment.
-    public func listCoverageStatistics(_ input: ListCoverageStatisticsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListCoverageStatisticsResponse> {
-        return self.client.execute(operation: "ListCoverageStatistics", path: "/coverage/statistics/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listCoverageStatistics(_ input: ListCoverageStatisticsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListCoverageStatisticsResponse {
+        return try await self.client.execute(
+            operation: "ListCoverageStatistics", 
+            path: "/coverage/statistics/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists information about the Amazon Inspector delegated administrator of your organization.
-    public func listDelegatedAdminAccounts(_ input: ListDelegatedAdminAccountsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListDelegatedAdminAccountsResponse> {
-        return self.client.execute(operation: "ListDelegatedAdminAccounts", path: "/delegatedadminaccounts/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listDelegatedAdminAccounts(_ input: ListDelegatedAdminAccountsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListDelegatedAdminAccountsResponse {
+        return try await self.client.execute(
+            operation: "ListDelegatedAdminAccounts", 
+            path: "/delegatedadminaccounts/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the filters associated with your account.
-    public func listFilters(_ input: ListFiltersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListFiltersResponse> {
-        return self.client.execute(operation: "ListFilters", path: "/filters/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listFilters(_ input: ListFiltersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListFiltersResponse {
+        return try await self.client.execute(
+            operation: "ListFilters", 
+            path: "/filters/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists aggregated finding data for your environment based on specific criteria.
-    public func listFindingAggregations(_ input: ListFindingAggregationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListFindingAggregationsResponse> {
-        return self.client.execute(operation: "ListFindingAggregations", path: "/findings/aggregation/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listFindingAggregations(_ input: ListFindingAggregationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListFindingAggregationsResponse {
+        return try await self.client.execute(
+            operation: "ListFindingAggregations", 
+            path: "/findings/aggregation/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists findings for your environment.
-    public func listFindings(_ input: ListFindingsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListFindingsResponse> {
-        return self.client.execute(operation: "ListFindings", path: "/findings/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listFindings(_ input: ListFindingsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListFindingsResponse {
+        return try await self.client.execute(
+            operation: "ListFindings", 
+            path: "/findings/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List members associated with the Amazon Inspector delegated administrator for your organization.
-    public func listMembers(_ input: ListMembersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListMembersResponse> {
-        return self.client.execute(operation: "ListMembers", path: "/members/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listMembers(_ input: ListMembersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListMembersResponse {
+        return try await self.client.execute(
+            operation: "ListMembers", 
+            path: "/members/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all tags attached to a given resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{resourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the Amazon Inspector usage totals over the last 30 days.
-    public func listUsageTotals(_ input: ListUsageTotalsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListUsageTotalsResponse> {
-        return self.client.execute(operation: "ListUsageTotals", path: "/usage/list", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listUsageTotals(_ input: ListUsageTotalsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListUsageTotalsResponse {
+        return try await self.client.execute(
+            operation: "ListUsageTotals", 
+            path: "/usage/list", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Resets an encryption key. After the key is reset your resources will be encrypted by an Amazon Web Services owned key.
+    @Sendable
+    public func resetEncryptionKey(_ input: ResetEncryptionKeyRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ResetEncryptionKeyResponse {
+        return try await self.client.execute(
+            operation: "ResetEncryptionKey", 
+            path: "/encryptionkey/reset", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists Amazon Inspector coverage details for a specific vulnerability.
+    @Sendable
+    public func searchVulnerabilities(_ input: SearchVulnerabilitiesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SearchVulnerabilitiesResponse {
+        return try await self.client.execute(
+            operation: "SearchVulnerabilities", 
+            path: "/vulnerabilities/search", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    ///  Sends a CIS session health.  This API is used by the Amazon Inspector SSM plugin to communicate with the Amazon Inspector service.  The Amazon Inspector SSM plugin calls this API to start a CIS scan session for the scan ID supplied by the service.
+    @Sendable
+    public func sendCisSessionHealth(_ input: SendCisSessionHealthRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SendCisSessionHealthResponse {
+        return try await self.client.execute(
+            operation: "SendCisSessionHealth", 
+            path: "/cissession/health/send", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    ///  Sends a CIS session telemetry.  This API is used by the Amazon Inspector SSM plugin to communicate with the Amazon Inspector service.  The Amazon Inspector SSM plugin calls this API to start a CIS scan session for the scan ID supplied by the service.
+    @Sendable
+    public func sendCisSessionTelemetry(_ input: SendCisSessionTelemetryRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SendCisSessionTelemetryResponse {
+        return try await self.client.execute(
+            operation: "SendCisSessionTelemetry", 
+            path: "/cissession/telemetry/send", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    ///  Starts a CIS session.  This API is used by the Amazon Inspector SSM plugin to communicate with the Amazon Inspector service.  The Amazon Inspector SSM plugin calls this API to start a CIS scan session for the scan ID supplied by the service.
+    @Sendable
+    public func startCisSession(_ input: StartCisSessionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartCisSessionResponse {
+        return try await self.client.execute(
+            operation: "StartCisSession", 
+            path: "/cissession/start", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    ///  Stops a CIS session.  This API is used by the Amazon Inspector SSM plugin to communicate with the Amazon Inspector service.  The Amazon Inspector SSM plugin calls this API to start a CIS scan session for the scan ID supplied by the service.
+    @Sendable
+    public func stopCisSession(_ input: StopCisSessionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StopCisSessionResponse {
+        return try await self.client.execute(
+            operation: "StopCisSession", 
+            path: "/cissession/stop", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Adds tags to a resource.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{resourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Removes tags from a resource.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{resourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates a CIS scan configuration.
+    @Sendable
+    public func updateCisScanConfiguration(_ input: UpdateCisScanConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateCisScanConfigurationResponse {
+        return try await self.client.execute(
+            operation: "UpdateCisScanConfiguration", 
+            path: "/cis/scan-configuration/update", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates setting configurations for your Amazon Inspector account. When you use this API as an Amazon Inspector delegated administrator this updates the setting for all accounts you manage. Member accounts in an organization cannot update this setting.
-    public func updateConfiguration(_ input: UpdateConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateConfigurationResponse> {
-        return self.client.execute(operation: "UpdateConfiguration", path: "/configuration/update", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateConfiguration(_ input: UpdateConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateConfigurationResponse {
+        return try await self.client.execute(
+            operation: "UpdateConfiguration", 
+            path: "/configuration/update", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Activates, deactivates Amazon Inspector deep inspection, or updates custom paths for your account.
+    @Sendable
+    public func updateEc2DeepInspectionConfiguration(_ input: UpdateEc2DeepInspectionConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateEc2DeepInspectionConfigurationResponse {
+        return try await self.client.execute(
+            operation: "UpdateEc2DeepInspectionConfiguration", 
+            path: "/ec2deepinspectionconfiguration/update", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates an encryption key. A ResourceNotFoundException means that an Amazon Web Services owned key is being used for encryption.
+    @Sendable
+    public func updateEncryptionKey(_ input: UpdateEncryptionKeyRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateEncryptionKeyResponse {
+        return try await self.client.execute(
+            operation: "UpdateEncryptionKey", 
+            path: "/encryptionkey/update", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Specifies the action that is to be applied to the findings that match the filter.
-    public func updateFilter(_ input: UpdateFilterRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateFilterResponse> {
-        return self.client.execute(operation: "UpdateFilter", path: "/filters/update", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateFilter(_ input: UpdateFilterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateFilterResponse {
+        return try await self.client.execute(
+            operation: "UpdateFilter", 
+            path: "/filters/update", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates the Amazon Inspector deep inspection custom paths for your organization. You must be an Amazon Inspector delegated administrator to use this API.
+    @Sendable
+    public func updateOrgEc2DeepInspectionConfiguration(_ input: UpdateOrgEc2DeepInspectionConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateOrgEc2DeepInspectionConfigurationResponse {
+        return try await self.client.execute(
+            operation: "UpdateOrgEc2DeepInspectionConfiguration", 
+            path: "/ec2deepinspectionconfiguration/org/update", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the configurations for your Amazon Inspector organization.
-    public func updateOrganizationConfiguration(_ input: UpdateOrganizationConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateOrganizationConfigurationResponse> {
-        return self.client.execute(operation: "UpdateOrganizationConfiguration", path: "/organizationconfiguration/update", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateOrganizationConfiguration(_ input: UpdateOrganizationConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateOrganizationConfigurationResponse {
+        return try await self.client.execute(
+            operation: "UpdateOrganizationConfiguration", 
+            path: "/organizationconfiguration/update", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Inspector2 {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Inspector2, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -235,481 +864,305 @@ extension Inspector2 {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Inspector2 {
-    ///  Lists the permissions an account has to configure Amazon Inspector.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listAccountPermissionsPaginator<Result>(
-        _ input: ListAccountPermissionsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListAccountPermissionsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listAccountPermissions,
-            inputKey: \ListAccountPermissionsRequest.nextToken,
-            outputKey: \ListAccountPermissionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves CIS scan result details.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func getCisScanResultDetailsPaginator(
+        _ input: GetCisScanResultDetailsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<GetCisScanResultDetailsRequest, GetCisScanResultDetailsResponse> {
+        return .init(
+            input: input,
+            command: self.getCisScanResultDetails,
+            inputKey: \GetCisScanResultDetailsRequest.nextToken,
+            outputKey: \GetCisScanResultDetailsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists the permissions an account has to configure Amazon Inspector.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listAccountPermissionsPaginator(
         _ input: ListAccountPermissionsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListAccountPermissionsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAccountPermissionsRequest, ListAccountPermissionsResponse> {
+        return .init(
             input: input,
             command: self.listAccountPermissions,
             inputKey: \ListAccountPermissionsRequest.nextToken,
             outputKey: \ListAccountPermissionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists coverage details for you environment.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listCoveragePaginator<Result>(
-        _ input: ListCoverageRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListCoverageResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listCoverage,
-            inputKey: \ListCoverageRequest.nextToken,
-            outputKey: \ListCoverageResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists CIS scan configurations.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listCisScanConfigurationsPaginator(
+        _ input: ListCisScanConfigurationsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCisScanConfigurationsRequest, ListCisScanConfigurationsResponse> {
+        return .init(
+            input: input,
+            command: self.listCisScanConfigurations,
+            inputKey: \ListCisScanConfigurationsRequest.nextToken,
+            outputKey: \ListCisScanConfigurationsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists scan results aggregated by checks.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listCisScanResultsAggregatedByChecksPaginator(
+        _ input: ListCisScanResultsAggregatedByChecksRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCisScanResultsAggregatedByChecksRequest, ListCisScanResultsAggregatedByChecksResponse> {
+        return .init(
+            input: input,
+            command: self.listCisScanResultsAggregatedByChecks,
+            inputKey: \ListCisScanResultsAggregatedByChecksRequest.nextToken,
+            outputKey: \ListCisScanResultsAggregatedByChecksResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists scan results aggregated by a target resource.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listCisScanResultsAggregatedByTargetResourcePaginator(
+        _ input: ListCisScanResultsAggregatedByTargetResourceRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCisScanResultsAggregatedByTargetResourceRequest, ListCisScanResultsAggregatedByTargetResourceResponse> {
+        return .init(
+            input: input,
+            command: self.listCisScanResultsAggregatedByTargetResource,
+            inputKey: \ListCisScanResultsAggregatedByTargetResourceRequest.nextToken,
+            outputKey: \ListCisScanResultsAggregatedByTargetResourceResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a CIS scan list.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listCisScansPaginator(
+        _ input: ListCisScansRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCisScansRequest, ListCisScansResponse> {
+        return .init(
+            input: input,
+            command: self.listCisScans,
+            inputKey: \ListCisScansRequest.nextToken,
+            outputKey: \ListCisScansResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists coverage details for you environment.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listCoveragePaginator(
         _ input: ListCoverageRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListCoverageResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCoverageRequest, ListCoverageResponse> {
+        return .init(
             input: input,
             command: self.listCoverage,
             inputKey: \ListCoverageRequest.nextToken,
             outputKey: \ListCoverageResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists Amazon Inspector coverage statistics for your environment.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listCoverageStatisticsPaginator<Result>(
-        _ input: ListCoverageStatisticsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListCoverageStatisticsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listCoverageStatistics,
-            inputKey: \ListCoverageStatisticsRequest.nextToken,
-            outputKey: \ListCoverageStatisticsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists Amazon Inspector coverage statistics for your environment.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listCoverageStatisticsPaginator(
         _ input: ListCoverageStatisticsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListCoverageStatisticsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListCoverageStatisticsRequest, ListCoverageStatisticsResponse> {
+        return .init(
             input: input,
             command: self.listCoverageStatistics,
             inputKey: \ListCoverageStatisticsRequest.nextToken,
             outputKey: \ListCoverageStatisticsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists information about the Amazon Inspector delegated administrator of your organization.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listDelegatedAdminAccountsPaginator<Result>(
-        _ input: ListDelegatedAdminAccountsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListDelegatedAdminAccountsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listDelegatedAdminAccounts,
-            inputKey: \ListDelegatedAdminAccountsRequest.nextToken,
-            outputKey: \ListDelegatedAdminAccountsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists information about the Amazon Inspector delegated administrator of your organization.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listDelegatedAdminAccountsPaginator(
         _ input: ListDelegatedAdminAccountsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListDelegatedAdminAccountsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListDelegatedAdminAccountsRequest, ListDelegatedAdminAccountsResponse> {
+        return .init(
             input: input,
             command: self.listDelegatedAdminAccounts,
             inputKey: \ListDelegatedAdminAccountsRequest.nextToken,
             outputKey: \ListDelegatedAdminAccountsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the filters associated with your account.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listFiltersPaginator<Result>(
-        _ input: ListFiltersRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListFiltersResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listFilters,
-            inputKey: \ListFiltersRequest.nextToken,
-            outputKey: \ListFiltersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the filters associated with your account.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listFiltersPaginator(
         _ input: ListFiltersRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListFiltersResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListFiltersRequest, ListFiltersResponse> {
+        return .init(
             input: input,
             command: self.listFilters,
             inputKey: \ListFiltersRequest.nextToken,
             outputKey: \ListFiltersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists aggregated finding data for your environment based on specific criteria.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listFindingAggregationsPaginator<Result>(
-        _ input: ListFindingAggregationsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListFindingAggregationsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listFindingAggregations,
-            inputKey: \ListFindingAggregationsRequest.nextToken,
-            outputKey: \ListFindingAggregationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists aggregated finding data for your environment based on specific criteria.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listFindingAggregationsPaginator(
         _ input: ListFindingAggregationsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListFindingAggregationsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListFindingAggregationsRequest, ListFindingAggregationsResponse> {
+        return .init(
             input: input,
             command: self.listFindingAggregations,
             inputKey: \ListFindingAggregationsRequest.nextToken,
             outputKey: \ListFindingAggregationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists findings for your environment.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listFindingsPaginator<Result>(
-        _ input: ListFindingsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListFindingsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listFindings,
-            inputKey: \ListFindingsRequest.nextToken,
-            outputKey: \ListFindingsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists findings for your environment.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listFindingsPaginator(
         _ input: ListFindingsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListFindingsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListFindingsRequest, ListFindingsResponse> {
+        return .init(
             input: input,
             command: self.listFindings,
             inputKey: \ListFindingsRequest.nextToken,
             outputKey: \ListFindingsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List members associated with the Amazon Inspector delegated administrator for your organization.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listMembersPaginator<Result>(
-        _ input: ListMembersRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListMembersResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listMembers,
-            inputKey: \ListMembersRequest.nextToken,
-            outputKey: \ListMembersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List members associated with the Amazon Inspector delegated administrator for your organization.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listMembersPaginator(
         _ input: ListMembersRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListMembersResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListMembersRequest, ListMembersResponse> {
+        return .init(
             input: input,
             command: self.listMembers,
             inputKey: \ListMembersRequest.nextToken,
             outputKey: \ListMembersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the Amazon Inspector usage totals over the last 30 days.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listUsageTotalsPaginator<Result>(
-        _ input: ListUsageTotalsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListUsageTotalsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listUsageTotals,
-            inputKey: \ListUsageTotalsRequest.nextToken,
-            outputKey: \ListUsageTotalsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the Amazon Inspector usage totals over the last 30 days.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listUsageTotalsPaginator(
         _ input: ListUsageTotalsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListUsageTotalsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListUsageTotalsRequest, ListUsageTotalsResponse> {
+        return .init(
             input: input,
             command: self.listUsageTotals,
             inputKey: \ListUsageTotalsRequest.nextToken,
             outputKey: \ListUsageTotalsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
+        )
+    }
+
+    /// Lists Amazon Inspector coverage details for a specific vulnerability.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func searchVulnerabilitiesPaginator(
+        _ input: SearchVulnerabilitiesRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<SearchVulnerabilitiesRequest, SearchVulnerabilitiesResponse> {
+        return .init(
+            input: input,
+            command: self.searchVulnerabilities,
+            inputKey: \SearchVulnerabilitiesRequest.nextToken,
+            outputKey: \SearchVulnerabilitiesResponse.nextToken,
+            logger: logger
+        )
+    }
+}
+
+extension Inspector2.GetCisScanResultDetailsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Inspector2.GetCisScanResultDetailsRequest {
+        return .init(
+            accountId: self.accountId,
+            filterCriteria: self.filterCriteria,
+            maxResults: self.maxResults,
+            nextToken: token,
+            scanArn: self.scanArn,
+            sortBy: self.sortBy,
+            sortOrder: self.sortOrder,
+            targetResourceId: self.targetResourceId
         )
     }
 }
@@ -720,6 +1173,57 @@ extension Inspector2.ListAccountPermissionsRequest: AWSPaginateToken {
             maxResults: self.maxResults,
             nextToken: token,
             service: self.service
+        )
+    }
+}
+
+extension Inspector2.ListCisScanConfigurationsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Inspector2.ListCisScanConfigurationsRequest {
+        return .init(
+            filterCriteria: self.filterCriteria,
+            maxResults: self.maxResults,
+            nextToken: token,
+            sortBy: self.sortBy,
+            sortOrder: self.sortOrder
+        )
+    }
+}
+
+extension Inspector2.ListCisScanResultsAggregatedByChecksRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Inspector2.ListCisScanResultsAggregatedByChecksRequest {
+        return .init(
+            filterCriteria: self.filterCriteria,
+            maxResults: self.maxResults,
+            nextToken: token,
+            scanArn: self.scanArn,
+            sortBy: self.sortBy,
+            sortOrder: self.sortOrder
+        )
+    }
+}
+
+extension Inspector2.ListCisScanResultsAggregatedByTargetResourceRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Inspector2.ListCisScanResultsAggregatedByTargetResourceRequest {
+        return .init(
+            filterCriteria: self.filterCriteria,
+            maxResults: self.maxResults,
+            nextToken: token,
+            scanArn: self.scanArn,
+            sortBy: self.sortBy,
+            sortOrder: self.sortOrder
+        )
+    }
+}
+
+extension Inspector2.ListCisScansRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Inspector2.ListCisScansRequest {
+        return .init(
+            detailLevel: self.detailLevel,
+            filterCriteria: self.filterCriteria,
+            maxResults: self.maxResults,
+            nextToken: token,
+            sortBy: self.sortBy,
+            sortOrder: self.sortOrder
         )
     }
 }
@@ -802,6 +1306,15 @@ extension Inspector2.ListUsageTotalsRequest: AWSPaginateToken {
         return .init(
             accountIds: self.accountIds,
             maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Inspector2.SearchVulnerabilitiesRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Inspector2.SearchVulnerabilitiesRequest {
+        return .init(
+            filterCriteria: self.filterCriteria,
             nextToken: token
         )
     }

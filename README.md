@@ -1,7 +1,7 @@
 # Soto for AWS
 
 [![sswg:incubating|104x20](https://img.shields.io/badge/sswg-incubating-blue.svg)](https://github.com/swift-server/sswg/blob/master/process/incubation.md#incubating-level)
-[<img src="http://img.shields.io/badge/swift-5.2-brightgreen.svg" alt="Swift 5.2" />](https://swift.org)
+[<img src="http://img.shields.io/badge/swift-5.6_to_5.8-brightgreen.svg" alt="Swift 5.4" />](https://swift.org)
 [<img src="https://github.com/soto-project/soto/workflows/CI/badge.svg" />](https://github.com/soto-project/soto/actions?query=workflow%3ACI)
 
 Soto is a Swift language SDK for Amazon Web Services (AWS), working on Linux, macOS and iOS. This library provides access to all AWS services. The service APIs it provides are a direct mapping of the REST APIs Amazon publishes for each of its services. Soto is a community supported project and is in no way affiliated with AWS.
@@ -56,7 +56,6 @@ Soto works on Linux, macOS and iOS. It requires v2.0 of [Swift NIO](https://gith
 |---------|-------|-------|--------|--------------------|--------|
 | 6.x     | 5.4 - | ✓     | 12.0 - | Ubuntu 18.04-22.04 | 4.0    |
 | 5.x     | 5.2 - | ✓     | 12.0 - | Ubuntu 18.04-20.04 | 4.0    |
-| 4.x     | 5.0 - | ✓     | 12.0 - | Ubuntu 18.04-20.04 | 4.0    |
 
 ## Configuring Credentials
 
@@ -73,10 +72,6 @@ You can find out more about credential providers [here](https://soto.codes/user-
 
 To use Soto you need to create an `AWSClient` and a service object for the AWS service you want to work with. The `AWSClient` provides all the communication with AWS and the service object provides the configuration and APIs for communicating with a specific AWS service. More can be found out about `AWSClient` [here](https://soto.codes/user-guides/awsclient.html) and the AWS service objects [here](https://soto.codes/user-guides/service-objects.html).
 
-Each Soto command returns a [Swift NIO](https://github.com/apple/swift-nio) `EventLoopFuture`. An `EventLoopFuture` _is not_ the response of the command, but rather a container object that will be populated with the response at a later point. In this manner calls to AWS do not block the main thread. It is recommended you familiarise yourself with the Swift NIO [documentation](https://apple.github.io/swift-nio/docs/current/NIO/), specifically [EventLoopFuture](https://apple.github.io/swift-nio/docs/current/NIO/Classes/EventLoopFuture.html) if you want to take full advantage of Soto.
-
-The recommended manner to interact with `EventLoopFutures` is chaining. The following function returns an `EventLoopFuture` that creates an S3 bucket, puts a file in the bucket, reads the file back from the bucket and finally prints the contents of the file. Each of these operations are chained together. The output of one being the input of the next.
-
 ```swift
 import SotoS3 //ensure this module is specified as a dependency in your package.swift
 
@@ -88,31 +83,27 @@ let client = AWSClient(
 )
 let s3 = S3(client: client, region: .uswest2)
 
-func createBucketPutGetObject() -> EventLoopFuture<S3.GetObjectOutput> {
+func createBucketPutGetObject() async throws -> S3.GetObjectOutput {
     // Create Bucket, Put an Object, Get the Object
     let createBucketRequest = S3.CreateBucketRequest(bucket: bucket)
-
-    s3.createBucket(createBucketRequest)
-        .flatMap { response -> EventLoopFuture<S3.PutObjectOutput> in
-            // Upload text file to the s3
-            let bodyData = "hello world".data(using: .utf8)!
-            let putObjectRequest = S3.PutObjectRequest(
-                acl: .publicRead,
-                body: bodyData,
-                bucket: bucket,
-                key: "hello.txt"
-            )
-            return s3.putObject(putObjectRequest)
-        }
-        .flatMap { response -> EventLoopFuture<S3.GetObjectOutput> in
-            let getObjectRequest = S3.GetObjectRequest(bucket: bucket, key: "hello.txt")
-            return s3.getObject(getObjectRequest)
-        }
-        .whenSuccess { response in
-            if let body = response.body {
-                print(String(data: body, encoding: .utf8)!)
-            }
+    _ = try await s3.createBucket(createBucketRequest)
+    // Upload text file to the s3
+    let bodyData = "hello world"
+    let putObjectRequest = S3.PutObjectRequest(
+        acl: .publicRead,
+        body: .string(bodyData),
+        bucket: bucket,
+        key: "hello.txt"
+    )
+    _ = try await s3.putObject(putObjectRequest)
+    // download text file just uploaded to S3
+    let getObjectRequest = S3.GetObjectRequest(bucket: bucket, key: "hello.txt")
+    let response = try await s3.getObject(getObjectRequest)
+    // print contents of response
+    if let body = response.body?.asString() {
+        print(body)
     }
+    return response
 }
 ```
 
@@ -152,8 +143,8 @@ Soto is released under the [Apache License, Version 2.0](http://www.apache.org/l
 ## Backers
 Support development of Soto by becoming a [backer](https://github.com/sponsors/adam-fowler)
 
-<a href="https://github.com/0xTim">
-    <img src="https://avatars1.githubusercontent.com/u/9938337?s=120" width="60px">
+<a href="https://github.com/brokenhandsio">
+    <img src="https://avatars1.githubusercontent.com/u/23179490?s=120" width="60px">
 </a>
 <a href="https://github.com/bitwit">
     <img src="https://avatars1.githubusercontent.com/u/707507?s=120" width="60px">
@@ -161,12 +152,12 @@ Support development of Soto by becoming a [backer](https://github.com/sponsors/a
 <a href="https://github.com/slashmo">
     <img src="https://avatars1.githubusercontent.com/u/16192401?s=120" width="60px">
 </a>
-<a href="https://github.com/zentered">
-    <img src="https://avatars1.githubusercontent.com/u/32449351?s=120" width="60px">
-</a>
 <a href="https://github.com/idelfonsog2">
     <img src="https://avatars1.githubusercontent.com/u/7195235?s=120" width="60px">
 </a>
-<a href="https://github.com/Yasumoto">
-    <img src="https://avatars1.githubusercontent.com/u/48383?s=120" width="60px">
+<a href="https://github.com/rausnitz">
+    <img src="https://avatars1.githubusercontent.com/u/6132143?s=120" width="60px">
+</a>
+<a href="https://github.com/florentmorin">
+    <img src="https://avatars1.githubusercontent.com/u/1071783?s=120" width="60px">
 </a>

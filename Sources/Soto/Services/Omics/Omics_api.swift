@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS Omics service.
 ///
-/// This is the Amazon Omics API Reference. For an introduction to the service, see What is Amazon Omics? in the Amazon Omics Developer Guide.
+/// This is the AWS HealthOmics API Reference. For an introduction to the service, see What is AWS HealthOmics? in the AWS HealthOmics User Guide.
 public struct Omics: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct Omics: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,364 +54,1195 @@ public struct Omics: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "omics",
+            serviceName: "Omics",
+            serviceIdentifier: "omics",
             serviceProtocol: .restjson,
             apiVersion: "2022-11-28",
             endpoint: endpoint,
+            serviceEndpoints: Self.serviceEndpoints,
+            variantEndpoints: Self.variantEndpoints,
             errorType: OmicsErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+    /// custom endpoints for regions
+    static var serviceEndpoints: [String: String] {[
+        "ap-southeast-1": "omics.ap-southeast-1.amazonaws.com",
+        "eu-central-1": "omics.eu-central-1.amazonaws.com",
+        "eu-west-1": "omics.eu-west-1.amazonaws.com",
+        "eu-west-2": "omics.eu-west-2.amazonaws.com",
+        "il-central-1": "omics.il-central-1.amazonaws.com",
+        "us-east-1": "omics.us-east-1.amazonaws.com",
+        "us-west-2": "omics.us-west-2.amazonaws.com"
+    ]}
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-east-1": "omics-fips.us-east-1.amazonaws.com",
+            "us-west-2": "omics-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
+    ///  Stops a multipart upload.
+    @Sendable
+    public func abortMultipartReadSetUpload(_ input: AbortMultipartReadSetUploadRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AbortMultipartReadSetUploadResponse {
+        return try await self.client.execute(
+            operation: "AbortMultipartReadSetUpload", 
+            path: "/sequencestore/{sequenceStoreId}/upload/{uploadId}/abort", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
+    }
+
+    /// Accepts a share for an analytics store.
+    @Sendable
+    public func acceptShare(_ input: AcceptShareRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AcceptShareResponse {
+        return try await self.client.execute(
+            operation: "AcceptShare", 
+            path: "/share/{shareId}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
     /// Deletes one or more read sets.
-    public func batchDeleteReadSet(_ input: BatchDeleteReadSetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<BatchDeleteReadSetResponse> {
-        return self.client.execute(operation: "BatchDeleteReadSet", path: "/sequencestore/{sequenceStoreId}/readset/batch/delete", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func batchDeleteReadSet(_ input: BatchDeleteReadSetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchDeleteReadSetResponse {
+        return try await self.client.execute(
+            operation: "BatchDeleteReadSet", 
+            path: "/sequencestore/{sequenceStoreId}/readset/batch/delete", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Cancels an annotation import job.
-    public func cancelAnnotationImportJob(_ input: CancelAnnotationImportRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CancelAnnotationImportResponse> {
-        return self.client.execute(operation: "CancelAnnotationImportJob", path: "/import/annotation/{jobId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func cancelAnnotationImportJob(_ input: CancelAnnotationImportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CancelAnnotationImportResponse {
+        return try await self.client.execute(
+            operation: "CancelAnnotationImportJob", 
+            path: "/import/annotation/{jobId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Cancels a run.
-    @discardableResult public func cancelRun(_ input: CancelRunRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "CancelRun", path: "/run/{id}/cancel", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func cancelRun(_ input: CancelRunRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "CancelRun", 
+            path: "/run/{id}/cancel", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Cancels a variant import job.
-    public func cancelVariantImportJob(_ input: CancelVariantImportRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CancelVariantImportResponse> {
-        return self.client.execute(operation: "CancelVariantImportJob", path: "/import/variant/{jobId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func cancelVariantImportJob(_ input: CancelVariantImportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CancelVariantImportResponse {
+        return try await self.client.execute(
+            operation: "CancelVariantImportJob", 
+            path: "/import/variant/{jobId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
+    ///  Concludes a multipart upload once you have uploaded all the components.
+    @Sendable
+    public func completeMultipartReadSetUpload(_ input: CompleteMultipartReadSetUploadRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CompleteMultipartReadSetUploadResponse {
+        return try await self.client.execute(
+            operation: "CompleteMultipartReadSetUpload", 
+            path: "/sequencestore/{sequenceStoreId}/upload/{uploadId}/complete", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "storage-", 
+            logger: logger
+        )
     }
 
     /// Creates an annotation store.
-    public func createAnnotationStore(_ input: CreateAnnotationStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateAnnotationStoreResponse> {
-        return self.client.execute(operation: "CreateAnnotationStore", path: "/annotationStore", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func createAnnotationStore(_ input: CreateAnnotationStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAnnotationStoreResponse {
+        return try await self.client.execute(
+            operation: "CreateAnnotationStore", 
+            path: "/annotationStore", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
+    /// Creates a new version of an annotation store.
+    @Sendable
+    public func createAnnotationStoreVersion(_ input: CreateAnnotationStoreVersionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAnnotationStoreVersionResponse {
+        return try await self.client.execute(
+            operation: "CreateAnnotationStoreVersion", 
+            path: "/annotationStore/{name}/version", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
+    ///  Begins a multipart read set upload.
+    @Sendable
+    public func createMultipartReadSetUpload(_ input: CreateMultipartReadSetUploadRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateMultipartReadSetUploadResponse {
+        return try await self.client.execute(
+            operation: "CreateMultipartReadSetUpload", 
+            path: "/sequencestore/{sequenceStoreId}/upload", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Creates a reference store.
-    public func createReferenceStore(_ input: CreateReferenceStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateReferenceStoreResponse> {
-        return self.client.execute(operation: "CreateReferenceStore", path: "/referencestore", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func createReferenceStore(_ input: CreateReferenceStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateReferenceStoreResponse {
+        return try await self.client.execute(
+            operation: "CreateReferenceStore", 
+            path: "/referencestore", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Creates a run group.
-    public func createRunGroup(_ input: CreateRunGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateRunGroupResponse> {
-        return self.client.execute(operation: "CreateRunGroup", path: "/runGroup", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func createRunGroup(_ input: CreateRunGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateRunGroupResponse {
+        return try await self.client.execute(
+            operation: "CreateRunGroup", 
+            path: "/runGroup", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Creates a sequence store.
-    public func createSequenceStore(_ input: CreateSequenceStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateSequenceStoreResponse> {
-        return self.client.execute(operation: "CreateSequenceStore", path: "/sequencestore", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func createSequenceStore(_ input: CreateSequenceStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateSequenceStoreResponse {
+        return try await self.client.execute(
+            operation: "CreateSequenceStore", 
+            path: "/sequencestore", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
+    }
+
+    ///  Creates a share offer that can be accepted outside the account by a subscriber. The share is created by the owner and accepted by the principal subscriber.
+    @Sendable
+    public func createShare(_ input: CreateShareRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateShareResponse {
+        return try await self.client.execute(
+            operation: "CreateShare", 
+            path: "/share", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Creates a variant store.
-    public func createVariantStore(_ input: CreateVariantStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateVariantStoreResponse> {
-        return self.client.execute(operation: "CreateVariantStore", path: "/variantStore", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func createVariantStore(_ input: CreateVariantStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateVariantStoreResponse {
+        return try await self.client.execute(
+            operation: "CreateVariantStore", 
+            path: "/variantStore", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Creates a workflow.
-    public func createWorkflow(_ input: CreateWorkflowRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateWorkflowResponse> {
-        return self.client.execute(operation: "CreateWorkflow", path: "/workflow", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func createWorkflow(_ input: CreateWorkflowRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateWorkflowResponse {
+        return try await self.client.execute(
+            operation: "CreateWorkflow", 
+            path: "/workflow", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Deletes an annotation store.
-    public func deleteAnnotationStore(_ input: DeleteAnnotationStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteAnnotationStoreResponse> {
-        return self.client.execute(operation: "DeleteAnnotationStore", path: "/annotationStore/{name}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteAnnotationStore(_ input: DeleteAnnotationStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteAnnotationStoreResponse {
+        return try await self.client.execute(
+            operation: "DeleteAnnotationStore", 
+            path: "/annotationStore/{name}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
+    /// Deletes one or multiple versions of an annotation store.
+    @Sendable
+    public func deleteAnnotationStoreVersions(_ input: DeleteAnnotationStoreVersionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteAnnotationStoreVersionsResponse {
+        return try await self.client.execute(
+            operation: "DeleteAnnotationStoreVersions", 
+            path: "/annotationStore/{name}/versions/delete", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Deletes a genome reference.
-    public func deleteReference(_ input: DeleteReferenceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteReferenceResponse> {
-        return self.client.execute(operation: "DeleteReference", path: "/referencestore/{referenceStoreId}/reference/{id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteReference(_ input: DeleteReferenceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteReferenceResponse {
+        return try await self.client.execute(
+            operation: "DeleteReference", 
+            path: "/referencestore/{referenceStoreId}/reference/{id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Deletes a genome reference store.
-    public func deleteReferenceStore(_ input: DeleteReferenceStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteReferenceStoreResponse> {
-        return self.client.execute(operation: "DeleteReferenceStore", path: "/referencestore/{id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteReferenceStore(_ input: DeleteReferenceStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteReferenceStoreResponse {
+        return try await self.client.execute(
+            operation: "DeleteReferenceStore", 
+            path: "/referencestore/{id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Deletes a workflow run.
-    @discardableResult public func deleteRun(_ input: DeleteRunRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteRun", path: "/run/{id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteRun(_ input: DeleteRunRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteRun", 
+            path: "/run/{id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Deletes a workflow run group.
-    @discardableResult public func deleteRunGroup(_ input: DeleteRunGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteRunGroup", path: "/runGroup/{id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteRunGroup(_ input: DeleteRunGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteRunGroup", 
+            path: "/runGroup/{id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Deletes a sequence store.
-    public func deleteSequenceStore(_ input: DeleteSequenceStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteSequenceStoreResponse> {
-        return self.client.execute(operation: "DeleteSequenceStore", path: "/sequencestore/{id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteSequenceStore(_ input: DeleteSequenceStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteSequenceStoreResponse {
+        return try await self.client.execute(
+            operation: "DeleteSequenceStore", 
+            path: "/sequencestore/{id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
+    }
+
+    ///  Deletes a share of an analytics store.
+    @Sendable
+    public func deleteShare(_ input: DeleteShareRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteShareResponse {
+        return try await self.client.execute(
+            operation: "DeleteShare", 
+            path: "/share/{shareId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Deletes a variant store.
-    public func deleteVariantStore(_ input: DeleteVariantStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteVariantStoreResponse> {
-        return self.client.execute(operation: "DeleteVariantStore", path: "/variantStore/{name}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteVariantStore(_ input: DeleteVariantStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteVariantStoreResponse {
+        return try await self.client.execute(
+            operation: "DeleteVariantStore", 
+            path: "/variantStore/{name}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Deletes a workflow.
-    @discardableResult public func deleteWorkflow(_ input: DeleteWorkflowRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteWorkflow", path: "/workflow/{id}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteWorkflow(_ input: DeleteWorkflowRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteWorkflow", 
+            path: "/workflow/{id}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Gets information about an annotation import job.
-    public func getAnnotationImportJob(_ input: GetAnnotationImportRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetAnnotationImportResponse> {
-        return self.client.execute(operation: "GetAnnotationImportJob", path: "/import/annotation/{jobId}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getAnnotationImportJob(_ input: GetAnnotationImportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAnnotationImportResponse {
+        return try await self.client.execute(
+            operation: "GetAnnotationImportJob", 
+            path: "/import/annotation/{jobId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Gets information about an annotation store.
-    public func getAnnotationStore(_ input: GetAnnotationStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetAnnotationStoreResponse> {
-        return self.client.execute(operation: "GetAnnotationStore", path: "/annotationStore/{name}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getAnnotationStore(_ input: GetAnnotationStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAnnotationStoreResponse {
+        return try await self.client.execute(
+            operation: "GetAnnotationStore", 
+            path: "/annotationStore/{name}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
+    /// Retrieves the metadata for an annotation store version.
+    @Sendable
+    public func getAnnotationStoreVersion(_ input: GetAnnotationStoreVersionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAnnotationStoreVersionResponse {
+        return try await self.client.execute(
+            operation: "GetAnnotationStoreVersion", 
+            path: "/annotationStore/{name}/version/{versionName}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Gets a file from a read set.
-    public func getReadSet(_ input: GetReadSetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReadSetResponse> {
-        return self.client.execute(operation: "GetReadSet", path: "/sequencestore/{sequenceStoreId}/readset/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReadSet(_ input: GetReadSetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReadSetResponse {
+        return try await self.client.execute(
+            operation: "GetReadSet", 
+            path: "/sequencestore/{sequenceStoreId}/readset/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "storage-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a read set activation job.
-    public func getReadSetActivationJob(_ input: GetReadSetActivationJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReadSetActivationJobResponse> {
-        return self.client.execute(operation: "GetReadSetActivationJob", path: "/sequencestore/{sequenceStoreId}/activationjob/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReadSetActivationJob(_ input: GetReadSetActivationJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReadSetActivationJobResponse {
+        return try await self.client.execute(
+            operation: "GetReadSetActivationJob", 
+            path: "/sequencestore/{sequenceStoreId}/activationjob/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a read set export job.
-    public func getReadSetExportJob(_ input: GetReadSetExportJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReadSetExportJobResponse> {
-        return self.client.execute(operation: "GetReadSetExportJob", path: "/sequencestore/{sequenceStoreId}/exportjob/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReadSetExportJob(_ input: GetReadSetExportJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReadSetExportJobResponse {
+        return try await self.client.execute(
+            operation: "GetReadSetExportJob", 
+            path: "/sequencestore/{sequenceStoreId}/exportjob/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a read set import job.
-    public func getReadSetImportJob(_ input: GetReadSetImportJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReadSetImportJobResponse> {
-        return self.client.execute(operation: "GetReadSetImportJob", path: "/sequencestore/{sequenceStoreId}/importjob/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReadSetImportJob(_ input: GetReadSetImportJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReadSetImportJobResponse {
+        return try await self.client.execute(
+            operation: "GetReadSetImportJob", 
+            path: "/sequencestore/{sequenceStoreId}/importjob/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Gets details about a read set.
-    public func getReadSetMetadata(_ input: GetReadSetMetadataRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReadSetMetadataResponse> {
-        return self.client.execute(operation: "GetReadSetMetadata", path: "/sequencestore/{sequenceStoreId}/readset/{id}/metadata", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReadSetMetadata(_ input: GetReadSetMetadataRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReadSetMetadataResponse {
+        return try await self.client.execute(
+            operation: "GetReadSetMetadata", 
+            path: "/sequencestore/{sequenceStoreId}/readset/{id}/metadata", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Gets a reference file.
-    public func getReference(_ input: GetReferenceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReferenceResponse> {
-        return self.client.execute(operation: "GetReference", path: "/referencestore/{referenceStoreId}/reference/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReference(_ input: GetReferenceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReferenceResponse {
+        return try await self.client.execute(
+            operation: "GetReference", 
+            path: "/referencestore/{referenceStoreId}/reference/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "storage-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a reference import job.
-    public func getReferenceImportJob(_ input: GetReferenceImportJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReferenceImportJobResponse> {
-        return self.client.execute(operation: "GetReferenceImportJob", path: "/referencestore/{referenceStoreId}/importjob/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReferenceImportJob(_ input: GetReferenceImportJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReferenceImportJobResponse {
+        return try await self.client.execute(
+            operation: "GetReferenceImportJob", 
+            path: "/referencestore/{referenceStoreId}/importjob/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a genome reference's metadata.
-    public func getReferenceMetadata(_ input: GetReferenceMetadataRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReferenceMetadataResponse> {
-        return self.client.execute(operation: "GetReferenceMetadata", path: "/referencestore/{referenceStoreId}/reference/{id}/metadata", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReferenceMetadata(_ input: GetReferenceMetadataRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReferenceMetadataResponse {
+        return try await self.client.execute(
+            operation: "GetReferenceMetadata", 
+            path: "/referencestore/{referenceStoreId}/reference/{id}/metadata", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a reference store.
-    public func getReferenceStore(_ input: GetReferenceStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetReferenceStoreResponse> {
-        return self.client.execute(operation: "GetReferenceStore", path: "/referencestore/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getReferenceStore(_ input: GetReferenceStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetReferenceStoreResponse {
+        return try await self.client.execute(
+            operation: "GetReferenceStore", 
+            path: "/referencestore/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a workflow run.
-    public func getRun(_ input: GetRunRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetRunResponse> {
-        return self.client.execute(operation: "GetRun", path: "/run/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getRun(_ input: GetRunRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetRunResponse {
+        return try await self.client.execute(
+            operation: "GetRun", 
+            path: "/run/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a workflow run group.
-    public func getRunGroup(_ input: GetRunGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetRunGroupResponse> {
-        return self.client.execute(operation: "GetRunGroup", path: "/runGroup/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getRunGroup(_ input: GetRunGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetRunGroupResponse {
+        return try await self.client.execute(
+            operation: "GetRunGroup", 
+            path: "/runGroup/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a workflow run task.
-    public func getRunTask(_ input: GetRunTaskRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetRunTaskResponse> {
-        return self.client.execute(operation: "GetRunTask", path: "/run/{id}/task/{taskId}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getRunTask(_ input: GetRunTaskRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetRunTaskResponse {
+        return try await self.client.execute(
+            operation: "GetRunTask", 
+            path: "/run/{id}/task/{taskId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a sequence store.
-    public func getSequenceStore(_ input: GetSequenceStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetSequenceStoreResponse> {
-        return self.client.execute(operation: "GetSequenceStore", path: "/sequencestore/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getSequenceStore(_ input: GetSequenceStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetSequenceStoreResponse {
+        return try await self.client.execute(
+            operation: "GetSequenceStore", 
+            path: "/sequencestore/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
+    }
+
+    ///  Retrieves the metadata for a share.
+    @Sendable
+    public func getShare(_ input: GetShareRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetShareResponse {
+        return try await self.client.execute(
+            operation: "GetShare", 
+            path: "/share/{shareId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a variant import job.
-    public func getVariantImportJob(_ input: GetVariantImportRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetVariantImportResponse> {
-        return self.client.execute(operation: "GetVariantImportJob", path: "/import/variant/{jobId}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getVariantImportJob(_ input: GetVariantImportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetVariantImportResponse {
+        return try await self.client.execute(
+            operation: "GetVariantImportJob", 
+            path: "/import/variant/{jobId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a variant store.
-    public func getVariantStore(_ input: GetVariantStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetVariantStoreResponse> {
-        return self.client.execute(operation: "GetVariantStore", path: "/variantStore/{name}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getVariantStore(_ input: GetVariantStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetVariantStoreResponse {
+        return try await self.client.execute(
+            operation: "GetVariantStore", 
+            path: "/variantStore/{name}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a workflow.
-    public func getWorkflow(_ input: GetWorkflowRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetWorkflowResponse> {
-        return self.client.execute(operation: "GetWorkflow", path: "/workflow/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func getWorkflow(_ input: GetWorkflowRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetWorkflowResponse {
+        return try await self.client.execute(
+            operation: "GetWorkflow", 
+            path: "/workflow/{id}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of annotation import jobs.
-    public func listAnnotationImportJobs(_ input: ListAnnotationImportJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListAnnotationImportJobsResponse> {
-        return self.client.execute(operation: "ListAnnotationImportJobs", path: "/import/annotations", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listAnnotationImportJobs(_ input: ListAnnotationImportJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAnnotationImportJobsResponse {
+        return try await self.client.execute(
+            operation: "ListAnnotationImportJobs", 
+            path: "/import/annotations", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
+    /// Lists the versions of an annotation store.
+    @Sendable
+    public func listAnnotationStoreVersions(_ input: ListAnnotationStoreVersionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAnnotationStoreVersionsResponse {
+        return try await self.client.execute(
+            operation: "ListAnnotationStoreVersions", 
+            path: "/annotationStore/{name}/versions", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of annotation stores.
-    public func listAnnotationStores(_ input: ListAnnotationStoresRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListAnnotationStoresResponse> {
-        return self.client.execute(operation: "ListAnnotationStores", path: "/annotationStores", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listAnnotationStores(_ input: ListAnnotationStoresRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAnnotationStoresResponse {
+        return try await self.client.execute(
+            operation: "ListAnnotationStores", 
+            path: "/annotationStores", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
+    ///  Lists multipart read set uploads and for in progress uploads. Once the upload is completed, a read set is created and the upload will no longer be returned in the respone.
+    @Sendable
+    public func listMultipartReadSetUploads(_ input: ListMultipartReadSetUploadsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListMultipartReadSetUploadsResponse {
+        return try await self.client.execute(
+            operation: "ListMultipartReadSetUploads", 
+            path: "/sequencestore/{sequenceStoreId}/uploads", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of read set activation jobs.
-    public func listReadSetActivationJobs(_ input: ListReadSetActivationJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListReadSetActivationJobsResponse> {
-        return self.client.execute(operation: "ListReadSetActivationJobs", path: "/sequencestore/{sequenceStoreId}/activationjobs", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listReadSetActivationJobs(_ input: ListReadSetActivationJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReadSetActivationJobsResponse {
+        return try await self.client.execute(
+            operation: "ListReadSetActivationJobs", 
+            path: "/sequencestore/{sequenceStoreId}/activationjobs", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of read set export jobs.
-    public func listReadSetExportJobs(_ input: ListReadSetExportJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListReadSetExportJobsResponse> {
-        return self.client.execute(operation: "ListReadSetExportJobs", path: "/sequencestore/{sequenceStoreId}/exportjobs", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listReadSetExportJobs(_ input: ListReadSetExportJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReadSetExportJobsResponse {
+        return try await self.client.execute(
+            operation: "ListReadSetExportJobs", 
+            path: "/sequencestore/{sequenceStoreId}/exportjobs", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of read set import jobs.
-    public func listReadSetImportJobs(_ input: ListReadSetImportJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListReadSetImportJobsResponse> {
-        return self.client.execute(operation: "ListReadSetImportJobs", path: "/sequencestore/{sequenceStoreId}/importjobs", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listReadSetImportJobs(_ input: ListReadSetImportJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReadSetImportJobsResponse {
+        return try await self.client.execute(
+            operation: "ListReadSetImportJobs", 
+            path: "/sequencestore/{sequenceStoreId}/importjobs", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
+    }
+
+    ///  This operation will list all parts in a requested multipart upload for a sequence store.
+    @Sendable
+    public func listReadSetUploadParts(_ input: ListReadSetUploadPartsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReadSetUploadPartsResponse {
+        return try await self.client.execute(
+            operation: "ListReadSetUploadParts", 
+            path: "/sequencestore/{sequenceStoreId}/upload/{uploadId}/parts", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of read sets.
-    public func listReadSets(_ input: ListReadSetsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListReadSetsResponse> {
-        return self.client.execute(operation: "ListReadSets", path: "/sequencestore/{sequenceStoreId}/readsets", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listReadSets(_ input: ListReadSetsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReadSetsResponse {
+        return try await self.client.execute(
+            operation: "ListReadSets", 
+            path: "/sequencestore/{sequenceStoreId}/readsets", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of reference import jobs.
-    public func listReferenceImportJobs(_ input: ListReferenceImportJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListReferenceImportJobsResponse> {
-        return self.client.execute(operation: "ListReferenceImportJobs", path: "/referencestore/{referenceStoreId}/importjobs", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listReferenceImportJobs(_ input: ListReferenceImportJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReferenceImportJobsResponse {
+        return try await self.client.execute(
+            operation: "ListReferenceImportJobs", 
+            path: "/referencestore/{referenceStoreId}/importjobs", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of reference stores.
-    public func listReferenceStores(_ input: ListReferenceStoresRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListReferenceStoresResponse> {
-        return self.client.execute(operation: "ListReferenceStores", path: "/referencestores", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listReferenceStores(_ input: ListReferenceStoresRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReferenceStoresResponse {
+        return try await self.client.execute(
+            operation: "ListReferenceStores", 
+            path: "/referencestores", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of references.
-    public func listReferences(_ input: ListReferencesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListReferencesResponse> {
-        return self.client.execute(operation: "ListReferences", path: "/referencestore/{referenceStoreId}/references", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listReferences(_ input: ListReferencesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReferencesResponse {
+        return try await self.client.execute(
+            operation: "ListReferences", 
+            path: "/referencestore/{referenceStoreId}/references", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of run groups.
-    public func listRunGroups(_ input: ListRunGroupsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListRunGroupsResponse> {
-        return self.client.execute(operation: "ListRunGroups", path: "/runGroup", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listRunGroups(_ input: ListRunGroupsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRunGroupsResponse {
+        return try await self.client.execute(
+            operation: "ListRunGroups", 
+            path: "/runGroup", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of tasks for a run.
-    public func listRunTasks(_ input: ListRunTasksRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListRunTasksResponse> {
-        return self.client.execute(operation: "ListRunTasks", path: "/run/{id}/task", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listRunTasks(_ input: ListRunTasksRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRunTasksResponse {
+        return try await self.client.execute(
+            operation: "ListRunTasks", 
+            path: "/run/{id}/task", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of runs.
-    public func listRuns(_ input: ListRunsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListRunsResponse> {
-        return self.client.execute(operation: "ListRuns", path: "/run", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listRuns(_ input: ListRunsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRunsResponse {
+        return try await self.client.execute(
+            operation: "ListRuns", 
+            path: "/run", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of sequence stores.
-    public func listSequenceStores(_ input: ListSequenceStoresRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListSequenceStoresResponse> {
-        return self.client.execute(operation: "ListSequenceStores", path: "/sequencestores", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listSequenceStores(_ input: ListSequenceStoresRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListSequenceStoresResponse {
+        return try await self.client.execute(
+            operation: "ListSequenceStores", 
+            path: "/sequencestores", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
+    }
+
+    ///  Lists all shares associated with an account.
+    @Sendable
+    public func listShares(_ input: ListSharesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListSharesResponse {
+        return try await self.client.execute(
+            operation: "ListShares", 
+            path: "/shares", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of tags for a resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{resourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "tags-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "tags-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of variant import jobs.
-    public func listVariantImportJobs(_ input: ListVariantImportJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListVariantImportJobsResponse> {
-        return self.client.execute(operation: "ListVariantImportJobs", path: "/import/variants", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listVariantImportJobs(_ input: ListVariantImportJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListVariantImportJobsResponse {
+        return try await self.client.execute(
+            operation: "ListVariantImportJobs", 
+            path: "/import/variants", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of variant stores.
-    public func listVariantStores(_ input: ListVariantStoresRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListVariantStoresResponse> {
-        return self.client.execute(operation: "ListVariantStores", path: "/variantStores", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listVariantStores(_ input: ListVariantStoresRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListVariantStoresResponse {
+        return try await self.client.execute(
+            operation: "ListVariantStores", 
+            path: "/variantStores", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Retrieves a list of workflows.
-    public func listWorkflows(_ input: ListWorkflowsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListWorkflowsResponse> {
-        return self.client.execute(operation: "ListWorkflows", path: "/workflow", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func listWorkflows(_ input: ListWorkflowsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListWorkflowsResponse {
+        return try await self.client.execute(
+            operation: "ListWorkflows", 
+            path: "/workflow", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Starts an annotation import job.
-    public func startAnnotationImportJob(_ input: StartAnnotationImportRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartAnnotationImportResponse> {
-        return self.client.execute(operation: "StartAnnotationImportJob", path: "/import/annotation", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func startAnnotationImportJob(_ input: StartAnnotationImportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartAnnotationImportResponse {
+        return try await self.client.execute(
+            operation: "StartAnnotationImportJob", 
+            path: "/import/annotation", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
-    /// Starts a read set activation job.
-    public func startReadSetActivationJob(_ input: StartReadSetActivationJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartReadSetActivationJobResponse> {
-        return self.client.execute(operation: "StartReadSetActivationJob", path: "/sequencestore/{sequenceStoreId}/activationjob", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    /// Activates an archived read set. To reduce storage charges, Amazon Omics archives unused read sets after 30 days.
+    @Sendable
+    public func startReadSetActivationJob(_ input: StartReadSetActivationJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartReadSetActivationJobResponse {
+        return try await self.client.execute(
+            operation: "StartReadSetActivationJob", 
+            path: "/sequencestore/{sequenceStoreId}/activationjob", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
-    /// Starts a read set export job.
-    public func startReadSetExportJob(_ input: StartReadSetExportJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartReadSetExportJobResponse> {
-        return self.client.execute(operation: "StartReadSetExportJob", path: "/sequencestore/{sequenceStoreId}/exportjob", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    /// Exports a read set to Amazon S3.
+    @Sendable
+    public func startReadSetExportJob(_ input: StartReadSetExportJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartReadSetExportJobResponse {
+        return try await self.client.execute(
+            operation: "StartReadSetExportJob", 
+            path: "/sequencestore/{sequenceStoreId}/exportjob", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Starts a read set import job.
-    public func startReadSetImportJob(_ input: StartReadSetImportJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartReadSetImportJobResponse> {
-        return self.client.execute(operation: "StartReadSetImportJob", path: "/sequencestore/{sequenceStoreId}/importjob", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func startReadSetImportJob(_ input: StartReadSetImportJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartReadSetImportJobResponse {
+        return try await self.client.execute(
+            operation: "StartReadSetImportJob", 
+            path: "/sequencestore/{sequenceStoreId}/importjob", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
     /// Starts a reference import job.
-    public func startReferenceImportJob(_ input: StartReferenceImportJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartReferenceImportJobResponse> {
-        return self.client.execute(operation: "StartReferenceImportJob", path: "/referencestore/{referenceStoreId}/importjob", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "control-storage-", logger: logger, on: eventLoop)
+    @Sendable
+    public func startReferenceImportJob(_ input: StartReferenceImportJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartReferenceImportJobResponse {
+        return try await self.client.execute(
+            operation: "StartReferenceImportJob", 
+            path: "/referencestore/{referenceStoreId}/importjob", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "control-storage-", 
+            logger: logger
+        )
     }
 
-    /// Starts a run.
-    public func startRun(_ input: StartRunRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartRunResponse> {
-        return self.client.execute(operation: "StartRun", path: "/run", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    /// Starts a workflow run. To duplicate a run, specify the run's ID and a role ARN. The remaining parameters are copied from the previous run. The total number of runs in your account is subject to a quota per Region. To avoid needing to delete runs manually, you can set the retention mode to REMOVE. Runs with this setting are deleted automatically when the run quoata is exceeded.
+    @Sendable
+    public func startRun(_ input: StartRunRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartRunResponse {
+        return try await self.client.execute(
+            operation: "StartRun", 
+            path: "/run", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Starts a variant import job.
-    public func startVariantImportJob(_ input: StartVariantImportRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartVariantImportResponse> {
-        return self.client.execute(operation: "StartVariantImportJob", path: "/import/variant", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func startVariantImportJob(_ input: StartVariantImportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartVariantImportResponse {
+        return try await self.client.execute(
+            operation: "StartVariantImportJob", 
+            path: "/import/variant", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Tags a resource.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{resourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "tags-", logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "tags-", 
+            logger: logger
+        )
     }
 
     /// Removes tags from a resource.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{resourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, hostPrefix: "tags-", logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "tags-", 
+            logger: logger
+        )
     }
 
     /// Updates an annotation store.
-    public func updateAnnotationStore(_ input: UpdateAnnotationStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateAnnotationStoreResponse> {
-        return self.client.execute(operation: "UpdateAnnotationStore", path: "/annotationStore/{name}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateAnnotationStore(_ input: UpdateAnnotationStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateAnnotationStoreResponse {
+        return try await self.client.execute(
+            operation: "UpdateAnnotationStore", 
+            path: "/annotationStore/{name}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
+    }
+
+    /// Updates the description of an annotation store version.
+    @Sendable
+    public func updateAnnotationStoreVersion(_ input: UpdateAnnotationStoreVersionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateAnnotationStoreVersionResponse {
+        return try await self.client.execute(
+            operation: "UpdateAnnotationStoreVersion", 
+            path: "/annotationStore/{name}/version/{versionName}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Updates a run group.
-    @discardableResult public func updateRunGroup(_ input: UpdateRunGroupRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "UpdateRunGroup", path: "/runGroup/{id}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateRunGroup(_ input: UpdateRunGroupRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "UpdateRunGroup", 
+            path: "/runGroup/{id}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
     /// Updates a variant store.
-    public func updateVariantStore(_ input: UpdateVariantStoreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateVariantStoreResponse> {
-        return self.client.execute(operation: "UpdateVariantStore", path: "/variantStore/{name}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "analytics-", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateVariantStore(_ input: UpdateVariantStoreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateVariantStoreResponse {
+        return try await self.client.execute(
+            operation: "UpdateVariantStore", 
+            path: "/variantStore/{name}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "analytics-", 
+            logger: logger
+        )
     }
 
     /// Updates a workflow.
-    @discardableResult public func updateWorkflow(_ input: UpdateWorkflowRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "UpdateWorkflow", path: "/workflow/{id}", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "workflows-", logger: logger, on: eventLoop)
+    @Sendable
+    public func updateWorkflow(_ input: UpdateWorkflowRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "UpdateWorkflow", 
+            path: "/workflow/{id}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "workflows-", 
+            logger: logger
+        )
     }
 
-    // MARK: Streaming API Calls
-
-    /// Gets a file from a read set.
-    public func getReadSetStreaming(_ input: GetReadSetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil, _ stream: @escaping (ByteBuffer, EventLoop) -> EventLoopFuture<Void>) -> EventLoopFuture<GetReadSetResponse> {
-        return self.client.execute(operation: "GetReadSet", path: "/sequencestore/{sequenceStoreId}/readset/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "storage-", logger: logger, on: eventLoop, stream: stream)
-    }
-
-    /// Gets a reference file.
-    public func getReferenceStreaming(_ input: GetReferenceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil, _ stream: @escaping (ByteBuffer, EventLoop) -> EventLoopFuture<Void>) -> EventLoopFuture<GetReferenceResponse> {
-        return self.client.execute(operation: "GetReference", path: "/referencestore/{referenceStoreId}/reference/{id}", httpMethod: .GET, serviceConfig: self.config, input: input, hostPrefix: "storage-", logger: logger, on: eventLoop, stream: stream)
+    ///  This operation uploads a specific part of a read set. If you upload a new part using a previously used part number, the previously uploaded part will be overwritten.
+    @Sendable
+    public func uploadReadSetPart(_ input: UploadReadSetPartRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UploadReadSetPartResponse {
+        return try await self.client.execute(
+            operation: "UploadReadSetPart", 
+            path: "/sequencestore/{sequenceStoreId}/upload/{uploadId}/part", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "storage-", 
+            logger: logger
+        )
     }
 }
 
 extension Omics {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Omics, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -417,852 +1252,385 @@ extension Omics {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Omics {
-    ///  Retrieves a list of annotation import jobs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listAnnotationImportJobsPaginator<Result>(
-        _ input: ListAnnotationImportJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListAnnotationImportJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listAnnotationImportJobs,
-            inputKey: \ListAnnotationImportJobsRequest.nextToken,
-            outputKey: \ListAnnotationImportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of annotation import jobs.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listAnnotationImportJobsPaginator(
         _ input: ListAnnotationImportJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListAnnotationImportJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAnnotationImportJobsRequest, ListAnnotationImportJobsResponse> {
+        return .init(
             input: input,
             command: self.listAnnotationImportJobs,
             inputKey: \ListAnnotationImportJobsRequest.nextToken,
             outputKey: \ListAnnotationImportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of annotation stores.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listAnnotationStoresPaginator<Result>(
-        _ input: ListAnnotationStoresRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListAnnotationStoresResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listAnnotationStores,
-            inputKey: \ListAnnotationStoresRequest.nextToken,
-            outputKey: \ListAnnotationStoresResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the versions of an annotation store.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listAnnotationStoreVersionsPaginator(
+        _ input: ListAnnotationStoreVersionsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAnnotationStoreVersionsRequest, ListAnnotationStoreVersionsResponse> {
+        return .init(
+            input: input,
+            command: self.listAnnotationStoreVersions,
+            inputKey: \ListAnnotationStoreVersionsRequest.nextToken,
+            outputKey: \ListAnnotationStoreVersionsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Retrieves a list of annotation stores.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listAnnotationStoresPaginator(
         _ input: ListAnnotationStoresRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListAnnotationStoresResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAnnotationStoresRequest, ListAnnotationStoresResponse> {
+        return .init(
             input: input,
             command: self.listAnnotationStores,
             inputKey: \ListAnnotationStoresRequest.nextToken,
             outputKey: \ListAnnotationStoresResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of read set activation jobs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listReadSetActivationJobsPaginator<Result>(
-        _ input: ListReadSetActivationJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListReadSetActivationJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listReadSetActivationJobs,
-            inputKey: \ListReadSetActivationJobsRequest.nextToken,
-            outputKey: \ListReadSetActivationJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    ///  Lists multipart read set uploads and for in progress uploads. Once the upload is completed, a read set is created and the upload will no longer be returned in the respone.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listMultipartReadSetUploadsPaginator(
+        _ input: ListMultipartReadSetUploadsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListMultipartReadSetUploadsRequest, ListMultipartReadSetUploadsResponse> {
+        return .init(
+            input: input,
+            command: self.listMultipartReadSetUploads,
+            inputKey: \ListMultipartReadSetUploadsRequest.nextToken,
+            outputKey: \ListMultipartReadSetUploadsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Retrieves a list of read set activation jobs.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listReadSetActivationJobsPaginator(
         _ input: ListReadSetActivationJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListReadSetActivationJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReadSetActivationJobsRequest, ListReadSetActivationJobsResponse> {
+        return .init(
             input: input,
             command: self.listReadSetActivationJobs,
             inputKey: \ListReadSetActivationJobsRequest.nextToken,
             outputKey: \ListReadSetActivationJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of read set export jobs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listReadSetExportJobsPaginator<Result>(
-        _ input: ListReadSetExportJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListReadSetExportJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listReadSetExportJobs,
-            inputKey: \ListReadSetExportJobsRequest.nextToken,
-            outputKey: \ListReadSetExportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of read set export jobs.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listReadSetExportJobsPaginator(
         _ input: ListReadSetExportJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListReadSetExportJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReadSetExportJobsRequest, ListReadSetExportJobsResponse> {
+        return .init(
             input: input,
             command: self.listReadSetExportJobs,
             inputKey: \ListReadSetExportJobsRequest.nextToken,
             outputKey: \ListReadSetExportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of read set import jobs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listReadSetImportJobsPaginator<Result>(
-        _ input: ListReadSetImportJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListReadSetImportJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listReadSetImportJobs,
-            inputKey: \ListReadSetImportJobsRequest.nextToken,
-            outputKey: \ListReadSetImportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of read set import jobs.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listReadSetImportJobsPaginator(
         _ input: ListReadSetImportJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListReadSetImportJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReadSetImportJobsRequest, ListReadSetImportJobsResponse> {
+        return .init(
             input: input,
             command: self.listReadSetImportJobs,
             inputKey: \ListReadSetImportJobsRequest.nextToken,
             outputKey: \ListReadSetImportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of read sets.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listReadSetsPaginator<Result>(
-        _ input: ListReadSetsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListReadSetsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listReadSets,
-            inputKey: \ListReadSetsRequest.nextToken,
-            outputKey: \ListReadSetsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    ///  This operation will list all parts in a requested multipart upload for a sequence store.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listReadSetUploadPartsPaginator(
+        _ input: ListReadSetUploadPartsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReadSetUploadPartsRequest, ListReadSetUploadPartsResponse> {
+        return .init(
+            input: input,
+            command: self.listReadSetUploadParts,
+            inputKey: \ListReadSetUploadPartsRequest.nextToken,
+            outputKey: \ListReadSetUploadPartsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Retrieves a list of read sets.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listReadSetsPaginator(
         _ input: ListReadSetsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListReadSetsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReadSetsRequest, ListReadSetsResponse> {
+        return .init(
             input: input,
             command: self.listReadSets,
             inputKey: \ListReadSetsRequest.nextToken,
             outputKey: \ListReadSetsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of reference import jobs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listReferenceImportJobsPaginator<Result>(
-        _ input: ListReferenceImportJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListReferenceImportJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listReferenceImportJobs,
-            inputKey: \ListReferenceImportJobsRequest.nextToken,
-            outputKey: \ListReferenceImportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of reference import jobs.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listReferenceImportJobsPaginator(
         _ input: ListReferenceImportJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListReferenceImportJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReferenceImportJobsRequest, ListReferenceImportJobsResponse> {
+        return .init(
             input: input,
             command: self.listReferenceImportJobs,
             inputKey: \ListReferenceImportJobsRequest.nextToken,
             outputKey: \ListReferenceImportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of reference stores.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listReferenceStoresPaginator<Result>(
-        _ input: ListReferenceStoresRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListReferenceStoresResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listReferenceStores,
-            inputKey: \ListReferenceStoresRequest.nextToken,
-            outputKey: \ListReferenceStoresResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of reference stores.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listReferenceStoresPaginator(
         _ input: ListReferenceStoresRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListReferenceStoresResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReferenceStoresRequest, ListReferenceStoresResponse> {
+        return .init(
             input: input,
             command: self.listReferenceStores,
             inputKey: \ListReferenceStoresRequest.nextToken,
             outputKey: \ListReferenceStoresResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of references.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listReferencesPaginator<Result>(
-        _ input: ListReferencesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListReferencesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listReferences,
-            inputKey: \ListReferencesRequest.nextToken,
-            outputKey: \ListReferencesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of references.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listReferencesPaginator(
         _ input: ListReferencesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListReferencesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReferencesRequest, ListReferencesResponse> {
+        return .init(
             input: input,
             command: self.listReferences,
             inputKey: \ListReferencesRequest.nextToken,
             outputKey: \ListReferencesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of run groups.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listRunGroupsPaginator<Result>(
-        _ input: ListRunGroupsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListRunGroupsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listRunGroups,
-            inputKey: \ListRunGroupsRequest.startingToken,
-            outputKey: \ListRunGroupsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of run groups.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listRunGroupsPaginator(
         _ input: ListRunGroupsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListRunGroupsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRunGroupsRequest, ListRunGroupsResponse> {
+        return .init(
             input: input,
             command: self.listRunGroups,
             inputKey: \ListRunGroupsRequest.startingToken,
             outputKey: \ListRunGroupsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of tasks for a run.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listRunTasksPaginator<Result>(
-        _ input: ListRunTasksRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListRunTasksResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listRunTasks,
-            inputKey: \ListRunTasksRequest.startingToken,
-            outputKey: \ListRunTasksResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of tasks for a run.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listRunTasksPaginator(
         _ input: ListRunTasksRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListRunTasksResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRunTasksRequest, ListRunTasksResponse> {
+        return .init(
             input: input,
             command: self.listRunTasks,
             inputKey: \ListRunTasksRequest.startingToken,
             outputKey: \ListRunTasksResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of runs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listRunsPaginator<Result>(
-        _ input: ListRunsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListRunsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listRuns,
-            inputKey: \ListRunsRequest.startingToken,
-            outputKey: \ListRunsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of runs.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listRunsPaginator(
         _ input: ListRunsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListRunsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRunsRequest, ListRunsResponse> {
+        return .init(
             input: input,
             command: self.listRuns,
             inputKey: \ListRunsRequest.startingToken,
             outputKey: \ListRunsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of sequence stores.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listSequenceStoresPaginator<Result>(
-        _ input: ListSequenceStoresRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListSequenceStoresResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listSequenceStores,
-            inputKey: \ListSequenceStoresRequest.nextToken,
-            outputKey: \ListSequenceStoresResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of sequence stores.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listSequenceStoresPaginator(
         _ input: ListSequenceStoresRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListSequenceStoresResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListSequenceStoresRequest, ListSequenceStoresResponse> {
+        return .init(
             input: input,
             command: self.listSequenceStores,
             inputKey: \ListSequenceStoresRequest.nextToken,
             outputKey: \ListSequenceStoresResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of variant import jobs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listVariantImportJobsPaginator<Result>(
-        _ input: ListVariantImportJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListVariantImportJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listVariantImportJobs,
-            inputKey: \ListVariantImportJobsRequest.nextToken,
-            outputKey: \ListVariantImportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    ///  Lists all shares associated with an account.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listSharesPaginator(
+        _ input: ListSharesRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListSharesRequest, ListSharesResponse> {
+        return .init(
+            input: input,
+            command: self.listShares,
+            inputKey: \ListSharesRequest.nextToken,
+            outputKey: \ListSharesResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Retrieves a list of variant import jobs.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listVariantImportJobsPaginator(
         _ input: ListVariantImportJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListVariantImportJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListVariantImportJobsRequest, ListVariantImportJobsResponse> {
+        return .init(
             input: input,
             command: self.listVariantImportJobs,
             inputKey: \ListVariantImportJobsRequest.nextToken,
             outputKey: \ListVariantImportJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of variant stores.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listVariantStoresPaginator<Result>(
-        _ input: ListVariantStoresRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListVariantStoresResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listVariantStores,
-            inputKey: \ListVariantStoresRequest.nextToken,
-            outputKey: \ListVariantStoresResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of variant stores.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listVariantStoresPaginator(
         _ input: ListVariantStoresRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListVariantStoresResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListVariantStoresRequest, ListVariantStoresResponse> {
+        return .init(
             input: input,
             command: self.listVariantStores,
             inputKey: \ListVariantStoresRequest.nextToken,
             outputKey: \ListVariantStoresResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves a list of workflows.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listWorkflowsPaginator<Result>(
-        _ input: ListWorkflowsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListWorkflowsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listWorkflows,
-            inputKey: \ListWorkflowsRequest.startingToken,
-            outputKey: \ListWorkflowsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves a list of workflows.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listWorkflowsPaginator(
         _ input: ListWorkflowsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListWorkflowsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListWorkflowsRequest, ListWorkflowsResponse> {
+        return .init(
             input: input,
             command: self.listWorkflows,
             inputKey: \ListWorkflowsRequest.startingToken,
             outputKey: \ListWorkflowsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
@@ -1278,6 +1646,17 @@ extension Omics.ListAnnotationImportJobsRequest: AWSPaginateToken {
     }
 }
 
+extension Omics.ListAnnotationStoreVersionsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Omics.ListAnnotationStoreVersionsRequest {
+        return .init(
+            filter: self.filter,
+            maxResults: self.maxResults,
+            name: self.name,
+            nextToken: token
+        )
+    }
+}
+
 extension Omics.ListAnnotationStoresRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Omics.ListAnnotationStoresRequest {
         return .init(
@@ -1285,6 +1664,16 @@ extension Omics.ListAnnotationStoresRequest: AWSPaginateToken {
             ids: self.ids,
             maxResults: self.maxResults,
             nextToken: token
+        )
+    }
+}
+
+extension Omics.ListMultipartReadSetUploadsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Omics.ListMultipartReadSetUploadsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token,
+            sequenceStoreId: self.sequenceStoreId
         )
     }
 }
@@ -1318,6 +1707,19 @@ extension Omics.ListReadSetImportJobsRequest: AWSPaginateToken {
             maxResults: self.maxResults,
             nextToken: token,
             sequenceStoreId: self.sequenceStoreId
+        )
+    }
+}
+
+extension Omics.ListReadSetUploadPartsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Omics.ListReadSetUploadPartsRequest {
+        return .init(
+            filter: self.filter,
+            maxResults: self.maxResults,
+            nextToken: token,
+            partSource: self.partSource,
+            sequenceStoreId: self.sequenceStoreId,
+            uploadId: self.uploadId
         )
     }
 }
@@ -1392,7 +1794,8 @@ extension Omics.ListRunsRequest: AWSPaginateToken {
             maxResults: self.maxResults,
             name: self.name,
             runGroupId: self.runGroupId,
-            startingToken: token
+            startingToken: token,
+            status: self.status
         )
     }
 }
@@ -1403,6 +1806,17 @@ extension Omics.ListSequenceStoresRequest: AWSPaginateToken {
             filter: self.filter,
             maxResults: self.maxResults,
             nextToken: token
+        )
+    }
+}
+
+extension Omics.ListSharesRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Omics.ListSharesRequest {
+        return .init(
+            filter: self.filter,
+            maxResults: self.maxResults,
+            nextToken: token,
+            resourceOwner: self.resourceOwner
         )
     }
 }
@@ -1442,14 +1856,13 @@ extension Omics.ListWorkflowsRequest: AWSPaginateToken {
 
 // MARK: Waiters
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Omics {
-    /// Wait until an annotation import is completed
     public func waitUntilAnnotationImportJobCreated(
         _ input: GetAnnotationImportRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .retry, matcher: try! JMESPathMatcher("status", expected: "SUBMITTED")),
@@ -1462,16 +1875,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getAnnotationImportJob
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until an annotation store is created
     public func waitUntilAnnotationStoreCreated(
         _ input: GetAnnotationStoreRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "ACTIVE")),
@@ -1483,16 +1894,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getAnnotationStore
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until an annotation store is deleted.
     public func waitUntilAnnotationStoreDeleted(
         _ input: GetAnnotationStoreRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "DELETED")),
@@ -1503,16 +1912,51 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getAnnotationStore
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a job is completed.
+    public func waitUntilAnnotationStoreVersionCreated(
+        _ input: GetAnnotationStoreVersionRequest,
+        maxWaitTime: TimeAmount? = nil,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
+        let waiter = AWSClient.Waiter(
+            acceptors: [
+                .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "ACTIVE")),
+                .init(state: .retry, matcher: try! JMESPathMatcher("status", expected: "CREATING")),
+                .init(state: .retry, matcher: try! JMESPathMatcher("status", expected: "UPDATING")),
+                .init(state: .failure, matcher: try! JMESPathMatcher("status", expected: "FAILED")),
+            ],
+            minDelayTime: .seconds(30),
+            maxDelayTime: .seconds(600),
+            command: self.getAnnotationStoreVersion
+        )
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
+    }
+
+    public func waitUntilAnnotationStoreVersionDeleted(
+        _ input: GetAnnotationStoreVersionRequest,
+        maxWaitTime: TimeAmount? = nil,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
+        let waiter = AWSClient.Waiter(
+            acceptors: [
+                .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "DELETED")),
+                .init(state: .success, matcher: AWSErrorCodeMatcher("ResourceNotFoundException")),
+                .init(state: .retry, matcher: try! JMESPathMatcher("status", expected: "DELETING")),
+            ],
+            minDelayTime: .seconds(30),
+            maxDelayTime: .seconds(600),
+            command: self.getAnnotationStoreVersion
+        )
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
+    }
+
     public func waitUntilReadSetActivationJobCompleted(
         _ input: GetReadSetActivationJobRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "COMPLETED")),
@@ -1527,16 +1971,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getReadSetActivationJob
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a job is completed.
     public func waitUntilReadSetExportJobCompleted(
         _ input: GetReadSetExportJobRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "COMPLETED")),
@@ -1551,16 +1993,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getReadSetExportJob
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a job is completed.
     public func waitUntilReadSetImportJobCompleted(
         _ input: GetReadSetImportJobRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "COMPLETED")),
@@ -1575,16 +2015,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getReadSetImportJob
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a job is completed.
     public func waitUntilReferenceImportJobCompleted(
         _ input: GetReferenceImportJobRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "COMPLETED")),
@@ -1599,16 +2037,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getReferenceImportJob
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a run is completed.
     public func waitUntilRunCompleted(
         _ input: GetRunRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "COMPLETED")),
@@ -1622,16 +2058,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getRun
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a run is running.
     public func waitUntilRunRunning(
         _ input: GetRunRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "RUNNING")),
@@ -1644,16 +2078,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getRun
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a task is completed.
     public func waitUntilTaskCompleted(
         _ input: GetRunTaskRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "COMPLETED")),
@@ -1667,16 +2099,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getRunTask
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a task is running.
     public func waitUntilTaskRunning(
         _ input: GetRunTaskRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "RUNNING")),
@@ -1689,16 +2119,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getRunTask
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until variant import is completed
     public func waitUntilVariantImportJobCreated(
         _ input: GetVariantImportRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .retry, matcher: try! JMESPathMatcher("status", expected: "SUBMITTED")),
@@ -1711,16 +2139,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getVariantImportJob
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a variant store is created
     public func waitUntilVariantStoreCreated(
         _ input: GetVariantStoreRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "ACTIVE")),
@@ -1732,16 +2158,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getVariantStore
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a variant store is deleted.
     public func waitUntilVariantStoreDeleted(
         _ input: GetVariantStoreRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "DELETED")),
@@ -1752,16 +2176,14 @@ extension Omics {
             maxDelayTime: .seconds(600),
             command: self.getVariantStore
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a workflow is active.
     public func waitUntilWorkflowActive(
         _ input: GetWorkflowRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("status", expected: "ACTIVE")),
@@ -1773,6 +2195,6 @@ extension Omics {
             maxDelayTime: .seconds(30),
             command: self.getWorkflow
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 }

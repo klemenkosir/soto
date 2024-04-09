@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct AppIntegrations: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,110 +54,494 @@ public struct AppIntegrations: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "app-integrations",
+            serviceName: "AppIntegrations",
+            serviceIdentifier: "app-integrations",
             serviceProtocol: .restjson,
             apiVersion: "2020-07-29",
             endpoint: endpoint,
             errorType: AppIntegrationsErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
-    /// Creates and persists a DataIntegration resource.  You cannot create a DataIntegration association for a DataIntegration that has been previously associated.   Use a different DataIntegration, or recreate the DataIntegration using the  CreateDataIntegration API.
-    public func createDataIntegration(_ input: CreateDataIntegrationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateDataIntegrationResponse> {
-        return self.client.execute(operation: "CreateDataIntegration", path: "/dataIntegrations", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// This API is in preview release and subject to change. Creates and persists an Application resource.
+    @Sendable
+    public func createApplication(_ input: CreateApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateApplicationResponse {
+        return try await self.client.execute(
+            operation: "CreateApplication", 
+            path: "/applications", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates and persists a DataIntegration resource.  You cannot create a DataIntegration association for a DataIntegration that has been previously associated. Use a different DataIntegration, or recreate the DataIntegration using the CreateDataIntegration API.
+    @Sendable
+    public func createDataIntegration(_ input: CreateDataIntegrationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateDataIntegrationResponse {
+        return try await self.client.execute(
+            operation: "CreateDataIntegration", 
+            path: "/dataIntegrations", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates an EventIntegration, given a specified name, description, and a reference to an Amazon EventBridge bus in your account and a partner event source that pushes events to that bus. No objects are created in the your account, only metadata that is persisted on the EventIntegration control plane.
-    public func createEventIntegration(_ input: CreateEventIntegrationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateEventIntegrationResponse> {
-        return self.client.execute(operation: "CreateEventIntegration", path: "/eventIntegrations", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createEventIntegration(_ input: CreateEventIntegrationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateEventIntegrationResponse {
+        return try await self.client.execute(
+            operation: "CreateEventIntegration", 
+            path: "/eventIntegrations", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes the Application. Only Applications that don't have any Application Associations can be deleted.
+    @Sendable
+    public func deleteApplication(_ input: DeleteApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteApplicationResponse {
+        return try await self.client.execute(
+            operation: "DeleteApplication", 
+            path: "/applications/{Arn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the DataIntegration. Only DataIntegrations that don't have any DataIntegrationAssociations can be deleted. Deleting a DataIntegration also deletes the underlying Amazon AppFlow flow and service linked role.   You cannot create a DataIntegration association for a DataIntegration that has been previously associated.
     /// Use a different DataIntegration, or recreate the DataIntegration using the
     /// CreateDataIntegration API.
-    public func deleteDataIntegration(_ input: DeleteDataIntegrationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteDataIntegrationResponse> {
-        return self.client.execute(operation: "DeleteDataIntegration", path: "/dataIntegrations/{DataIntegrationIdentifier}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteDataIntegration(_ input: DeleteDataIntegrationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteDataIntegrationResponse {
+        return try await self.client.execute(
+            operation: "DeleteDataIntegration", 
+            path: "/dataIntegrations/{DataIntegrationIdentifier}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the specified existing event integration. If the event integration is associated with clients, the request is rejected.
-    public func deleteEventIntegration(_ input: DeleteEventIntegrationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteEventIntegrationResponse> {
-        return self.client.execute(operation: "DeleteEventIntegration", path: "/eventIntegrations/{Name}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteEventIntegration(_ input: DeleteEventIntegrationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteEventIntegrationResponse {
+        return try await self.client.execute(
+            operation: "DeleteEventIntegration", 
+            path: "/eventIntegrations/{Name}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// This API is in preview release and subject to change. Get an Application resource.
+    @Sendable
+    public func getApplication(_ input: GetApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetApplicationResponse {
+        return try await self.client.execute(
+            operation: "GetApplication", 
+            path: "/applications/{Arn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns information about the DataIntegration.  You cannot create a DataIntegration association for a DataIntegration that has been previously associated.
     /// Use a different DataIntegration, or recreate the DataIntegration using the
     /// CreateDataIntegration API.
-    public func getDataIntegration(_ input: GetDataIntegrationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetDataIntegrationResponse> {
-        return self.client.execute(operation: "GetDataIntegration", path: "/dataIntegrations/{Identifier}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getDataIntegration(_ input: GetDataIntegrationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetDataIntegrationResponse {
+        return try await self.client.execute(
+            operation: "GetDataIntegration", 
+            path: "/dataIntegrations/{Identifier}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns information about the event integration.
-    public func getEventIntegration(_ input: GetEventIntegrationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetEventIntegrationResponse> {
-        return self.client.execute(operation: "GetEventIntegration", path: "/eventIntegrations/{Name}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getEventIntegration(_ input: GetEventIntegrationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetEventIntegrationResponse {
+        return try await self.client.execute(
+            operation: "GetEventIntegration", 
+            path: "/eventIntegrations/{Name}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a paginated list of application associations for an application.
+    @Sendable
+    public func listApplicationAssociations(_ input: ListApplicationAssociationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListApplicationAssociationsResponse {
+        return try await self.client.execute(
+            operation: "ListApplicationAssociations", 
+            path: "/applications/{ApplicationId}/associations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// This API is in preview release and subject to change. Lists applications in the account.
+    @Sendable
+    public func listApplications(_ input: ListApplicationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListApplicationsResponse {
+        return try await self.client.execute(
+            operation: "ListApplications", 
+            path: "/applications", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a paginated list of DataIntegration associations in the account.  You cannot create a DataIntegration association for a DataIntegration that has been previously associated.
     /// Use a different DataIntegration, or recreate the DataIntegration using the
     /// CreateDataIntegration API.
-    public func listDataIntegrationAssociations(_ input: ListDataIntegrationAssociationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListDataIntegrationAssociationsResponse> {
-        return self.client.execute(operation: "ListDataIntegrationAssociations", path: "/dataIntegrations/{DataIntegrationIdentifier}/associations", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listDataIntegrationAssociations(_ input: ListDataIntegrationAssociationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListDataIntegrationAssociationsResponse {
+        return try await self.client.execute(
+            operation: "ListDataIntegrationAssociations", 
+            path: "/dataIntegrations/{DataIntegrationIdentifier}/associations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a paginated list of DataIntegrations in the account.  You cannot create a DataIntegration association for a DataIntegration that has been previously associated.
     /// Use a different DataIntegration, or recreate the DataIntegration using the
     /// CreateDataIntegration API.
-    public func listDataIntegrations(_ input: ListDataIntegrationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListDataIntegrationsResponse> {
-        return self.client.execute(operation: "ListDataIntegrations", path: "/dataIntegrations", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listDataIntegrations(_ input: ListDataIntegrationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListDataIntegrationsResponse {
+        return try await self.client.execute(
+            operation: "ListDataIntegrations", 
+            path: "/dataIntegrations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a paginated list of event integration associations in the account.
-    public func listEventIntegrationAssociations(_ input: ListEventIntegrationAssociationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListEventIntegrationAssociationsResponse> {
-        return self.client.execute(operation: "ListEventIntegrationAssociations", path: "/eventIntegrations/{EventIntegrationName}/associations", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listEventIntegrationAssociations(_ input: ListEventIntegrationAssociationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListEventIntegrationAssociationsResponse {
+        return try await self.client.execute(
+            operation: "ListEventIntegrationAssociations", 
+            path: "/eventIntegrations/{EventIntegrationName}/associations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a paginated list of event integrations in the account.
-    public func listEventIntegrations(_ input: ListEventIntegrationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListEventIntegrationsResponse> {
-        return self.client.execute(operation: "ListEventIntegrations", path: "/eventIntegrations", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listEventIntegrations(_ input: ListEventIntegrationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListEventIntegrationsResponse {
+        return try await self.client.execute(
+            operation: "ListEventIntegrations", 
+            path: "/eventIntegrations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the tags for the specified resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{resourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Adds the specified tags to the specified resource.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{resourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Removes the specified tags from the specified resource.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{resourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// This API is in preview release and subject to change. Updates and persists an Application resource.
+    @Sendable
+    public func updateApplication(_ input: UpdateApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateApplicationResponse {
+        return try await self.client.execute(
+            operation: "UpdateApplication", 
+            path: "/applications/{Arn}", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the description of a DataIntegration.  You cannot create a DataIntegration association for a DataIntegration that has been previously associated.
     /// Use a different DataIntegration, or recreate the DataIntegration using the
     /// CreateDataIntegration API.
-    public func updateDataIntegration(_ input: UpdateDataIntegrationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateDataIntegrationResponse> {
-        return self.client.execute(operation: "UpdateDataIntegration", path: "/dataIntegrations/{Identifier}", httpMethod: .PATCH, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateDataIntegration(_ input: UpdateDataIntegrationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateDataIntegrationResponse {
+        return try await self.client.execute(
+            operation: "UpdateDataIntegration", 
+            path: "/dataIntegrations/{Identifier}", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the description of an event integration.
-    public func updateEventIntegration(_ input: UpdateEventIntegrationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateEventIntegrationResponse> {
-        return self.client.execute(operation: "UpdateEventIntegration", path: "/eventIntegrations/{Name}", httpMethod: .PATCH, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateEventIntegration(_ input: UpdateEventIntegrationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateEventIntegrationResponse {
+        return try await self.client.execute(
+            operation: "UpdateEventIntegration", 
+            path: "/eventIntegrations/{Name}", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension AppIntegrations {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: AppIntegrations, patch: AWSServiceConfig.Patch) {
         self.client = from.client
         self.config = from.config.with(patch: patch)
+    }
+}
+
+// MARK: Paginators
+
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+extension AppIntegrations {
+    /// Returns a paginated list of application associations for an application.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listApplicationAssociationsPaginator(
+        _ input: ListApplicationAssociationsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListApplicationAssociationsRequest, ListApplicationAssociationsResponse> {
+        return .init(
+            input: input,
+            command: self.listApplicationAssociations,
+            inputKey: \ListApplicationAssociationsRequest.nextToken,
+            outputKey: \ListApplicationAssociationsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// This API is in preview release and subject to change. Lists applications in the account.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listApplicationsPaginator(
+        _ input: ListApplicationsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListApplicationsRequest, ListApplicationsResponse> {
+        return .init(
+            input: input,
+            command: self.listApplications,
+            inputKey: \ListApplicationsRequest.nextToken,
+            outputKey: \ListApplicationsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a paginated list of DataIntegration associations in the account.  You cannot create a DataIntegration association for a DataIntegration that has been previously associated.
+    /// Use a different DataIntegration, or recreate the DataIntegration using the
+    /// CreateDataIntegration API.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listDataIntegrationAssociationsPaginator(
+        _ input: ListDataIntegrationAssociationsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListDataIntegrationAssociationsRequest, ListDataIntegrationAssociationsResponse> {
+        return .init(
+            input: input,
+            command: self.listDataIntegrationAssociations,
+            inputKey: \ListDataIntegrationAssociationsRequest.nextToken,
+            outputKey: \ListDataIntegrationAssociationsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a paginated list of DataIntegrations in the account.  You cannot create a DataIntegration association for a DataIntegration that has been previously associated.
+    /// Use a different DataIntegration, or recreate the DataIntegration using the
+    /// CreateDataIntegration API.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listDataIntegrationsPaginator(
+        _ input: ListDataIntegrationsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListDataIntegrationsRequest, ListDataIntegrationsResponse> {
+        return .init(
+            input: input,
+            command: self.listDataIntegrations,
+            inputKey: \ListDataIntegrationsRequest.nextToken,
+            outputKey: \ListDataIntegrationsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a paginated list of event integration associations in the account.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listEventIntegrationAssociationsPaginator(
+        _ input: ListEventIntegrationAssociationsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListEventIntegrationAssociationsRequest, ListEventIntegrationAssociationsResponse> {
+        return .init(
+            input: input,
+            command: self.listEventIntegrationAssociations,
+            inputKey: \ListEventIntegrationAssociationsRequest.nextToken,
+            outputKey: \ListEventIntegrationAssociationsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a paginated list of event integrations in the account.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listEventIntegrationsPaginator(
+        _ input: ListEventIntegrationsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListEventIntegrationsRequest, ListEventIntegrationsResponse> {
+        return .init(
+            input: input,
+            command: self.listEventIntegrations,
+            inputKey: \ListEventIntegrationsRequest.nextToken,
+            outputKey: \ListEventIntegrationsResponse.nextToken,
+            logger: logger
+        )
+    }
+}
+
+extension AppIntegrations.ListApplicationAssociationsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> AppIntegrations.ListApplicationAssociationsRequest {
+        return .init(
+            applicationId: self.applicationId,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension AppIntegrations.ListApplicationsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> AppIntegrations.ListApplicationsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension AppIntegrations.ListDataIntegrationAssociationsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> AppIntegrations.ListDataIntegrationAssociationsRequest {
+        return .init(
+            dataIntegrationIdentifier: self.dataIntegrationIdentifier,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension AppIntegrations.ListDataIntegrationsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> AppIntegrations.ListDataIntegrationsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension AppIntegrations.ListEventIntegrationAssociationsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> AppIntegrations.ListEventIntegrationAssociationsRequest {
+        return .init(
+            eventIntegrationName: self.eventIntegrationName,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension AppIntegrations.ListEventIntegrationsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> AppIntegrations.ListEventIntegrationsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token
+        )
     }
 }

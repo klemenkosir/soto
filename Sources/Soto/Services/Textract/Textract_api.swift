@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct Textract: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -51,107 +55,435 @@ public struct Textract: AWSService {
             region: region,
             partition: region?.partition ?? partition,
             amzTarget: "Textract",
-            service: "textract",
+            serviceName: "Textract",
+            serviceIdentifier: "textract",
             serviceProtocol: .json(version: "1.1"),
             apiVersion: "2018-06-27",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "ca-central-1": "textract-fips.ca-central-1.amazonaws.com",
-                    "us-east-1": "textract-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "textract-fips.us-east-2.amazonaws.com",
-                    "us-gov-east-1": "textract-fips.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "textract-fips.us-gov-west-1.amazonaws.com",
-                    "us-west-1": "textract-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "textract-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: TextractErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "textract-fips.ca-central-1.amazonaws.com",
+            "us-east-1": "textract-fips.us-east-1.amazonaws.com",
+            "us-east-2": "textract-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "textract-fips.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "textract-fips.us-gov-west-1.amazonaws.com",
+            "us-west-1": "textract-fips.us-west-1.amazonaws.com",
+            "us-west-2": "textract-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
-    /// Analyzes an input document for relationships between detected items.  The types of information returned are as follows:    Form data (key-value pairs). The related information is returned in two Block objects, each of type KEY_VALUE_SET: a KEY Block object and a VALUE Block object. For example, Name: Ana Silva Carolina contains a key and value. Name: is the key. Ana Silva Carolina is the value.   Table and table cell data. A TABLE Block object contains information about a detected table. A CELL Block object is returned for each cell in a table.   Lines and words of text. A LINE Block object contains one or more WORD Block objects. All lines and words that are detected in the document are returned (including text that doesn't have a relationship with the value of FeatureTypes).    Signatures. A SIGNATURE Block object contains the location information of a signature in a document. If used in conjunction with forms or tables, a signature can be given a Key-Value pairing or be detected in the cell of a table.   Query. A QUERY Block object contains the query text, alias and link to the associated Query results block object.   Query Result. A QUERY_RESULT Block object contains the answer to the query and an ID that connects it to the query asked. This Block also contains a confidence score.
-    ///  Selection elements such as check boxes and option buttons (radio buttons) can be detected in form data and in tables. A SELECTION_ELEMENT Block object contains information about a selection element, including the selection status.
-    ///  You can choose which type of analysis to perform by specifying the FeatureTypes list.  The output is returned in a list of Block objects.  AnalyzeDocument is a synchronous operation. To analyze documents asynchronously, use StartDocumentAnalysis. For more information, see Document Text Analysis.
-    public func analyzeDocument(_ input: AnalyzeDocumentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AnalyzeDocumentResponse> {
-        return self.client.execute(operation: "AnalyzeDocument", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Analyzes an input document for relationships between detected items.  The types of information returned are as follows:    Form data (key-value pairs). The related information is returned in two Block objects, each of type KEY_VALUE_SET: a KEY Block object and a VALUE Block object. For example, Name: Ana Silva Carolina contains a key and value. Name: is the key. Ana Silva Carolina is the value.   Table and table cell data. A TABLE Block object contains information about a detected table. A CELL Block object is returned for each cell in a table.   Lines and words of text. A LINE Block object contains one or more WORD Block objects. All lines and words that are detected in the document are returned (including text that doesn't have a relationship with the value of FeatureTypes).    Signatures. A SIGNATURE Block object contains the location information of a signature in a document. If used in conjunction with forms or tables, a signature can be given a Key-Value pairing or be detected in the cell of a table.   Query. A QUERY Block object contains the query text, alias and link to the associated Query results block object.   Query Result. A QUERY_RESULT Block object contains the answer to the query and an ID that connects it to the query asked. This Block also contains a confidence score.   Selection elements such as check boxes and option buttons (radio buttons) can be detected in form data and in tables. A SELECTION_ELEMENT Block object contains information about a selection element, including the selection status. You can choose which type of analysis to perform by specifying the FeatureTypes list.  The output is returned in a list of Block objects.  AnalyzeDocument is a synchronous operation. To analyze documents asynchronously, use StartDocumentAnalysis. For more information, see Document Text Analysis.
+    @Sendable
+    public func analyzeDocument(_ input: AnalyzeDocumentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AnalyzeDocumentResponse {
+        return try await self.client.execute(
+            operation: "AnalyzeDocument", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  AnalyzeExpense synchronously analyzes an input document for financially related relationships between text. Information is returned as ExpenseDocuments and seperated as follows:    LineItemGroups- A data set containing LineItems which store information about the lines of text, such as an item purchased and its price on a receipt.    SummaryFields- Contains all other information a receipt, such as header information or the vendors name.
-    public func analyzeExpense(_ input: AnalyzeExpenseRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AnalyzeExpenseResponse> {
-        return self.client.execute(operation: "AnalyzeExpense", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func analyzeExpense(_ input: AnalyzeExpenseRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AnalyzeExpenseResponse {
+        return try await self.client.execute(
+            operation: "AnalyzeExpense", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Analyzes identity documents for relevant information. This information is extracted and returned as IdentityDocumentFields, which records both the normalized field and value of the extracted text.Unlike other Amazon Textract operations, AnalyzeID doesn't return any Geometry data.
-    public func analyzeID(_ input: AnalyzeIDRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AnalyzeIDResponse> {
-        return self.client.execute(operation: "AnalyzeID", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Analyzes identity documents for relevant information. This information is extracted and returned as IdentityDocumentFields, which records both the normalized field and value of the extracted text. Unlike other Amazon Textract operations, AnalyzeID doesn't return any Geometry data.
+    @Sendable
+    public func analyzeID(_ input: AnalyzeIDRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AnalyzeIDResponse {
+        return try await self.client.execute(
+            operation: "AnalyzeID", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Detects text in the input document. Amazon Textract can detect lines of text and the words that make up a line of text. The input document must be in one of the following image formats:  JPEG, PNG, PDF, or TIFF. DetectDocumentText returns the detected text in an array of Block objects.  Each document page has as an associated Block of type PAGE. Each PAGE Block object is the parent of LINE Block objects that represent the lines of detected text on a page. A LINE Block object is a parent for each word that makes up the line. Words are represented by Block objects of type WORD.   DetectDocumentText is a synchronous operation. To analyze documents  asynchronously, use StartDocumentTextDetection. For more information, see Document Text Detection.
-    public func detectDocumentText(_ input: DetectDocumentTextRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DetectDocumentTextResponse> {
-        return self.client.execute(operation: "DetectDocumentText", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates an adapter, which can be fine-tuned for enhanced performance on user provided documents. Takes an AdapterName and FeatureType. Currently the only supported feature type is QUERIES. You can also provide a Description, Tags, and a ClientRequestToken. You can choose whether or not the adapter should be AutoUpdated with the AutoUpdate argument. By default, AutoUpdate is set to DISABLED.
+    @Sendable
+    public func createAdapter(_ input: CreateAdapterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAdapterResponse {
+        return try await self.client.execute(
+            operation: "CreateAdapter", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Gets the results for an Amazon Textract asynchronous operation that analyzes text in a document. You start asynchronous text analysis by calling StartDocumentAnalysis, which returns a job identifier (JobId). When the text analysis operation finishes, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that's registered in the initial call to StartDocumentAnalysis. To get the results of the text-detection operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetDocumentAnalysis, and pass the job identifier (JobId) from the initial call to StartDocumentAnalysis.  GetDocumentAnalysis returns an array of Block objects. The following types of information are returned:    Form data (key-value pairs). The related information is returned in two Block objects, each of type KEY_VALUE_SET: a KEY Block object and a VALUE Block object. For example, Name: Ana Silva Carolina contains a key and value. Name: is the key. Ana Silva Carolina is the value.   Table and table cell data. A TABLE Block object contains information about a detected table. A CELL Block object is returned for each cell in a table.   Lines and words of text. A LINE Block object contains one or more WORD Block objects. All lines and words that are detected in the document are returned (including text that doesn't have a relationship with the value of the StartDocumentAnalysis FeatureTypes input parameter).    Query. A QUERY Block object contains the query text, alias and link to the associated Query results block object.   Query Results. A QUERY_RESULT Block object contains the answer to the query and an ID that connects it to the query asked. This Block also contains a confidence score.
-    ///   While processing a document with queries, look out for INVALID_REQUEST_PARAMETERS output. This indicates that either the per page query limit has been exceeded or that the operation is trying to query a page in the document which doesn’t exist.
-    ///  Selection elements such as check boxes and option buttons (radio buttons) can be detected in form data and in tables. A SELECTION_ELEMENT Block object contains information about a selection element, including the selection status.
-    ///  Use the MaxResults parameter to limit the number of blocks that are returned. If there are more results than specified in MaxResults, the value of NextToken in the operation response contains a pagination token for getting the next set of results. To get the next page of results, call GetDocumentAnalysis, and populate the NextToken request parameter with the token value that's returned from the previous call to GetDocumentAnalysis. For more information, see Document Text Analysis.
-    public func getDocumentAnalysis(_ input: GetDocumentAnalysisRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetDocumentAnalysisResponse> {
-        return self.client.execute(operation: "GetDocumentAnalysis", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates  a new version of an adapter. Operates on a provided AdapterId and a specified  dataset provided via the DatasetConfig argument. Requires that you  specify an Amazon S3 bucket with the OutputConfig argument. You can provide an optional KMSKeyId,  an optional ClientRequestToken, and optional tags.
+    @Sendable
+    public func createAdapterVersion(_ input: CreateAdapterVersionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAdapterVersionResponse {
+        return try await self.client.execute(
+            operation: "CreateAdapterVersion", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Gets the results for an Amazon Textract asynchronous operation that detects text in a document.  Amazon Textract can detect lines of text and the words that make up a line of text. You start asynchronous text detection by calling StartDocumentTextDetection, which returns a job identifier (JobId). When the text detection operation finishes, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that's registered in the initial call to StartDocumentTextDetection. To get the results of the text-detection operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetDocumentTextDetection, and pass the job identifier (JobId) from the initial call to StartDocumentTextDetection.  GetDocumentTextDetection returns an array of Block objects.  Each document page has as an associated Block of type PAGE. Each PAGE Block object is the parent of LINE Block objects that represent the lines of detected text on a page. A LINE Block object is a parent for each word that makes up the line. Words are represented by Block objects of type WORD.  Use the MaxResults parameter to limit the number of blocks that are returned. If there are more results than specified in MaxResults, the value of NextToken in the operation response contains a pagination token for getting the next set of results. To get the next page of results, call GetDocumentTextDetection, and populate the NextToken request parameter with the token value that's returned from the previous call to GetDocumentTextDetection. For more information, see Document Text Detection.
-    public func getDocumentTextDetection(_ input: GetDocumentTextDetectionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetDocumentTextDetectionResponse> {
-        return self.client.execute(operation: "GetDocumentTextDetection", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes an Amazon Textract adapter. Takes an AdapterId and deletes the adapter specified by the ID.
+    @Sendable
+    public func deleteAdapter(_ input: DeleteAdapterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteAdapterResponse {
+        return try await self.client.execute(
+            operation: "DeleteAdapter", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes an Amazon Textract adapter version. Requires that you specify both an AdapterId and a  AdapterVersion. Deletes the adapter version specified by the AdapterId and the AdapterVersion.
+    @Sendable
+    public func deleteAdapterVersion(_ input: DeleteAdapterVersionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteAdapterVersionResponse {
+        return try await self.client.execute(
+            operation: "DeleteAdapterVersion", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Detects text in the input document. Amazon Textract can detect lines of text and the words that make up a line of text. The input document must be in one of the following image formats:  JPEG, PNG, PDF, or TIFF. DetectDocumentText returns the detected text in an array of Block objects.  Each document page has as an associated Block of type PAGE. Each PAGE Block object is the parent of LINE Block objects that represent the lines of detected text on a page. A LINE Block object is a parent for each word that makes up the line. Words are represented by Block objects of type WORD.  DetectDocumentText is a synchronous operation. To analyze documents  asynchronously, use StartDocumentTextDetection. For more information, see Document Text Detection.
+    @Sendable
+    public func detectDocumentText(_ input: DetectDocumentTextRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DetectDocumentTextResponse {
+        return try await self.client.execute(
+            operation: "DetectDocumentText", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Gets configuration information for an adapter specified by an AdapterId, returning information on AdapterName, Description, CreationTime, AutoUpdate status, and FeatureTypes.
+    @Sendable
+    public func getAdapter(_ input: GetAdapterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAdapterResponse {
+        return try await self.client.execute(
+            operation: "GetAdapter", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Gets configuration information for the specified adapter version, including:  AdapterId, AdapterVersion, FeatureTypes, Status, StatusMessage, DatasetConfig,  KMSKeyId, OutputConfig, Tags and EvaluationMetrics.
+    @Sendable
+    public func getAdapterVersion(_ input: GetAdapterVersionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAdapterVersionResponse {
+        return try await self.client.execute(
+            operation: "GetAdapterVersion", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Gets the results for an Amazon Textract asynchronous operation that analyzes text in a document. You start asynchronous text analysis by calling StartDocumentAnalysis, which returns a job identifier (JobId). When the text analysis operation finishes, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that's registered in the initial call to StartDocumentAnalysis. To get the results of the text-detection operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetDocumentAnalysis, and pass the job identifier (JobId) from the initial call to StartDocumentAnalysis.  GetDocumentAnalysis returns an array of Block objects. The following types of information are returned:    Form data (key-value pairs). The related information is returned in two Block objects, each of type KEY_VALUE_SET: a KEY Block object and a VALUE Block object. For example, Name: Ana Silva Carolina contains a key and value. Name: is the key. Ana Silva Carolina is the value.   Table and table cell data. A TABLE Block object contains information about a detected table. A CELL Block object is returned for each cell in a table.   Lines and words of text. A LINE Block object contains one or more WORD Block objects. All lines and words that are detected in the document are returned (including text that doesn't have a relationship with the value of the StartDocumentAnalysis FeatureTypes input parameter).    Query. A QUERY Block object contains the query text, alias and link to the associated Query results block object.   Query Results. A QUERY_RESULT Block object contains the answer to the query and an ID that connects it to the query asked. This Block also contains a confidence score.    While processing a document with queries, look out for INVALID_REQUEST_PARAMETERS output. This indicates that either the per page query limit has been exceeded or that the operation is trying to query a page in the document which doesn’t exist.   Selection elements such as check boxes and option buttons (radio buttons) can be detected in form data and in tables. A SELECTION_ELEMENT Block object contains information about a selection element, including the selection status. Use the MaxResults parameter to limit the number of blocks that are returned. If there are more results than specified in MaxResults, the value of NextToken in the operation response contains a pagination token for getting the next set of results. To get the next page of results, call GetDocumentAnalysis, and populate the NextToken request parameter with the token value that's returned from the previous call to GetDocumentAnalysis. For more information, see Document Text Analysis.
+    @Sendable
+    public func getDocumentAnalysis(_ input: GetDocumentAnalysisRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetDocumentAnalysisResponse {
+        return try await self.client.execute(
+            operation: "GetDocumentAnalysis", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Gets the results for an Amazon Textract asynchronous operation that detects text in a document.  Amazon Textract can detect lines of text and the words that make up a line of text. You start asynchronous text detection by calling StartDocumentTextDetection, which returns a job identifier (JobId). When the text detection operation finishes, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that's registered in the initial call to StartDocumentTextDetection. To get the results of the text-detection operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetDocumentTextDetection, and pass the job identifier (JobId) from the initial call to StartDocumentTextDetection.  GetDocumentTextDetection returns an array of Block objects.  Each document page has as an associated Block of type PAGE. Each PAGE Block object is the parent of LINE Block objects that represent the lines of detected text on a page. A LINE Block object is a parent for each word that makes up the line. Words are represented by Block objects of type WORD. Use the MaxResults parameter to limit the number of blocks that are returned. If there are more results than specified in MaxResults, the value of NextToken in the operation response contains a pagination token for getting the next set of results. To get the next page of results, call GetDocumentTextDetection, and populate the NextToken request parameter with the token value that's returned from the previous call to GetDocumentTextDetection. For more information, see Document Text Detection.
+    @Sendable
+    public func getDocumentTextDetection(_ input: GetDocumentTextDetectionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetDocumentTextDetectionResponse {
+        return try await self.client.execute(
+            operation: "GetDocumentTextDetection", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets the results for an Amazon Textract asynchronous operation that analyzes invoices and receipts. Amazon Textract finds contact information, items purchased, and vendor name, from input invoices and receipts. You start asynchronous invoice/receipt analysis by calling StartExpenseAnalysis, which returns a job identifier (JobId). Upon completion of the invoice/receipt analysis, Amazon Textract publishes the completion status to the Amazon Simple Notification Service (Amazon SNS) topic. This topic must be registered in the initial call to StartExpenseAnalysis. To get the results of the invoice/receipt analysis operation, first ensure that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetExpenseAnalysis, and pass the job identifier (JobId) from the initial call to StartExpenseAnalysis. Use the MaxResults parameter to limit the number of blocks that are returned. If there are more results than specified in MaxResults, the value of NextToken in the operation response contains a pagination token for getting the next set of results. To get the next page of results, call GetExpenseAnalysis, and populate the NextToken request parameter with the token value that's returned from the previous call to GetExpenseAnalysis. For more information, see Analyzing Invoices and Receipts.
-    public func getExpenseAnalysis(_ input: GetExpenseAnalysisRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetExpenseAnalysisResponse> {
-        return self.client.execute(operation: "GetExpenseAnalysis", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getExpenseAnalysis(_ input: GetExpenseAnalysisRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetExpenseAnalysisResponse {
+        return try await self.client.execute(
+            operation: "GetExpenseAnalysis", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets the results for an Amazon Textract asynchronous operation that analyzes text in a lending document.  You start asynchronous text analysis by calling StartLendingAnalysis, which returns a job identifier (JobId). When the text analysis operation finishes, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that's registered in the initial call to StartLendingAnalysis.  To get the results of the text analysis operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetLendingAnalysis, and pass the job identifier (JobId) from the initial call to StartLendingAnalysis.
-    public func getLendingAnalysis(_ input: GetLendingAnalysisRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetLendingAnalysisResponse> {
-        return self.client.execute(operation: "GetLendingAnalysis", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getLendingAnalysis(_ input: GetLendingAnalysisRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetLendingAnalysisResponse {
+        return try await self.client.execute(
+            operation: "GetLendingAnalysis", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets summarized results for the StartLendingAnalysis operation, which analyzes text in a lending document. The returned summary consists of information about documents grouped together by a common document type. Information like detected signatures, page numbers, and split documents is returned with respect to the type of grouped document.  You start asynchronous text analysis by calling StartLendingAnalysis, which returns a job identifier (JobId). When the text analysis operation finishes, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that's registered in the initial call to StartLendingAnalysis.  To get the results of the text analysis operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetLendingAnalysisSummary, and pass the job identifier (JobId) from the initial call to StartLendingAnalysis.
-    public func getLendingAnalysisSummary(_ input: GetLendingAnalysisSummaryRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetLendingAnalysisSummaryResponse> {
-        return self.client.execute(operation: "GetLendingAnalysisSummary", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getLendingAnalysisSummary(_ input: GetLendingAnalysisSummaryRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetLendingAnalysisSummaryResponse {
+        return try await self.client.execute(
+            operation: "GetLendingAnalysisSummary", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Starts the asynchronous analysis of an input document for relationships between detected items such as key-value pairs, tables, and selection elements.
-    ///   StartDocumentAnalysis can analyze text in documents that are in JPEG, PNG, TIFF, and PDF format. The documents are stored in an Amazon S3 bucket. Use DocumentLocation to specify the bucket name and file name of the document.   StartDocumentAnalysis returns a job identifier (JobId) that you use to get the results of the operation. When text analysis is finished, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that you specify in NotificationChannel. To get the results of the text analysis operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetDocumentAnalysis, and pass the job identifier (JobId) from the initial call to StartDocumentAnalysis. For more information, see Document Text Analysis.
-    public func startDocumentAnalysis(_ input: StartDocumentAnalysisRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartDocumentAnalysisResponse> {
-        return self.client.execute(operation: "StartDocumentAnalysis", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// List all version of an adapter that meet the specified filtration criteria.
+    @Sendable
+    public func listAdapterVersions(_ input: ListAdapterVersionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAdapterVersionsResponse {
+        return try await self.client.execute(
+            operation: "ListAdapterVersions", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists all adapters that match the specified filtration criteria.
+    @Sendable
+    public func listAdapters(_ input: ListAdaptersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAdaptersResponse {
+        return try await self.client.execute(
+            operation: "ListAdapters", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists all tags for an Amazon Textract resource.
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Starts the asynchronous analysis of an input document for relationships between detected items such as key-value pairs, tables, and selection elements.  StartDocumentAnalysis can analyze text in documents that are in JPEG, PNG, TIFF, and PDF format. The documents are stored in an Amazon S3 bucket. Use DocumentLocation to specify the bucket name and file name of the document.   StartDocumentAnalysis returns a job identifier (JobId) that you use to get the results of the operation. When text analysis is finished, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that you specify in NotificationChannel. To get the results of the text analysis operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetDocumentAnalysis, and pass the job identifier (JobId) from the initial call to StartDocumentAnalysis. For more information, see Document Text Analysis.
+    @Sendable
+    public func startDocumentAnalysis(_ input: StartDocumentAnalysisRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartDocumentAnalysisResponse {
+        return try await self.client.execute(
+            operation: "StartDocumentAnalysis", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Starts the asynchronous detection of text in a document. Amazon Textract can detect lines of text and the words that make up a line of text.  StartDocumentTextDetection can analyze text in documents that are in JPEG, PNG, TIFF, and PDF format. The documents are stored in an Amazon S3 bucket. Use DocumentLocation to specify the bucket name and file name of the document.   StartTextDetection returns a job identifier (JobId) that you use to get the results of the operation. When text detection is finished, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that you specify in NotificationChannel. To get the results of the text detection operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetDocumentTextDetection, and pass the job identifier (JobId) from the initial call to StartDocumentTextDetection. For more information, see Document Text Detection.
-    public func startDocumentTextDetection(_ input: StartDocumentTextDetectionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartDocumentTextDetectionResponse> {
-        return self.client.execute(operation: "StartDocumentTextDetection", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startDocumentTextDetection(_ input: StartDocumentTextDetectionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartDocumentTextDetectionResponse {
+        return try await self.client.execute(
+            operation: "StartDocumentTextDetection", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Starts the asynchronous analysis of invoices or receipts for data like contact information, items purchased, and vendor names.   StartExpenseAnalysis can analyze text in documents that are in JPEG, PNG, and PDF format. The documents must be stored in an Amazon S3 bucket. Use the DocumentLocation parameter to specify the name of your S3 bucket and the name of the document in that bucket.   StartExpenseAnalysis returns a job identifier (JobId) that you will provide to GetExpenseAnalysis to retrieve the results of the operation. When the analysis of the input invoices/receipts is finished, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that you provide to the NotificationChannel. To obtain the results of the invoice and receipt analysis operation, ensure that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetExpenseAnalysis, and pass the job identifier (JobId) that was returned by your call to StartExpenseAnalysis. For more information, see Analyzing Invoices and Receipts.
-    public func startExpenseAnalysis(_ input: StartExpenseAnalysisRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartExpenseAnalysisResponse> {
-        return self.client.execute(operation: "StartExpenseAnalysis", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Starts the asynchronous analysis of invoices or receipts for data like contact information, items purchased, and vendor names.  StartExpenseAnalysis can analyze text in documents that are in JPEG, PNG, and PDF format. The documents must be stored in an Amazon S3 bucket. Use the DocumentLocation parameter to specify the name of your S3 bucket and the name of the document in that bucket.   StartExpenseAnalysis returns a job identifier (JobId) that you will provide to GetExpenseAnalysis to retrieve the results of the operation. When the analysis of the input invoices/receipts is finished, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that you provide to the NotificationChannel. To obtain the results of the invoice and receipt analysis operation, ensure that the status value published to the Amazon SNS topic is SUCCEEDED. If so, call GetExpenseAnalysis, and pass the job identifier (JobId) that was returned by your call to StartExpenseAnalysis. For more information, see Analyzing Invoices and Receipts.
+    @Sendable
+    public func startExpenseAnalysis(_ input: StartExpenseAnalysisRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartExpenseAnalysisResponse {
+        return try await self.client.execute(
+            operation: "StartExpenseAnalysis", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Starts the classification and analysis of an input document. StartLendingAnalysis initiates the classification and analysis of a packet of lending documents. StartLendingAnalysis operates on a document file located in an Amazon S3 bucket.  StartLendingAnalysis can analyze text in documents that are in one of the following formats: JPEG, PNG, TIFF, PDF. Use DocumentLocation to specify the bucket name and the file name of the document.   StartLendingAnalysis returns a job identifier (JobId) that you use to get the results of the operation. When the text analysis is finished, Amazon Textract publishes a completion status to the Amazon Simple Notification Service (Amazon SNS) topic that you specify in NotificationChannel. To get the results of the text analysis operation, first check that the status value published to the Amazon SNS topic is SUCCEEDED. If the status is SUCCEEDED you can call either GetLendingAnalysis or GetLendingAnalysisSummary and provide the JobId to obtain the results of the analysis. If using OutputConfig to specify an Amazon S3 bucket, the output will be contained within the specified prefix in a directory labeled with the job-id. In the directory there are 3 sub-directories:    detailedResponse (contains the GetLendingAnalysis response)   summaryResponse (for the GetLendingAnalysisSummary response)   splitDocuments (documents split across logical boundaries)
-    public func startLendingAnalysis(_ input: StartLendingAnalysisRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartLendingAnalysisResponse> {
-        return self.client.execute(operation: "StartLendingAnalysis", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startLendingAnalysis(_ input: StartLendingAnalysisRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartLendingAnalysisResponse {
+        return try await self.client.execute(
+            operation: "StartLendingAnalysis", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Adds one or more tags to the specified resource.
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Removes any tags with the specified keys from the specified resource.
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Update the configuration for an adapter. FeatureTypes configurations cannot be updated. At least one new parameter must be specified as an argument.
+    @Sendable
+    public func updateAdapter(_ input: UpdateAdapterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateAdapterResponse {
+        return try await self.client.execute(
+            operation: "UpdateAdapter", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Textract {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Textract, patch: AWSServiceConfig.Patch) {
         self.client = from.client
         self.config = from.config.with(patch: patch)
+    }
+}
+
+// MARK: Paginators
+
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+extension Textract {
+    /// List all version of an adapter that meet the specified filtration criteria.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listAdapterVersionsPaginator(
+        _ input: ListAdapterVersionsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAdapterVersionsRequest, ListAdapterVersionsResponse> {
+        return .init(
+            input: input,
+            command: self.listAdapterVersions,
+            inputKey: \ListAdapterVersionsRequest.nextToken,
+            outputKey: \ListAdapterVersionsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists all adapters that match the specified filtration criteria.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listAdaptersPaginator(
+        _ input: ListAdaptersRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAdaptersRequest, ListAdaptersResponse> {
+        return .init(
+            input: input,
+            command: self.listAdapters,
+            inputKey: \ListAdaptersRequest.nextToken,
+            outputKey: \ListAdaptersResponse.nextToken,
+            logger: logger
+        )
+    }
+}
+
+extension Textract.ListAdapterVersionsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Textract.ListAdapterVersionsRequest {
+        return .init(
+            adapterId: self.adapterId,
+            afterCreationTime: self.afterCreationTime,
+            beforeCreationTime: self.beforeCreationTime,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Textract.ListAdaptersRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Textract.ListAdaptersRequest {
+        return .init(
+            afterCreationTime: self.afterCreationTime,
+            beforeCreationTime: self.beforeCreationTime,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
     }
 }

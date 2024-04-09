@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -35,11 +35,15 @@ public struct Account: AWSService {
     ///     - client: AWSClient used to process requests
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -48,58 +52,195 @@ public struct Account: AWSService {
         self.config = AWSServiceConfig(
             region: nil,
             partition: partition,
-            service: "account",
+            serviceName: "Account",
+            serviceIdentifier: "account",
             serviceProtocol: .restjson,
             apiVersion: "2021-02-01",
             endpoint: endpoint,
-            serviceEndpoints: [
-                "aws-cn-global": "account.cn-northwest-1.amazonaws.com.cn",
-                "aws-global": "account.us-east-1.amazonaws.com"
-            ],
-            partitionEndpoints: [
-                .aws: (endpoint: "aws-global", region: .useast1),
-                .awscn: (endpoint: "aws-cn-global", region: .cnnorthwest1)
-            ],
+            serviceEndpoints: Self.serviceEndpoints,
+            partitionEndpoints: Self.partitionEndpoints,
             errorType: AccountErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+    /// custom endpoints for regions
+    static var serviceEndpoints: [String: String] {[
+        "aws-cn-global": "account.cn-northwest-1.amazonaws.com.cn",
+        "aws-global": "account.us-east-1.amazonaws.com"
+    ]}
+
+    /// Default endpoint and region to use for each partition
+    static var partitionEndpoints: [AWSPartition: (endpoint: String, region: SotoCore.Region)] {[
+        .aws: (endpoint: "aws-global", region: .useast1),
+        .awscn: (endpoint: "aws-cn-global", region: .cnnorthwest1)
+    ]}
+
+
     // MARK: API Calls
 
     /// Deletes the specified alternate contact from an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Access or updating the alternate contacts.  Before you can update the alternate contact information for an  Amazon Web Services account that is managed by Organizations, you must first enable integration between Amazon Web Services Account Management and Organizations.  For more information, see Enabling trusted access for  Amazon Web Services Account Management.
-    @discardableResult public func deleteAlternateContact(_ input: DeleteAlternateContactRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteAlternateContact", path: "/deleteAlternateContact", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteAlternateContact(_ input: DeleteAlternateContactRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteAlternateContact", 
+            path: "/deleteAlternateContact", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Disables (opts-out) a particular Region for an account.
+    @Sendable
+    public func disableRegion(_ input: DisableRegionRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DisableRegion", 
+            path: "/disableRegion", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Enables (opts-in) a particular Region for an account.
+    @Sendable
+    public func enableRegion(_ input: EnableRegionRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "EnableRegion", 
+            path: "/enableRegion", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves the specified alternate contact attached to an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Access or updating the alternate contacts.  Before you can update the alternate contact information for an  Amazon Web Services account that is managed by Organizations, you must first enable integration between Amazon Web Services Account Management and Organizations.  For more information, see Enabling trusted access for  Amazon Web Services Account Management.
-    public func getAlternateContact(_ input: GetAlternateContactRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetAlternateContactResponse> {
-        return self.client.execute(operation: "GetAlternateContact", path: "/getAlternateContact", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getAlternateContact(_ input: GetAlternateContactRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAlternateContactResponse {
+        return try await self.client.execute(
+            operation: "GetAlternateContact", 
+            path: "/getAlternateContact", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves the primary contact information of an Amazon Web Services account. For complete details about how to use the primary contact operations, see Update the primary and alternate contact information.
-    public func getContactInformation(_ input: GetContactInformationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetContactInformationResponse> {
-        return self.client.execute(operation: "GetContactInformation", path: "/getContactInformation", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getContactInformation(_ input: GetContactInformationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetContactInformationResponse {
+        return try await self.client.execute(
+            operation: "GetContactInformation", 
+            path: "/getContactInformation", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieves the opt-in status of a particular Region.
+    @Sendable
+    public func getRegionOptStatus(_ input: GetRegionOptStatusRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetRegionOptStatusResponse {
+        return try await self.client.execute(
+            operation: "GetRegionOptStatus", 
+            path: "/getRegionOptStatus", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists all the Regions for a given account and their respective opt-in statuses. Optionally, this list can be filtered by the region-opt-status-contains parameter.
+    @Sendable
+    public func listRegions(_ input: ListRegionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRegionsResponse {
+        return try await self.client.execute(
+            operation: "ListRegions", 
+            path: "/listRegions", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Modifies the specified alternate contact attached to an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Access or updating the alternate contacts.  Before you can update the alternate contact information for an  Amazon Web Services account that is managed by Organizations, you must first enable integration between Amazon Web Services Account Management and Organizations.  For more information, see Enabling trusted access for  Amazon Web Services Account Management.
-    @discardableResult public func putAlternateContact(_ input: PutAlternateContactRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "PutAlternateContact", path: "/putAlternateContact", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func putAlternateContact(_ input: PutAlternateContactRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "PutAlternateContact", 
+            path: "/putAlternateContact", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the primary contact information of an Amazon Web Services account. For complete details about how to use the primary contact operations, see Update the primary and alternate contact information.
-    @discardableResult public func putContactInformation(_ input: PutContactInformationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "PutContactInformation", path: "/putContactInformation", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func putContactInformation(_ input: PutContactInformationRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "PutContactInformation", 
+            path: "/putContactInformation", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Account {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Account, patch: AWSServiceConfig.Patch) {
         self.client = from.client
         self.config = from.config.with(patch: patch)
+    }
+}
+
+// MARK: Paginators
+
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+extension Account {
+    /// Lists all the Regions for a given account and their respective opt-in statuses. Optionally, this list can be filtered by the region-opt-status-contains parameter.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listRegionsPaginator(
+        _ input: ListRegionsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRegionsRequest, ListRegionsResponse> {
+        return .init(
+            input: input,
+            command: self.listRegions,
+            inputKey: \ListRegionsRequest.nextToken,
+            outputKey: \ListRegionsResponse.nextToken,
+            logger: logger
+        )
+    }
+}
+
+extension Account.ListRegionsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Account.ListRegionsRequest {
+        return .init(
+            accountId: self.accountId,
+            maxResults: self.maxResults,
+            nextToken: token,
+            regionOptStatusContains: self.regionOptStatusContains
+        )
     }
 }

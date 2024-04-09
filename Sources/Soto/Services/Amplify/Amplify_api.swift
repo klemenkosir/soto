@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS Amplify service.
 ///
-/// Amplify enables developers to develop and deploy cloud-powered mobile and web apps. The Amplify Console provides a continuous delivery and hosting service for web applications. For more information, see the Amplify Console User Guide. The Amplify Framework is a comprehensive set of SDKs, libraries, tools, and documentation for client app development. For more information, see the Amplify Framework.
+/// Amplify enables developers to develop and deploy cloud-powered mobile and web apps. Amplify Hosting provides a continuous delivery and hosting service for web applications. For more information, see the Amplify Hosting User Guide. The Amplify Framework is a comprehensive set of SDKs, libraries, tools, and documentation for client app development. For more information, see the Amplify Framework.
 public struct Amplify: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct Amplify: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,211 +54,634 @@ public struct Amplify: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "amplify",
+            serviceName: "Amplify",
+            serviceIdentifier: "amplify",
             serviceProtocol: .restjson,
             apiVersion: "2017-07-25",
             endpoint: endpoint,
             errorType: AmplifyErrorType.self,
             xmlNamespace: "http://amplify.amazonaws.com",
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
-    ///  Creates a new Amplify app.
-    public func createApp(_ input: CreateAppRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateAppResult> {
-        return self.client.execute(operation: "CreateApp", path: "/apps", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a new Amplify app.
+    @Sendable
+    public func createApp(_ input: CreateAppRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAppResult {
+        return try await self.client.execute(
+            operation: "CreateApp", 
+            path: "/apps", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Creates a new backend environment for an Amplify app.
-    public func createBackendEnvironment(_ input: CreateBackendEnvironmentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateBackendEnvironmentResult> {
-        return self.client.execute(operation: "CreateBackendEnvironment", path: "/apps/{appId}/backendenvironments", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a new backend environment for an Amplify app.  This API is available only to Amplify Gen 1 applications where the backend is created using Amplify Studio or the Amplify command line interface (CLI). This API isn’t available to applications created using the Amplify Gen 2 public preview. When you deploy an application with Amplify Gen 2, you provision the app's backend infrastructure using Typescript code.
+    @Sendable
+    public func createBackendEnvironment(_ input: CreateBackendEnvironmentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateBackendEnvironmentResult {
+        return try await self.client.execute(
+            operation: "CreateBackendEnvironment", 
+            path: "/apps/{appId}/backendenvironments", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Creates a new branch for an Amplify app.
-    public func createBranch(_ input: CreateBranchRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateBranchResult> {
-        return self.client.execute(operation: "CreateBranch", path: "/apps/{appId}/branches", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createBranch(_ input: CreateBranchRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateBranchResult {
+        return try await self.client.execute(
+            operation: "CreateBranch", 
+            path: "/apps/{appId}/branches", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Creates a deployment for a manually deployed Amplify app. Manually deployed apps are not connected to a repository.
-    public func createDeployment(_ input: CreateDeploymentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateDeploymentResult> {
-        return self.client.execute(operation: "CreateDeployment", path: "/apps/{appId}/branches/{branchName}/deployments", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a deployment for a manually deployed Amplify app. Manually deployed apps are not connected to a repository.  The maximum duration between the CreateDeployment call and the StartDeployment call cannot exceed 8 hours. If the duration exceeds 8 hours, the StartDeployment call and the associated Job will fail.
+    @Sendable
+    public func createDeployment(_ input: CreateDeploymentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateDeploymentResult {
+        return try await self.client.execute(
+            operation: "CreateDeployment", 
+            path: "/apps/{appId}/branches/{branchName}/deployments", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Creates a new domain association for an Amplify app. This action associates a custom domain with the Amplify app
-    public func createDomainAssociation(_ input: CreateDomainAssociationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateDomainAssociationResult> {
-        return self.client.execute(operation: "CreateDomainAssociation", path: "/apps/{appId}/domains", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a new domain association for an Amplify app. This action associates a custom domain with the Amplify app
+    @Sendable
+    public func createDomainAssociation(_ input: CreateDomainAssociationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateDomainAssociationResult {
+        return try await self.client.execute(
+            operation: "CreateDomainAssociation", 
+            path: "/apps/{appId}/domains", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Creates a new webhook on an Amplify app.
-    public func createWebhook(_ input: CreateWebhookRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateWebhookResult> {
-        return self.client.execute(operation: "CreateWebhook", path: "/apps/{appId}/webhooks", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a new webhook on an Amplify app.
+    @Sendable
+    public func createWebhook(_ input: CreateWebhookRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateWebhookResult {
+        return try await self.client.execute(
+            operation: "CreateWebhook", 
+            path: "/apps/{appId}/webhooks", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Deletes an existing Amplify app specified by an app ID.
-    public func deleteApp(_ input: DeleteAppRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteAppResult> {
-        return self.client.execute(operation: "DeleteApp", path: "/apps/{appId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes an existing Amplify app specified by an app ID.
+    @Sendable
+    public func deleteApp(_ input: DeleteAppRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteAppResult {
+        return try await self.client.execute(
+            operation: "DeleteApp", 
+            path: "/apps/{appId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Deletes a backend environment for an Amplify app.
-    public func deleteBackendEnvironment(_ input: DeleteBackendEnvironmentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteBackendEnvironmentResult> {
-        return self.client.execute(operation: "DeleteBackendEnvironment", path: "/apps/{appId}/backendenvironments/{environmentName}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes a backend environment for an Amplify app.  This API is available only to Amplify Gen 1 applications where the backend was created using Amplify Studio or the Amplify command line interface (CLI). This API isn’t available to applications created using the Amplify Gen 2 public preview. When you deploy an application with Amplify Gen 2, you provision the app's backend infrastructure using Typescript code.
+    @Sendable
+    public func deleteBackendEnvironment(_ input: DeleteBackendEnvironmentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteBackendEnvironmentResult {
+        return try await self.client.execute(
+            operation: "DeleteBackendEnvironment", 
+            path: "/apps/{appId}/backendenvironments/{environmentName}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Deletes a branch for an Amplify app.
-    public func deleteBranch(_ input: DeleteBranchRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteBranchResult> {
-        return self.client.execute(operation: "DeleteBranch", path: "/apps/{appId}/branches/{branchName}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteBranch(_ input: DeleteBranchRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteBranchResult {
+        return try await self.client.execute(
+            operation: "DeleteBranch", 
+            path: "/apps/{appId}/branches/{branchName}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Deletes a domain association for an Amplify app.
-    public func deleteDomainAssociation(_ input: DeleteDomainAssociationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteDomainAssociationResult> {
-        return self.client.execute(operation: "DeleteDomainAssociation", path: "/apps/{appId}/domains/{domainName}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes a domain association for an Amplify app.
+    @Sendable
+    public func deleteDomainAssociation(_ input: DeleteDomainAssociationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteDomainAssociationResult {
+        return try await self.client.execute(
+            operation: "DeleteDomainAssociation", 
+            path: "/apps/{appId}/domains/{domainName}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Deletes a job for a branch of an Amplify app.
-    public func deleteJob(_ input: DeleteJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteJobResult> {
-        return self.client.execute(operation: "DeleteJob", path: "/apps/{appId}/branches/{branchName}/jobs/{jobId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteJob(_ input: DeleteJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteJobResult {
+        return try await self.client.execute(
+            operation: "DeleteJob", 
+            path: "/apps/{appId}/branches/{branchName}/jobs/{jobId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Deletes a webhook.
-    public func deleteWebhook(_ input: DeleteWebhookRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteWebhookResult> {
-        return self.client.execute(operation: "DeleteWebhook", path: "/webhooks/{webhookId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes a webhook.
+    @Sendable
+    public func deleteWebhook(_ input: DeleteWebhookRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteWebhookResult {
+        return try await self.client.execute(
+            operation: "DeleteWebhook", 
+            path: "/webhooks/{webhookId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns the website access logs for a specific time range using a presigned URL.
-    public func generateAccessLogs(_ input: GenerateAccessLogsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GenerateAccessLogsResult> {
-        return self.client.execute(operation: "GenerateAccessLogs", path: "/apps/{appId}/accesslogs", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns the website access logs for a specific time range using a presigned URL.
+    @Sendable
+    public func generateAccessLogs(_ input: GenerateAccessLogsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GenerateAccessLogsResult {
+        return try await self.client.execute(
+            operation: "GenerateAccessLogs", 
+            path: "/apps/{appId}/accesslogs", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns an existing Amplify app by appID.
-    public func getApp(_ input: GetAppRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetAppResult> {
-        return self.client.execute(operation: "GetApp", path: "/apps/{appId}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns an existing Amplify app specified by an app ID.
+    @Sendable
+    public func getApp(_ input: GetAppRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAppResult {
+        return try await self.client.execute(
+            operation: "GetApp", 
+            path: "/apps/{appId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns the artifact info that corresponds to an artifact id.
-    public func getArtifactUrl(_ input: GetArtifactUrlRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetArtifactUrlResult> {
-        return self.client.execute(operation: "GetArtifactUrl", path: "/artifacts/{artifactId}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns the artifact info that corresponds to an artifact id.
+    @Sendable
+    public func getArtifactUrl(_ input: GetArtifactUrlRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetArtifactUrlResult {
+        return try await self.client.execute(
+            operation: "GetArtifactUrl", 
+            path: "/artifacts/{artifactId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns a backend environment for an Amplify app.
-    public func getBackendEnvironment(_ input: GetBackendEnvironmentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetBackendEnvironmentResult> {
-        return self.client.execute(operation: "GetBackendEnvironment", path: "/apps/{appId}/backendenvironments/{environmentName}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns a backend environment for an Amplify app.  This API is available only to Amplify Gen 1 applications where the backend was created using Amplify Studio or the Amplify command line interface (CLI). This API isn’t available to applications created using the Amplify Gen 2 public preview. When you deploy an application with Amplify Gen 2, you provision the app's backend infrastructure using Typescript code.
+    @Sendable
+    public func getBackendEnvironment(_ input: GetBackendEnvironmentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetBackendEnvironmentResult {
+        return try await self.client.execute(
+            operation: "GetBackendEnvironment", 
+            path: "/apps/{appId}/backendenvironments/{environmentName}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Returns a branch for an Amplify app.
-    public func getBranch(_ input: GetBranchRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetBranchResult> {
-        return self.client.execute(operation: "GetBranch", path: "/apps/{appId}/branches/{branchName}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getBranch(_ input: GetBranchRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetBranchResult {
+        return try await self.client.execute(
+            operation: "GetBranch", 
+            path: "/apps/{appId}/branches/{branchName}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns the domain information for an Amplify app.
-    public func getDomainAssociation(_ input: GetDomainAssociationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetDomainAssociationResult> {
-        return self.client.execute(operation: "GetDomainAssociation", path: "/apps/{appId}/domains/{domainName}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns the domain information for an Amplify app.
+    @Sendable
+    public func getDomainAssociation(_ input: GetDomainAssociationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetDomainAssociationResult {
+        return try await self.client.execute(
+            operation: "GetDomainAssociation", 
+            path: "/apps/{appId}/domains/{domainName}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Returns a job for a branch of an Amplify app.
-    public func getJob(_ input: GetJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetJobResult> {
-        return self.client.execute(operation: "GetJob", path: "/apps/{appId}/branches/{branchName}/jobs/{jobId}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getJob(_ input: GetJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetJobResult {
+        return try await self.client.execute(
+            operation: "GetJob", 
+            path: "/apps/{appId}/branches/{branchName}/jobs/{jobId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns the webhook information that corresponds to a specified webhook ID.
-    public func getWebhook(_ input: GetWebhookRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetWebhookResult> {
-        return self.client.execute(operation: "GetWebhook", path: "/webhooks/{webhookId}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns the webhook information that corresponds to a specified webhook ID.
+    @Sendable
+    public func getWebhook(_ input: GetWebhookRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetWebhookResult {
+        return try await self.client.execute(
+            operation: "GetWebhook", 
+            path: "/webhooks/{webhookId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns a list of the existing Amplify apps.
-    public func listApps(_ input: ListAppsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListAppsResult> {
-        return self.client.execute(operation: "ListApps", path: "/apps", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns a list of the existing Amplify apps.
+    @Sendable
+    public func listApps(_ input: ListAppsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAppsResult {
+        return try await self.client.execute(
+            operation: "ListApps", 
+            path: "/apps", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns a list of artifacts for a specified app, branch, and job.
-    public func listArtifacts(_ input: ListArtifactsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListArtifactsResult> {
-        return self.client.execute(operation: "ListArtifacts", path: "/apps/{appId}/branches/{branchName}/jobs/{jobId}/artifacts", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns a list of artifacts for a specified app, branch, and job.
+    @Sendable
+    public func listArtifacts(_ input: ListArtifactsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListArtifactsResult {
+        return try await self.client.execute(
+            operation: "ListArtifacts", 
+            path: "/apps/{appId}/branches/{branchName}/jobs/{jobId}/artifacts", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Lists the backend environments for an Amplify app.
-    public func listBackendEnvironments(_ input: ListBackendEnvironmentsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListBackendEnvironmentsResult> {
-        return self.client.execute(operation: "ListBackendEnvironments", path: "/apps/{appId}/backendenvironments", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Lists the backend environments for an Amplify app.  This API is available only to Amplify Gen 1 applications where the backend was created using Amplify Studio or the Amplify command line interface (CLI). This API isn’t available to applications created using the Amplify Gen 2 public preview. When you deploy an application with Amplify Gen 2, you provision the app's backend infrastructure using Typescript code.
+    @Sendable
+    public func listBackendEnvironments(_ input: ListBackendEnvironmentsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListBackendEnvironmentsResult {
+        return try await self.client.execute(
+            operation: "ListBackendEnvironments", 
+            path: "/apps/{appId}/backendenvironments", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Lists the branches of an Amplify app.
-    public func listBranches(_ input: ListBranchesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListBranchesResult> {
-        return self.client.execute(operation: "ListBranches", path: "/apps/{appId}/branches", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listBranches(_ input: ListBranchesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListBranchesResult {
+        return try await self.client.execute(
+            operation: "ListBranches", 
+            path: "/apps/{appId}/branches", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns the domain associations for an Amplify app.
-    public func listDomainAssociations(_ input: ListDomainAssociationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListDomainAssociationsResult> {
-        return self.client.execute(operation: "ListDomainAssociations", path: "/apps/{appId}/domains", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns the domain associations for an Amplify app.
+    @Sendable
+    public func listDomainAssociations(_ input: ListDomainAssociationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListDomainAssociationsResult {
+        return try await self.client.execute(
+            operation: "ListDomainAssociations", 
+            path: "/apps/{appId}/domains", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Lists the jobs for a branch of an Amplify app.
-    public func listJobs(_ input: ListJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListJobsResult> {
-        return self.client.execute(operation: "ListJobs", path: "/apps/{appId}/branches/{branchName}/jobs", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listJobs(_ input: ListJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListJobsResult {
+        return try await self.client.execute(
+            operation: "ListJobs", 
+            path: "/apps/{appId}/branches/{branchName}/jobs", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns a list of tags for a specified Amazon Resource Name (ARN).
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{resourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns a list of tags for a specified Amazon Resource Name (ARN).
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns a list of webhooks for an Amplify app.
-    public func listWebhooks(_ input: ListWebhooksRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListWebhooksResult> {
-        return self.client.execute(operation: "ListWebhooks", path: "/apps/{appId}/webhooks", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns a list of webhooks for an Amplify app.
+    @Sendable
+    public func listWebhooks(_ input: ListWebhooksRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListWebhooksResult {
+        return try await self.client.execute(
+            operation: "ListWebhooks", 
+            path: "/apps/{appId}/webhooks", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Starts a deployment for a manually deployed app. Manually deployed apps are not connected to a repository.
-    public func startDeployment(_ input: StartDeploymentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartDeploymentResult> {
-        return self.client.execute(operation: "StartDeployment", path: "/apps/{appId}/branches/{branchName}/deployments/start", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Starts a deployment for a manually deployed app. Manually deployed apps are not connected to a repository.  The maximum duration between the CreateDeployment call and the StartDeployment call cannot exceed 8 hours. If the duration exceeds 8 hours, the StartDeployment call and the associated Job will fail.
+    @Sendable
+    public func startDeployment(_ input: StartDeploymentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartDeploymentResult {
+        return try await self.client.execute(
+            operation: "StartDeployment", 
+            path: "/apps/{appId}/branches/{branchName}/deployments/start", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Starts a new job for a branch of an Amplify app.
-    public func startJob(_ input: StartJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartJobResult> {
-        return self.client.execute(operation: "StartJob", path: "/apps/{appId}/branches/{branchName}/jobs", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startJob(_ input: StartJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartJobResult {
+        return try await self.client.execute(
+            operation: "StartJob", 
+            path: "/apps/{appId}/branches/{branchName}/jobs", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Stops a job that is in progress for a branch of an Amplify app.
-    public func stopJob(_ input: StopJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StopJobResult> {
-        return self.client.execute(operation: "StopJob", path: "/apps/{appId}/branches/{branchName}/jobs/{jobId}/stop", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func stopJob(_ input: StopJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StopJobResult {
+        return try await self.client.execute(
+            operation: "StopJob", 
+            path: "/apps/{appId}/branches/{branchName}/jobs/{jobId}/stop", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Tags the resource with a tag key and value.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{resourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Tags the resource with a tag key and value.
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Untags a resource with a specified Amazon Resource Name (ARN).
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{resourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Untags a resource with a specified Amazon Resource Name (ARN).
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Updates an existing Amplify app.
-    public func updateApp(_ input: UpdateAppRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateAppResult> {
-        return self.client.execute(operation: "UpdateApp", path: "/apps/{appId}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Updates an existing Amplify app.
+    @Sendable
+    public func updateApp(_ input: UpdateAppRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateAppResult {
+        return try await self.client.execute(
+            operation: "UpdateApp", 
+            path: "/apps/{appId}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Updates a branch for an Amplify app.
-    public func updateBranch(_ input: UpdateBranchRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateBranchResult> {
-        return self.client.execute(operation: "UpdateBranch", path: "/apps/{appId}/branches/{branchName}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateBranch(_ input: UpdateBranchRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateBranchResult {
+        return try await self.client.execute(
+            operation: "UpdateBranch", 
+            path: "/apps/{appId}/branches/{branchName}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Creates a new domain association for an Amplify app.
-    public func updateDomainAssociation(_ input: UpdateDomainAssociationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateDomainAssociationResult> {
-        return self.client.execute(operation: "UpdateDomainAssociation", path: "/apps/{appId}/domains/{domainName}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a new domain association for an Amplify app.
+    @Sendable
+    public func updateDomainAssociation(_ input: UpdateDomainAssociationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateDomainAssociationResult {
+        return try await self.client.execute(
+            operation: "UpdateDomainAssociation", 
+            path: "/apps/{appId}/domains/{domainName}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Updates a webhook.
-    public func updateWebhook(_ input: UpdateWebhookRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateWebhookResult> {
-        return self.client.execute(operation: "UpdateWebhook", path: "/webhooks/{webhookId}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Updates a webhook.
+    @Sendable
+    public func updateWebhook(_ input: UpdateWebhookRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateWebhookResult {
+        return try await self.client.execute(
+            operation: "UpdateWebhook", 
+            path: "/webhooks/{webhookId}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Amplify {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Amplify, patch: AWSServiceConfig.Patch) {
         self.client = from.client
         self.config = from.config.with(patch: patch)
+    }
+}
+
+// MARK: Paginators
+
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+extension Amplify {
+    /// Returns a list of the existing Amplify apps.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listAppsPaginator(
+        _ input: ListAppsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAppsRequest, ListAppsResult> {
+        return .init(
+            input: input,
+            command: self.listApps,
+            inputKey: \ListAppsRequest.nextToken,
+            outputKey: \ListAppsResult.nextToken,
+            logger: logger
+        )
+    }
+
+    ///  Lists the branches of an Amplify app.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listBranchesPaginator(
+        _ input: ListBranchesRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListBranchesRequest, ListBranchesResult> {
+        return .init(
+            input: input,
+            command: self.listBranches,
+            inputKey: \ListBranchesRequest.nextToken,
+            outputKey: \ListBranchesResult.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns the domain associations for an Amplify app.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listDomainAssociationsPaginator(
+        _ input: ListDomainAssociationsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListDomainAssociationsRequest, ListDomainAssociationsResult> {
+        return .init(
+            input: input,
+            command: self.listDomainAssociations,
+            inputKey: \ListDomainAssociationsRequest.nextToken,
+            outputKey: \ListDomainAssociationsResult.nextToken,
+            logger: logger
+        )
+    }
+
+    ///  Lists the jobs for a branch of an Amplify app.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listJobsPaginator(
+        _ input: ListJobsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListJobsRequest, ListJobsResult> {
+        return .init(
+            input: input,
+            command: self.listJobs,
+            inputKey: \ListJobsRequest.nextToken,
+            outputKey: \ListJobsResult.nextToken,
+            logger: logger
+        )
+    }
+}
+
+extension Amplify.ListAppsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Amplify.ListAppsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Amplify.ListBranchesRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Amplify.ListBranchesRequest {
+        return .init(
+            appId: self.appId,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Amplify.ListDomainAssociationsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Amplify.ListDomainAssociationsRequest {
+        return .init(
+            appId: self.appId,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Amplify.ListJobsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Amplify.ListJobsRequest {
+        return .init(
+            appId: self.appId,
+            branchName: self.branchName,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
     }
 }

@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct MediaStoreData: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,56 +54,95 @@ public struct MediaStoreData: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "data.mediastore",
+            serviceName: "MediaStoreData",
+            serviceIdentifier: "data.mediastore",
             signingName: "mediastore",
             serviceProtocol: .restjson,
             apiVersion: "2017-09-01",
             endpoint: endpoint,
             errorType: MediaStoreDataErrorType.self,
             xmlNamespace: "https://object.mediastore.amazonaws.com/doc/2017-09-01",
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
     /// Deletes an object at the specified path.
-    public func deleteObject(_ input: DeleteObjectRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteObjectResponse> {
-        return self.client.execute(operation: "DeleteObject", path: "/{Path+}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteObject(_ input: DeleteObjectRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteObjectResponse {
+        return try await self.client.execute(
+            operation: "DeleteObject", 
+            path: "/{Path+}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets the headers for an object at the specified path.
-    public func describeObject(_ input: DescribeObjectRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeObjectResponse> {
-        return self.client.execute(operation: "DescribeObject", path: "/{Path+}", httpMethod: .HEAD, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeObject(_ input: DescribeObjectRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeObjectResponse {
+        return try await self.client.execute(
+            operation: "DescribeObject", 
+            path: "/{Path+}", 
+            httpMethod: .HEAD, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Downloads the object at the specified path. If the object’s upload availability is set to streaming, AWS Elemental MediaStore downloads the object even if it’s still uploading the object.
-    public func getObject(_ input: GetObjectRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetObjectResponse> {
-        return self.client.execute(operation: "GetObject", path: "/{Path+}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getObject(_ input: GetObjectRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetObjectResponse {
+        return try await self.client.execute(
+            operation: "GetObject", 
+            path: "/{Path+}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Provides a list of metadata entries about folders and objects in the specified folder.
-    public func listItems(_ input: ListItemsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListItemsResponse> {
-        return self.client.execute(operation: "ListItems", path: "/", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listItems(_ input: ListItemsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListItemsResponse {
+        return try await self.client.execute(
+            operation: "ListItems", 
+            path: "/", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Uploads an object to the specified path. Object sizes are limited to 25 MB for standard upload availability and 10 MB for streaming upload availability.
-    public func putObject(_ input: PutObjectRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<PutObjectResponse> {
-        return self.client.execute(operation: "PutObject", path: "/{Path+}", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
-    }
-
-    // MARK: Streaming API Calls
-
-    /// Downloads the object at the specified path. If the object’s upload availability is set to streaming, AWS Elemental MediaStore downloads the object even if it’s still uploading the object.
-    public func getObjectStreaming(_ input: GetObjectRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil, _ stream: @escaping (ByteBuffer, EventLoop) -> EventLoopFuture<Void>) -> EventLoopFuture<GetObjectResponse> {
-        return self.client.execute(operation: "GetObject", path: "/{Path+}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop, stream: stream)
+    @Sendable
+    public func putObject(_ input: PutObjectRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> PutObjectResponse {
+        return try await self.client.execute(
+            operation: "PutObject", 
+            path: "/{Path+}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension MediaStoreData {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: MediaStoreData, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -109,57 +152,24 @@ extension MediaStoreData {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension MediaStoreData {
-    ///  Provides a list of metadata entries about folders and objects in the specified folder.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listItemsPaginator<Result>(
-        _ input: ListItemsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListItemsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listItems,
-            inputKey: \ListItemsRequest.nextToken,
-            outputKey: \ListItemsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Provides a list of metadata entries about folders and objects in the specified folder.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listItemsPaginator(
         _ input: ListItemsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListItemsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListItemsRequest, ListItemsResponse> {
+        return .init(
             input: input,
             command: self.listItems,
             inputKey: \ListItemsRequest.nextToken,
             outputKey: \ListItemsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }

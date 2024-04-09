@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS Amp service.
 ///
-/// Amazon Managed Service for Prometheus
+/// Amazon Managed Service for Prometheus is a serverless, Prometheus-compatible monitoring service for container metrics that makes it easier to securely monitor container environments at scale. With Amazon Managed Service for Prometheus, you can use the same open-source Prometheus data model and query language that you use today to monitor the performance of your containerized workloads, and also enjoy improved scalability, availability, and security without having to manage the underlying infrastructure. For more information about Amazon Managed Service for Prometheus, see the Amazon Managed Service for Prometheus User Guide. Amazon Managed Service for Prometheus includes two APIs.   Use the Amazon Web Services API described in this guide to manage Amazon Managed Service for Prometheus resources, such as workspaces, rule groups, and alert managers.   Use the Prometheus-compatible API to work within your Prometheus workspace.
 public struct Amp: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct Amp: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,127 +54,366 @@ public struct Amp: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "aps",
+            serviceName: "Amp",
+            serviceIdentifier: "aps",
             serviceProtocol: .restjson,
             apiVersion: "2020-08-01",
             endpoint: endpoint,
             errorType: AmpErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
-    /// Create an alert manager definition.
-    public func createAlertManagerDefinition(_ input: CreateAlertManagerDefinitionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateAlertManagerDefinitionResponse> {
-        return self.client.execute(operation: "CreateAlertManagerDefinition", path: "/workspaces/{workspaceId}/alertmanager/definition", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The CreateAlertManagerDefinition operation creates the alert manager definition in a workspace. If a workspace already has an alert manager definition, don't use this operation to update it. Instead, use PutAlertManagerDefinition.
+    @Sendable
+    public func createAlertManagerDefinition(_ input: CreateAlertManagerDefinitionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAlertManagerDefinitionResponse {
+        return try await self.client.execute(
+            operation: "CreateAlertManagerDefinition", 
+            path: "/workspaces/{workspaceId}/alertmanager/definition", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Create logging configuration.
-    public func createLoggingConfiguration(_ input: CreateLoggingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLoggingConfigurationResponse> {
-        return self.client.execute(operation: "CreateLoggingConfiguration", path: "/workspaces/{workspaceId}/logging", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The CreateLoggingConfiguration operation creates a logging configuration for the workspace. Use this operation to set the CloudWatch log group to which the logs will be published to.
+    @Sendable
+    public func createLoggingConfiguration(_ input: CreateLoggingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLoggingConfigurationResponse {
+        return try await self.client.execute(
+            operation: "CreateLoggingConfiguration", 
+            path: "/workspaces/{workspaceId}/logging", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Create a rule group namespace.
-    public func createRuleGroupsNamespace(_ input: CreateRuleGroupsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateRuleGroupsNamespaceResponse> {
-        return self.client.execute(operation: "CreateRuleGroupsNamespace", path: "/workspaces/{workspaceId}/rulegroupsnamespaces", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The CreateRuleGroupsNamespace operation creates a rule groups namespace within a workspace. A rule groups namespace is associated with exactly one rules file. A workspace can have multiple rule groups namespaces. Use this operation only to create new rule groups namespaces. To update an existing rule groups namespace, use PutRuleGroupsNamespace.
+    @Sendable
+    public func createRuleGroupsNamespace(_ input: CreateRuleGroupsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateRuleGroupsNamespaceResponse {
+        return try await self.client.execute(
+            operation: "CreateRuleGroupsNamespace", 
+            path: "/workspaces/{workspaceId}/rulegroupsnamespaces", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates a new AMP workspace.
-    public func createWorkspace(_ input: CreateWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateWorkspaceResponse> {
-        return self.client.execute(operation: "CreateWorkspace", path: "/workspaces", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The CreateScraper operation creates a scraper to collect metrics. A scraper pulls metrics from Prometheus-compatible sources within an Amazon EKS cluster, and sends them to your Amazon Managed Service for Prometheus workspace. You can configure the scraper to control what metrics are collected, and what transformations are applied prior to sending them to your workspace. If needed, an IAM role will be created for you that gives Amazon Managed Service for Prometheus access to the metrics in your cluster. For more information, see  Using roles for scraping metrics from EKS in the Amazon Managed Service for Prometheus User  Guide. You cannot update a scraper. If you want to change the configuration of the scraper, create a new scraper and delete the old one. The scrapeConfiguration parameter contains the base64-encoded version of the YAML configuration file.  For more information about collectors, including what metrics are collected, and how to configure the scraper, see Amazon Web Services managed collectors in the Amazon Managed Service for Prometheus User  Guide.
+    @Sendable
+    public func createScraper(_ input: CreateScraperRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateScraperResponse {
+        return try await self.client.execute(
+            operation: "CreateScraper", 
+            path: "/scrapers", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes an alert manager definition.
-    @discardableResult public func deleteAlertManagerDefinition(_ input: DeleteAlertManagerDefinitionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteAlertManagerDefinition", path: "/workspaces/{workspaceId}/alertmanager/definition", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a Prometheus workspace. A workspace is a logical space dedicated to the storage and querying of Prometheus metrics. You can have one or more workspaces in each Region in your account.
+    @Sendable
+    public func createWorkspace(_ input: CreateWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateWorkspaceResponse {
+        return try await self.client.execute(
+            operation: "CreateWorkspace", 
+            path: "/workspaces", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Delete logging configuration.
-    @discardableResult public func deleteLoggingConfiguration(_ input: DeleteLoggingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteLoggingConfiguration", path: "/workspaces/{workspaceId}/logging", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes the alert manager definition from a workspace.
+    @Sendable
+    public func deleteAlertManagerDefinition(_ input: DeleteAlertManagerDefinitionRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteAlertManagerDefinition", 
+            path: "/workspaces/{workspaceId}/alertmanager/definition", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Delete a rule groups namespace.
-    @discardableResult public func deleteRuleGroupsNamespace(_ input: DeleteRuleGroupsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteRuleGroupsNamespace", path: "/workspaces/{workspaceId}/rulegroupsnamespaces/{name}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes the logging configuration for a workspace.
+    @Sendable
+    public func deleteLoggingConfiguration(_ input: DeleteLoggingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteLoggingConfiguration", 
+            path: "/workspaces/{workspaceId}/logging", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes an AMP workspace.
-    @discardableResult public func deleteWorkspace(_ input: DeleteWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteWorkspace", path: "/workspaces/{workspaceId}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes one rule groups namespace and its associated rule groups definition.
+    @Sendable
+    public func deleteRuleGroupsNamespace(_ input: DeleteRuleGroupsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteRuleGroupsNamespace", 
+            path: "/workspaces/{workspaceId}/rulegroupsnamespaces/{name}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Describes an alert manager definition.
-    public func describeAlertManagerDefinition(_ input: DescribeAlertManagerDefinitionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeAlertManagerDefinitionResponse> {
-        return self.client.execute(operation: "DescribeAlertManagerDefinition", path: "/workspaces/{workspaceId}/alertmanager/definition", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The DeleteScraper operation deletes one scraper, and stops any metrics collection that the scraper performs.
+    @Sendable
+    public func deleteScraper(_ input: DeleteScraperRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteScraperResponse {
+        return try await self.client.execute(
+            operation: "DeleteScraper", 
+            path: "/scrapers/{scraperId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Describes logging configuration.
-    public func describeLoggingConfiguration(_ input: DescribeLoggingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLoggingConfigurationResponse> {
-        return self.client.execute(operation: "DescribeLoggingConfiguration", path: "/workspaces/{workspaceId}/logging", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes an existing workspace.   When you delete a workspace, the data that has been ingested into it is not immediately deleted. It will be permanently deleted within one month.
+    @Sendable
+    public func deleteWorkspace(_ input: DeleteWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteWorkspace", 
+            path: "/workspaces/{workspaceId}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Describe a rule groups namespace.
-    public func describeRuleGroupsNamespace(_ input: DescribeRuleGroupsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeRuleGroupsNamespaceResponse> {
-        return self.client.execute(operation: "DescribeRuleGroupsNamespace", path: "/workspaces/{workspaceId}/rulegroupsnamespaces/{name}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Retrieves the full information about the alert manager definition for a workspace.
+    @Sendable
+    public func describeAlertManagerDefinition(_ input: DescribeAlertManagerDefinitionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeAlertManagerDefinitionResponse {
+        return try await self.client.execute(
+            operation: "DescribeAlertManagerDefinition", 
+            path: "/workspaces/{workspaceId}/alertmanager/definition", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Describes an existing AMP workspace.
-    public func describeWorkspace(_ input: DescribeWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeWorkspaceResponse> {
-        return self.client.execute(operation: "DescribeWorkspace", path: "/workspaces/{workspaceId}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns complete information about the current logging configuration of the workspace.
+    @Sendable
+    public func describeLoggingConfiguration(_ input: DescribeLoggingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLoggingConfigurationResponse {
+        return try await self.client.execute(
+            operation: "DescribeLoggingConfiguration", 
+            path: "/workspaces/{workspaceId}/logging", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists rule groups namespaces.
-    public func listRuleGroupsNamespaces(_ input: ListRuleGroupsNamespacesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListRuleGroupsNamespacesResponse> {
-        return self.client.execute(operation: "ListRuleGroupsNamespaces", path: "/workspaces/{workspaceId}/rulegroupsnamespaces", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns complete information about one rule groups namespace. To retrieve a list of rule groups namespaces, use ListRuleGroupsNamespaces.
+    @Sendable
+    public func describeRuleGroupsNamespace(_ input: DescribeRuleGroupsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeRuleGroupsNamespaceResponse {
+        return try await self.client.execute(
+            operation: "DescribeRuleGroupsNamespace", 
+            path: "/workspaces/{workspaceId}/rulegroupsnamespaces/{name}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists the tags you have assigned to the resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{resourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The DescribeScraper operation displays information about an existing scraper.
+    @Sendable
+    public func describeScraper(_ input: DescribeScraperRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeScraperResponse {
+        return try await self.client.execute(
+            operation: "DescribeScraper", 
+            path: "/scrapers/{scraperId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists all AMP workspaces, including workspaces being created or deleted.
-    public func listWorkspaces(_ input: ListWorkspacesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListWorkspacesResponse> {
-        return self.client.execute(operation: "ListWorkspaces", path: "/workspaces", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns information about an existing workspace.
+    @Sendable
+    public func describeWorkspace(_ input: DescribeWorkspaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeWorkspaceResponse {
+        return try await self.client.execute(
+            operation: "DescribeWorkspace", 
+            path: "/workspaces/{workspaceId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Update an alert manager definition.
-    public func putAlertManagerDefinition(_ input: PutAlertManagerDefinitionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<PutAlertManagerDefinitionResponse> {
-        return self.client.execute(operation: "PutAlertManagerDefinition", path: "/workspaces/{workspaceId}/alertmanager/definition", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The GetDefaultScraperConfiguration operation returns the default  scraper configuration used when Amazon EKS creates a scraper for you.
+    @Sendable
+    public func getDefaultScraperConfiguration(_ input: GetDefaultScraperConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetDefaultScraperConfigurationResponse {
+        return try await self.client.execute(
+            operation: "GetDefaultScraperConfiguration", 
+            path: "/scraperconfiguration", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Update a rule groups namespace.
-    public func putRuleGroupsNamespace(_ input: PutRuleGroupsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<PutRuleGroupsNamespaceResponse> {
-        return self.client.execute(operation: "PutRuleGroupsNamespace", path: "/workspaces/{workspaceId}/rulegroupsnamespaces/{name}", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns a list of rule groups namespaces in a workspace.
+    @Sendable
+    public func listRuleGroupsNamespaces(_ input: ListRuleGroupsNamespacesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRuleGroupsNamespacesResponse {
+        return try await self.client.execute(
+            operation: "ListRuleGroupsNamespaces", 
+            path: "/workspaces/{workspaceId}/rulegroupsnamespaces", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates tags for the specified resource.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{resourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The ListScrapers operation lists all of the scrapers in your account. This includes scrapers being created or deleted. You can optionally filter the returned list.
+    @Sendable
+    public func listScrapers(_ input: ListScrapersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListScrapersResponse {
+        return try await self.client.execute(
+            operation: "ListScrapers", 
+            path: "/scrapers", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes tags from the specified resource.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{resourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// The ListTagsForResource operation returns the tags that are associated with an Amazon Managed Service for Prometheus resource. Currently, the only resources that can be tagged are workspaces and rule groups namespaces.
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Update logging configuration.
-    public func updateLoggingConfiguration(_ input: UpdateLoggingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateLoggingConfigurationResponse> {
-        return self.client.execute(operation: "UpdateLoggingConfiguration", path: "/workspaces/{workspaceId}/logging", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Lists all of the Amazon Managed Service for Prometheus workspaces in your account. This includes workspaces being created or deleted.
+    @Sendable
+    public func listWorkspaces(_ input: ListWorkspacesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListWorkspacesResponse {
+        return try await self.client.execute(
+            operation: "ListWorkspaces", 
+            path: "/workspaces", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Updates an AMP workspace alias.
-    @discardableResult public func updateWorkspaceAlias(_ input: UpdateWorkspaceAliasRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "UpdateWorkspaceAlias", path: "/workspaces/{workspaceId}/alias", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Updates an existing alert manager definition in a workspace. If the workspace does not already have an alert manager definition, don't use this operation to create it. Instead, use CreateAlertManagerDefinition.
+    @Sendable
+    public func putAlertManagerDefinition(_ input: PutAlertManagerDefinitionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> PutAlertManagerDefinitionResponse {
+        return try await self.client.execute(
+            operation: "PutAlertManagerDefinition", 
+            path: "/workspaces/{workspaceId}/alertmanager/definition", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates an existing rule groups namespace within a workspace. A rule groups namespace is associated with exactly one rules file. A workspace can have multiple rule groups namespaces. Use this operation only to update existing rule groups namespaces. To create a new rule groups namespace, use CreateRuleGroupsNamespace. You can't use this operation to add tags to an existing rule groups namespace. Instead, use TagResource.
+    @Sendable
+    public func putRuleGroupsNamespace(_ input: PutRuleGroupsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> PutRuleGroupsNamespaceResponse {
+        return try await self.client.execute(
+            operation: "PutRuleGroupsNamespace", 
+            path: "/workspaces/{workspaceId}/rulegroupsnamespaces/{name}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// The TagResource operation associates tags with an Amazon Managed Service for Prometheus resource. The only resources that can be tagged are workspaces and rule groups namespaces.  If you specify a new tag key for the resource, this tag is appended to the list of tags associated with the resource. If you specify a tag key that is already associated with the resource, the new tag value that you specify replaces the previous value for that tag.
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Removes the specified tags from an Amazon Managed Service for Prometheus resource. The only resources that can be tagged are workspaces and rule groups namespaces.
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates the log group ARN or the workspace ID of the current logging configuration.
+    @Sendable
+    public func updateLoggingConfiguration(_ input: UpdateLoggingConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateLoggingConfigurationResponse {
+        return try await self.client.execute(
+            operation: "UpdateLoggingConfiguration", 
+            path: "/workspaces/{workspaceId}/logging", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates the alias of an existing workspace.
+    @Sendable
+    public func updateWorkspaceAlias(_ input: UpdateWorkspaceAliasRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "UpdateWorkspaceAlias", 
+            path: "/workspaces/{workspaceId}/alias", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Amp {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Amp, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -180,110 +423,62 @@ extension Amp {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Amp {
-    ///  Lists rule groups namespaces.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listRuleGroupsNamespacesPaginator<Result>(
-        _ input: ListRuleGroupsNamespacesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListRuleGroupsNamespacesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listRuleGroupsNamespaces,
-            inputKey: \ListRuleGroupsNamespacesRequest.nextToken,
-            outputKey: \ListRuleGroupsNamespacesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of rule groups namespaces in a workspace.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listRuleGroupsNamespacesPaginator(
         _ input: ListRuleGroupsNamespacesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListRuleGroupsNamespacesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRuleGroupsNamespacesRequest, ListRuleGroupsNamespacesResponse> {
+        return .init(
             input: input,
             command: self.listRuleGroupsNamespaces,
             inputKey: \ListRuleGroupsNamespacesRequest.nextToken,
             outputKey: \ListRuleGroupsNamespacesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all AMP workspaces, including workspaces being created or deleted.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listWorkspacesPaginator<Result>(
-        _ input: ListWorkspacesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListWorkspacesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listWorkspaces,
-            inputKey: \ListWorkspacesRequest.nextToken,
-            outputKey: \ListWorkspacesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// The ListScrapers operation lists all of the scrapers in your account. This includes scrapers being created or deleted. You can optionally filter the returned list.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listScrapersPaginator(
+        _ input: ListScrapersRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListScrapersRequest, ListScrapersResponse> {
+        return .init(
+            input: input,
+            command: self.listScrapers,
+            inputKey: \ListScrapersRequest.nextToken,
+            outputKey: \ListScrapersResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists all of the Amazon Managed Service for Prometheus workspaces in your account. This includes workspaces being created or deleted.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listWorkspacesPaginator(
         _ input: ListWorkspacesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListWorkspacesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListWorkspacesRequest, ListWorkspacesResponse> {
+        return .init(
             input: input,
             command: self.listWorkspaces,
             inputKey: \ListWorkspacesRequest.nextToken,
             outputKey: \ListWorkspacesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
@@ -295,6 +490,16 @@ extension Amp.ListRuleGroupsNamespacesRequest: AWSPaginateToken {
             name: self.name,
             nextToken: token,
             workspaceId: self.workspaceId
+        )
+    }
+}
+
+extension Amp.ListScrapersRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Amp.ListScrapersRequest {
+        return .init(
+            filters: self.filters,
+            maxResults: self.maxResults,
+            nextToken: token
         )
     }
 }
@@ -311,14 +516,43 @@ extension Amp.ListWorkspacesRequest: AWSPaginateToken {
 
 // MARK: Waiters
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Amp {
-    /// Wait until a workspace reaches ACTIVE status
+    public func waitUntilScraperActive(
+        _ input: DescribeScraperRequest,
+        maxWaitTime: TimeAmount? = nil,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
+        let waiter = AWSClient.Waiter(
+            acceptors: [
+                .init(state: .success, matcher: try! JMESPathMatcher("scraper.status.statusCode", expected: "ACTIVE")),
+                .init(state: .failure, matcher: try! JMESPathMatcher("scraper.status.statusCode", expected: "CREATION_FAILED")),
+            ],
+            command: self.describeScraper
+        )
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
+    }
+
+    public func waitUntilScraperDeleted(
+        _ input: DescribeScraperRequest,
+        maxWaitTime: TimeAmount? = nil,
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
+        let waiter = AWSClient.Waiter(
+            acceptors: [
+                .init(state: .success, matcher: AWSErrorCodeMatcher("ResourceNotFoundException")),
+                .init(state: .failure, matcher: try! JMESPathMatcher("scraper.status.statusCode", expected: "DELETION_FAILED")),
+            ],
+            command: self.describeScraper
+        )
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
+    }
+
     public func waitUntilWorkspaceActive(
         _ input: DescribeWorkspaceRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESPathMatcher("workspace.status.statusCode", expected: "ACTIVE")),
@@ -327,16 +561,14 @@ extension Amp {
             ],
             command: self.describeWorkspace
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until a workspace reaches DELETED status
     public func waitUntilWorkspaceDeleted(
         _ input: DescribeWorkspaceRequest,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: AWSErrorCodeMatcher("ResourceNotFoundException")),
@@ -344,6 +576,6 @@ extension Amp {
             ],
             command: self.describeWorkspace
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 }

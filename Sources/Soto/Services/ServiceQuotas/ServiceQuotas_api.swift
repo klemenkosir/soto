@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS ServiceQuotas service.
 ///
-/// With Service Quotas, you can view and manage your quotas easily as your AWS workloads grow. Quotas, also referred to as limits, are the maximum number of resources that you can create in your AWS account. For more information, see the Service Quotas User Guide.
+/// With Service Quotas, you can view and manage your quotas easily as your Amazon Web Services workloads grow. Quotas, also referred to as limits, are the maximum number of resources that you can create in your Amazon Web Services account. For more information, see the Service Quotas User Guide.
 public struct ServiceQuotas: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct ServiceQuotas: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -51,123 +55,283 @@ public struct ServiceQuotas: AWSService {
             region: region,
             partition: region?.partition ?? partition,
             amzTarget: "ServiceQuotasV20190624",
-            service: "servicequotas",
+            serviceName: "ServiceQuotas",
+            serviceIdentifier: "servicequotas",
             serviceProtocol: .json(version: "1.1"),
             apiVersion: "2019-06-24",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "us-gov-east-1": "servicequotas.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "servicequotas.us-gov-west-1.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: ServiceQuotasErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-gov-east-1": "servicequotas.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "servicequotas.us-gov-west-1.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
-    /// Associates your quota request template with your organization. When a new account is created in your organization, the quota increase requests in the template are automatically applied to the account. You can add a quota increase request for any adjustable quota to your template.
-    public func associateServiceQuotaTemplate(_ input: AssociateServiceQuotaTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AssociateServiceQuotaTemplateResponse> {
-        return self.client.execute(operation: "AssociateServiceQuotaTemplate", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Associates your quota request template with your organization. When a new Amazon Web Services account is created in your organization, the quota increase requests in the template are automatically applied to the account. You can add a quota increase request for any adjustable quota to your template.
+    @Sendable
+    public func associateServiceQuotaTemplate(_ input: AssociateServiceQuotaTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AssociateServiceQuotaTemplateResponse {
+        return try await self.client.execute(
+            operation: "AssociateServiceQuotaTemplate", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the quota increase request for the specified quota from your quota request template.
-    public func deleteServiceQuotaIncreaseRequestFromTemplate(_ input: DeleteServiceQuotaIncreaseRequestFromTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteServiceQuotaIncreaseRequestFromTemplateResponse> {
-        return self.client.execute(operation: "DeleteServiceQuotaIncreaseRequestFromTemplate", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteServiceQuotaIncreaseRequestFromTemplate(_ input: DeleteServiceQuotaIncreaseRequestFromTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteServiceQuotaIncreaseRequestFromTemplateResponse {
+        return try await self.client.execute(
+            operation: "DeleteServiceQuotaIncreaseRequestFromTemplate", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Disables your quota request template. After a template is disabled, the quota increase requests in the template are not applied to new accounts in your organization. Disabling a quota request template does not apply its quota increase requests.
-    public func disassociateServiceQuotaTemplate(_ input: DisassociateServiceQuotaTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DisassociateServiceQuotaTemplateResponse> {
-        return self.client.execute(operation: "DisassociateServiceQuotaTemplate", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Disables your quota request template. After a template is disabled, the quota increase requests in the template are not applied to new Amazon Web Services accounts in your organization. Disabling a quota request template does not apply its quota increase requests.
+    @Sendable
+    public func disassociateServiceQuotaTemplate(_ input: DisassociateServiceQuotaTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DisassociateServiceQuotaTemplateResponse {
+        return try await self.client.execute(
+            operation: "DisassociateServiceQuotaTemplate", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves the default value for the specified quota. The default value does not reflect any quota increases.
-    public func getAWSDefaultServiceQuota(_ input: GetAWSDefaultServiceQuotaRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetAWSDefaultServiceQuotaResponse> {
-        return self.client.execute(operation: "GetAWSDefaultServiceQuota", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getAWSDefaultServiceQuota(_ input: GetAWSDefaultServiceQuotaRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAWSDefaultServiceQuotaResponse {
+        return try await self.client.execute(
+            operation: "GetAWSDefaultServiceQuota", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves the status of the association for the quota request template.
-    public func getAssociationForServiceQuotaTemplate(_ input: GetAssociationForServiceQuotaTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetAssociationForServiceQuotaTemplateResponse> {
-        return self.client.execute(operation: "GetAssociationForServiceQuotaTemplate", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getAssociationForServiceQuotaTemplate(_ input: GetAssociationForServiceQuotaTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetAssociationForServiceQuotaTemplateResponse {
+        return try await self.client.execute(
+            operation: "GetAssociationForServiceQuotaTemplate", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves information about the specified quota increase request.
-    public func getRequestedServiceQuotaChange(_ input: GetRequestedServiceQuotaChangeRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetRequestedServiceQuotaChangeResponse> {
-        return self.client.execute(operation: "GetRequestedServiceQuotaChange", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getRequestedServiceQuotaChange(_ input: GetRequestedServiceQuotaChangeRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetRequestedServiceQuotaChangeResponse {
+        return try await self.client.execute(
+            operation: "GetRequestedServiceQuotaChange", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves the applied quota value for the specified quota. For some quotas, only the default values are available. If the applied quota value is not available for a quota, the quota is not retrieved.
-    public func getServiceQuota(_ input: GetServiceQuotaRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetServiceQuotaResponse> {
-        return self.client.execute(operation: "GetServiceQuota", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getServiceQuota(_ input: GetServiceQuotaRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetServiceQuotaResponse {
+        return try await self.client.execute(
+            operation: "GetServiceQuota", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves information about the specified quota increase request in your quota request template.
-    public func getServiceQuotaIncreaseRequestFromTemplate(_ input: GetServiceQuotaIncreaseRequestFromTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetServiceQuotaIncreaseRequestFromTemplateResponse> {
-        return self.client.execute(operation: "GetServiceQuotaIncreaseRequestFromTemplate", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getServiceQuotaIncreaseRequestFromTemplate(_ input: GetServiceQuotaIncreaseRequestFromTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetServiceQuotaIncreaseRequestFromTemplateResponse {
+        return try await self.client.execute(
+            operation: "GetServiceQuotaIncreaseRequestFromTemplate", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists the default values for the quotas for the specified AWS service. A default value does not reflect any quota increases.
-    public func listAWSDefaultServiceQuotas(_ input: ListAWSDefaultServiceQuotasRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListAWSDefaultServiceQuotasResponse> {
-        return self.client.execute(operation: "ListAWSDefaultServiceQuotas", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Lists the default values for the quotas for the specified Amazon Web Service. A default value does not reflect any quota increases.
+    @Sendable
+    public func listAWSDefaultServiceQuotas(_ input: ListAWSDefaultServiceQuotasRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAWSDefaultServiceQuotasResponse {
+        return try await self.client.execute(
+            operation: "ListAWSDefaultServiceQuotas", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Retrieves the quota increase requests for the specified service.
-    public func listRequestedServiceQuotaChangeHistory(_ input: ListRequestedServiceQuotaChangeHistoryRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListRequestedServiceQuotaChangeHistoryResponse> {
-        return self.client.execute(operation: "ListRequestedServiceQuotaChangeHistory", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Retrieves the quota increase requests for the specified Amazon Web Service.
+    @Sendable
+    public func listRequestedServiceQuotaChangeHistory(_ input: ListRequestedServiceQuotaChangeHistoryRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRequestedServiceQuotaChangeHistoryResponse {
+        return try await self.client.execute(
+            operation: "ListRequestedServiceQuotaChangeHistory", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves the quota increase requests for the specified quota.
-    public func listRequestedServiceQuotaChangeHistoryByQuota(_ input: ListRequestedServiceQuotaChangeHistoryByQuotaRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListRequestedServiceQuotaChangeHistoryByQuotaResponse> {
-        return self.client.execute(operation: "ListRequestedServiceQuotaChangeHistoryByQuota", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listRequestedServiceQuotaChangeHistoryByQuota(_ input: ListRequestedServiceQuotaChangeHistoryByQuotaRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListRequestedServiceQuotaChangeHistoryByQuotaResponse {
+        return try await self.client.execute(
+            operation: "ListRequestedServiceQuotaChangeHistoryByQuota", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the quota increase requests in the specified quota request template.
-    public func listServiceQuotaIncreaseRequestsInTemplate(_ input: ListServiceQuotaIncreaseRequestsInTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListServiceQuotaIncreaseRequestsInTemplateResponse> {
-        return self.client.execute(operation: "ListServiceQuotaIncreaseRequestsInTemplate", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listServiceQuotaIncreaseRequestsInTemplate(_ input: ListServiceQuotaIncreaseRequestsInTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListServiceQuotaIncreaseRequestsInTemplateResponse {
+        return try await self.client.execute(
+            operation: "ListServiceQuotaIncreaseRequestsInTemplate", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists the applied quota values for the specified AWS service. For some quotas, only the default values are available. If the applied quota value is not available for a quota, the quota is not retrieved.
-    public func listServiceQuotas(_ input: ListServiceQuotasRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListServiceQuotasResponse> {
-        return self.client.execute(operation: "ListServiceQuotas", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Lists the applied quota values for the specified Amazon Web Service. For some quotas, only the default values are available. If the applied quota value is not available for a quota, the quota is not retrieved.
+    @Sendable
+    public func listServiceQuotas(_ input: ListServiceQuotasRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListServiceQuotasResponse {
+        return try await self.client.execute(
+            operation: "ListServiceQuotas", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists the names and codes for the services integrated with Service Quotas.
-    public func listServices(_ input: ListServicesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListServicesResponse> {
-        return self.client.execute(operation: "ListServices", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Lists the names and codes for the Amazon Web Services integrated with Service Quotas.
+    @Sendable
+    public func listServices(_ input: ListServicesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListServicesResponse {
+        return try await self.client.execute(
+            operation: "ListServices", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of the tags assigned to the specified applied quota.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Adds a quota increase request to your quota request template.
-    public func putServiceQuotaIncreaseRequestIntoTemplate(_ input: PutServiceQuotaIncreaseRequestIntoTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<PutServiceQuotaIncreaseRequestIntoTemplateResponse> {
-        return self.client.execute(operation: "PutServiceQuotaIncreaseRequestIntoTemplate", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func putServiceQuotaIncreaseRequestIntoTemplate(_ input: PutServiceQuotaIncreaseRequestIntoTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> PutServiceQuotaIncreaseRequestIntoTemplateResponse {
+        return try await self.client.execute(
+            operation: "PutServiceQuotaIncreaseRequestIntoTemplate", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Submits a quota increase request for the specified quota.
-    public func requestServiceQuotaIncrease(_ input: RequestServiceQuotaIncreaseRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RequestServiceQuotaIncreaseResponse> {
-        return self.client.execute(operation: "RequestServiceQuotaIncrease", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func requestServiceQuotaIncrease(_ input: RequestServiceQuotaIncreaseRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> RequestServiceQuotaIncreaseResponse {
+        return try await self.client.execute(
+            operation: "RequestServiceQuotaIncrease", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Adds tags to the specified applied quota. You can include one or more tags to add to the quota.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Removes tags from the specified applied quota. You can specify one or more tags to remove.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension ServiceQuotas {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: ServiceQuotas, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -177,322 +341,119 @@ extension ServiceQuotas {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension ServiceQuotas {
-    ///  Lists the default values for the quotas for the specified AWS service. A default value does not reflect any quota increases.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listAWSDefaultServiceQuotasPaginator<Result>(
-        _ input: ListAWSDefaultServiceQuotasRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListAWSDefaultServiceQuotasResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listAWSDefaultServiceQuotas,
-            inputKey: \ListAWSDefaultServiceQuotasRequest.nextToken,
-            outputKey: \ListAWSDefaultServiceQuotasResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the default values for the quotas for the specified Amazon Web Service. A default value does not reflect any quota increases.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listAWSDefaultServiceQuotasPaginator(
         _ input: ListAWSDefaultServiceQuotasRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListAWSDefaultServiceQuotasResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAWSDefaultServiceQuotasRequest, ListAWSDefaultServiceQuotasResponse> {
+        return .init(
             input: input,
             command: self.listAWSDefaultServiceQuotas,
             inputKey: \ListAWSDefaultServiceQuotasRequest.nextToken,
             outputKey: \ListAWSDefaultServiceQuotasResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves the quota increase requests for the specified service.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listRequestedServiceQuotaChangeHistoryPaginator<Result>(
-        _ input: ListRequestedServiceQuotaChangeHistoryRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListRequestedServiceQuotaChangeHistoryResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listRequestedServiceQuotaChangeHistory,
-            inputKey: \ListRequestedServiceQuotaChangeHistoryRequest.nextToken,
-            outputKey: \ListRequestedServiceQuotaChangeHistoryResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves the quota increase requests for the specified Amazon Web Service.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listRequestedServiceQuotaChangeHistoryPaginator(
         _ input: ListRequestedServiceQuotaChangeHistoryRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListRequestedServiceQuotaChangeHistoryResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRequestedServiceQuotaChangeHistoryRequest, ListRequestedServiceQuotaChangeHistoryResponse> {
+        return .init(
             input: input,
             command: self.listRequestedServiceQuotaChangeHistory,
             inputKey: \ListRequestedServiceQuotaChangeHistoryRequest.nextToken,
             outputKey: \ListRequestedServiceQuotaChangeHistoryResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves the quota increase requests for the specified quota.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listRequestedServiceQuotaChangeHistoryByQuotaPaginator<Result>(
-        _ input: ListRequestedServiceQuotaChangeHistoryByQuotaRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListRequestedServiceQuotaChangeHistoryByQuotaResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listRequestedServiceQuotaChangeHistoryByQuota,
-            inputKey: \ListRequestedServiceQuotaChangeHistoryByQuotaRequest.nextToken,
-            outputKey: \ListRequestedServiceQuotaChangeHistoryByQuotaResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves the quota increase requests for the specified quota.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listRequestedServiceQuotaChangeHistoryByQuotaPaginator(
         _ input: ListRequestedServiceQuotaChangeHistoryByQuotaRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListRequestedServiceQuotaChangeHistoryByQuotaResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListRequestedServiceQuotaChangeHistoryByQuotaRequest, ListRequestedServiceQuotaChangeHistoryByQuotaResponse> {
+        return .init(
             input: input,
             command: self.listRequestedServiceQuotaChangeHistoryByQuota,
             inputKey: \ListRequestedServiceQuotaChangeHistoryByQuotaRequest.nextToken,
             outputKey: \ListRequestedServiceQuotaChangeHistoryByQuotaResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the quota increase requests in the specified quota request template.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listServiceQuotaIncreaseRequestsInTemplatePaginator<Result>(
-        _ input: ListServiceQuotaIncreaseRequestsInTemplateRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListServiceQuotaIncreaseRequestsInTemplateResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listServiceQuotaIncreaseRequestsInTemplate,
-            inputKey: \ListServiceQuotaIncreaseRequestsInTemplateRequest.nextToken,
-            outputKey: \ListServiceQuotaIncreaseRequestsInTemplateResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the quota increase requests in the specified quota request template.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listServiceQuotaIncreaseRequestsInTemplatePaginator(
         _ input: ListServiceQuotaIncreaseRequestsInTemplateRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListServiceQuotaIncreaseRequestsInTemplateResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListServiceQuotaIncreaseRequestsInTemplateRequest, ListServiceQuotaIncreaseRequestsInTemplateResponse> {
+        return .init(
             input: input,
             command: self.listServiceQuotaIncreaseRequestsInTemplate,
             inputKey: \ListServiceQuotaIncreaseRequestsInTemplateRequest.nextToken,
             outputKey: \ListServiceQuotaIncreaseRequestsInTemplateResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the applied quota values for the specified AWS service. For some quotas, only the default values are available. If the applied quota value is not available for a quota, the quota is not retrieved.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listServiceQuotasPaginator<Result>(
-        _ input: ListServiceQuotasRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListServiceQuotasResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listServiceQuotas,
-            inputKey: \ListServiceQuotasRequest.nextToken,
-            outputKey: \ListServiceQuotasResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the applied quota values for the specified Amazon Web Service. For some quotas, only the default values are available. If the applied quota value is not available for a quota, the quota is not retrieved.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listServiceQuotasPaginator(
         _ input: ListServiceQuotasRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListServiceQuotasResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListServiceQuotasRequest, ListServiceQuotasResponse> {
+        return .init(
             input: input,
             command: self.listServiceQuotas,
             inputKey: \ListServiceQuotasRequest.nextToken,
             outputKey: \ListServiceQuotasResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the names and codes for the services integrated with Service Quotas.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listServicesPaginator<Result>(
-        _ input: ListServicesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListServicesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listServices,
-            inputKey: \ListServicesRequest.nextToken,
-            outputKey: \ListServicesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the names and codes for the Amazon Web Services integrated with Service Quotas.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listServicesPaginator(
         _ input: ListServicesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListServicesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListServicesRequest, ListServicesResponse> {
+        return .init(
             input: input,
             command: self.listServices,
             inputKey: \ListServicesRequest.nextToken,
             outputKey: \ListServicesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
@@ -513,6 +474,7 @@ extension ServiceQuotas.ListRequestedServiceQuotaChangeHistoryByQuotaRequest: AW
             maxResults: self.maxResults,
             nextToken: token,
             quotaCode: self.quotaCode,
+            quotaRequestedAtLevel: self.quotaRequestedAtLevel,
             serviceCode: self.serviceCode,
             status: self.status
         )
@@ -524,6 +486,7 @@ extension ServiceQuotas.ListRequestedServiceQuotaChangeHistoryRequest: AWSPagina
         return .init(
             maxResults: self.maxResults,
             nextToken: token,
+            quotaRequestedAtLevel: self.quotaRequestedAtLevel,
             serviceCode: self.serviceCode,
             status: self.status
         )
@@ -546,6 +509,8 @@ extension ServiceQuotas.ListServiceQuotasRequest: AWSPaginateToken {
         return .init(
             maxResults: self.maxResults,
             nextToken: token,
+            quotaAppliedAtLevel: self.quotaAppliedAtLevel,
+            quotaCode: self.quotaCode,
             serviceCode: self.serviceCode
         )
     }

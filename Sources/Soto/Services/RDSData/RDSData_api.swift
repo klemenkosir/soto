@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS RDSData service.
 ///
-/// Amazon RDS Data Service Amazon RDS provides an HTTP endpoint to run SQL statements on an Amazon Aurora Serverless v1 DB cluster. To run these statements, you work with the Data Service API.  The Data Service API isn't supported on Amazon Aurora Serverless v2 DB clusters.  For more information about the Data Service API, see Using the Data API in the Amazon Aurora User Guide.
+/// RDS Data API Amazon RDS provides an HTTP endpoint to run SQL statements on an Amazon Aurora DB cluster. To run these statements, you use the RDS Data API (Data API). Data API is available with the following types of Aurora databases:   Aurora PostgreSQL - Serverless v2, Serverless v1, and provisioned   Aurora MySQL - Serverless v1 only   For more information about the Data API, see Using RDS Data API in the Amazon Aurora User Guide.
 public struct RDSData: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct RDSData: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,61 +54,117 @@ public struct RDSData: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "rds-data",
+            serviceName: "RDSData",
+            serviceIdentifier: "rds-data",
             serviceProtocol: .restjson,
             apiVersion: "2018-08-01",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "us-east-1": "rds-data-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "rds-data-fips.us-east-2.amazonaws.com",
-                    "us-west-1": "rds-data-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "rds-data-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: RDSDataErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-east-1": "rds-data-fips.us-east-1.amazonaws.com",
+            "us-east-2": "rds-data-fips.us-east-2.amazonaws.com",
+            "us-west-1": "rds-data-fips.us-west-1.amazonaws.com",
+            "us-west-2": "rds-data-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
     /// Runs a batch SQL statement over an array of data. You can run bulk update and insert operations for multiple records using a DML  statement with different parameter sets. Bulk operations can provide a significant  performance improvement over individual insert and update operations.  If a call isn't part of a transaction because it doesn't include the transactionID parameter, changes that result from the call are committed automatically. There isn't a fixed upper limit on the number of parameter sets. However, the maximum size of the HTTP request submitted through the Data API is 4 MiB. If the request exceeds this limit, the Data API returns an error and doesn't process the request. This 4-MiB limit includes the size of the HTTP headers and the JSON notation in the request. Thus, the number of parameter sets that you can include depends on a combination of factors, such as the size of the SQL statement and the size of each parameter set. The response size limit is 1 MiB. If the call returns more than 1 MiB of response data, the call is terminated.
-    public func batchExecuteStatement(_ input: BatchExecuteStatementRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<BatchExecuteStatementResponse> {
-        return self.client.execute(operation: "BatchExecuteStatement", path: "/BatchExecute", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func batchExecuteStatement(_ input: BatchExecuteStatementRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchExecuteStatementResponse {
+        return try await self.client.execute(
+            operation: "BatchExecuteStatement", 
+            path: "/BatchExecute", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Starts a SQL transaction.  A transaction can run for a maximum of 24 hours. A transaction is terminated and rolled back automatically after 24 hours. A transaction times out if no calls use its transaction ID in three minutes. If a transaction times out before it's committed, it's rolled back automatically. DDL statements inside a transaction cause an implicit commit. We recommend that you run each DDL statement in a separate ExecuteStatement call with continueAfterTimeout enabled.
-    public func beginTransaction(_ input: BeginTransactionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<BeginTransactionResponse> {
-        return self.client.execute(operation: "BeginTransaction", path: "/BeginTransaction", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func beginTransaction(_ input: BeginTransactionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BeginTransactionResponse {
+        return try await self.client.execute(
+            operation: "BeginTransaction", 
+            path: "/BeginTransaction", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Ends a SQL transaction started with the BeginTransaction operation and commits the changes.
-    public func commitTransaction(_ input: CommitTransactionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CommitTransactionResponse> {
-        return self.client.execute(operation: "CommitTransaction", path: "/CommitTransaction", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func commitTransaction(_ input: CommitTransactionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CommitTransactionResponse {
+        return try await self.client.execute(
+            operation: "CommitTransaction", 
+            path: "/CommitTransaction", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Runs one or more SQL statements.  This operation is deprecated. Use the BatchExecuteStatement or ExecuteStatement operation.
+    /// Runs one or more SQL statements.  This operation isn't supported for Aurora PostgreSQL Serverless v2 and provisioned DB clusters, and for Aurora Serverless v1 DB clusters,  the operation is deprecated. Use the BatchExecuteStatement or ExecuteStatement operation.
     @available(*, deprecated, message: "The ExecuteSql API is deprecated, please use the ExecuteStatement API.")
-    public func executeSql(_ input: ExecuteSqlRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ExecuteSqlResponse> {
-        return self.client.execute(operation: "ExecuteSql", path: "/ExecuteSql", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func executeSql(_ input: ExecuteSqlRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ExecuteSqlResponse {
+        return try await self.client.execute(
+            operation: "ExecuteSql", 
+            path: "/ExecuteSql", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Runs a SQL statement against a database.  If a call isn't part of a transaction because it doesn't include the transactionID parameter, changes that result from the call are committed automatically. If the binary response data from the database is more than 1 MB, the call is terminated.
-    public func executeStatement(_ input: ExecuteStatementRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ExecuteStatementResponse> {
-        return self.client.execute(operation: "ExecuteStatement", path: "/Execute", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func executeStatement(_ input: ExecuteStatementRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ExecuteStatementResponse {
+        return try await self.client.execute(
+            operation: "ExecuteStatement", 
+            path: "/Execute", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Performs a rollback of a transaction. Rolling back a transaction cancels its changes.
-    public func rollbackTransaction(_ input: RollbackTransactionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RollbackTransactionResponse> {
-        return self.client.execute(operation: "RollbackTransaction", path: "/RollbackTransaction", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func rollbackTransaction(_ input: RollbackTransactionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> RollbackTransactionResponse {
+        return try await self.client.execute(
+            operation: "RollbackTransaction", 
+            path: "/RollbackTransaction", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension RDSData {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: RDSData, patch: AWSServiceConfig.Patch) {
         self.client = from.client

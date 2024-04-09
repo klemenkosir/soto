@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS VoiceID service.
 ///
-/// Amazon Connect Voice ID provides real-time caller authentication and fraud screening. This guide describes the APIs used for this service.
+/// Amazon Connect Voice ID provides real-time caller authentication and fraud risk detection, which make voice interactions in contact centers more secure and efficient.
 public struct VoiceID: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct VoiceID: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -51,134 +55,414 @@ public struct VoiceID: AWSService {
             region: region,
             partition: region?.partition ?? partition,
             amzTarget: "VoiceID",
-            service: "voiceid",
+            serviceName: "VoiceID",
+            serviceIdentifier: "voiceid",
             serviceProtocol: .json(version: "1.0"),
             apiVersion: "2021-09-27",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "ca-central-1": "voiceid-fips.ca-central-1.amazonaws.com",
-                    "us-east-1": "voiceid-fips.us-east-1.amazonaws.com",
-                    "us-west-2": "voiceid-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: VoiceIDErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "voiceid-fips.ca-central-1.amazonaws.com",
+            "us-east-1": "voiceid-fips.us-east-1.amazonaws.com",
+            "us-west-2": "voiceid-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
-    /// Creates a domain that contains all Amazon Connect Voice ID data, such as speakers, fraudsters, customer audio, and voiceprints.
-    public func createDomain(_ input: CreateDomainRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateDomainResponse> {
-        return self.client.execute(operation: "CreateDomain", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Associates the fraudsters with the watchlist specified in the same domain.
+    @Sendable
+    public func associateFraudster(_ input: AssociateFraudsterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AssociateFraudsterResponse {
+        return try await self.client.execute(
+            operation: "AssociateFraudster", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates a domain that contains all Amazon Connect Voice ID data, such as speakers, fraudsters, customer audio, and voiceprints.  Every domain is created with a default watchlist that fraudsters can be a part of.
+    @Sendable
+    public func createDomain(_ input: CreateDomainRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateDomainResponse {
+        return try await self.client.execute(
+            operation: "CreateDomain", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates a watchlist that fraudsters can be a part of.
+    @Sendable
+    public func createWatchlist(_ input: CreateWatchlistRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateWatchlistResponse {
+        return try await self.client.execute(
+            operation: "CreateWatchlist", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the specified domain from Voice ID.
-    @discardableResult public func deleteDomain(_ input: DeleteDomainRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteDomain", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteDomain(_ input: DeleteDomainRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteDomain", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes the specified fraudster from Voice ID.
-    @discardableResult public func deleteFraudster(_ input: DeleteFraudsterRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteFraudster", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes the specified fraudster from Voice ID. This action disassociates the fraudster from any watchlists it is a part of.
+    @Sendable
+    public func deleteFraudster(_ input: DeleteFraudsterRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteFraudster", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the specified speaker from Voice ID.
-    @discardableResult public func deleteSpeaker(_ input: DeleteSpeakerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteSpeaker", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteSpeaker(_ input: DeleteSpeakerRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteSpeaker", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes the specified watchlist from Voice ID. This API throws an exception when there are fraudsters in the watchlist that you are trying to delete. You must delete the fraudsters, and then delete the watchlist. Every domain has a default watchlist which cannot be deleted.
+    @Sendable
+    public func deleteWatchlist(_ input: DeleteWatchlistRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteWatchlist", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describes the specified domain.
-    public func describeDomain(_ input: DescribeDomainRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeDomainResponse> {
-        return self.client.execute(operation: "DescribeDomain", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeDomain(_ input: DescribeDomainRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeDomainResponse {
+        return try await self.client.execute(
+            operation: "DescribeDomain", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describes the specified fraudster.
-    public func describeFraudster(_ input: DescribeFraudsterRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeFraudsterResponse> {
-        return self.client.execute(operation: "DescribeFraudster", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeFraudster(_ input: DescribeFraudsterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeFraudsterResponse {
+        return try await self.client.execute(
+            operation: "DescribeFraudster", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describes the specified fraudster registration job.
-    public func describeFraudsterRegistrationJob(_ input: DescribeFraudsterRegistrationJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeFraudsterRegistrationJobResponse> {
-        return self.client.execute(operation: "DescribeFraudsterRegistrationJob", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeFraudsterRegistrationJob(_ input: DescribeFraudsterRegistrationJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeFraudsterRegistrationJobResponse {
+        return try await self.client.execute(
+            operation: "DescribeFraudsterRegistrationJob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describes the specified speaker.
-    public func describeSpeaker(_ input: DescribeSpeakerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeSpeakerResponse> {
-        return self.client.execute(operation: "DescribeSpeaker", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeSpeaker(_ input: DescribeSpeakerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeSpeakerResponse {
+        return try await self.client.execute(
+            operation: "DescribeSpeaker", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describes the specified speaker enrollment job.
-    public func describeSpeakerEnrollmentJob(_ input: DescribeSpeakerEnrollmentJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeSpeakerEnrollmentJobResponse> {
-        return self.client.execute(operation: "DescribeSpeakerEnrollmentJob", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeSpeakerEnrollmentJob(_ input: DescribeSpeakerEnrollmentJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeSpeakerEnrollmentJobResponse {
+        return try await self.client.execute(
+            operation: "DescribeSpeakerEnrollmentJob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Describes the specified watchlist.
+    @Sendable
+    public func describeWatchlist(_ input: DescribeWatchlistRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeWatchlistResponse {
+        return try await self.client.execute(
+            operation: "DescribeWatchlist", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Disassociates the fraudsters from the watchlist specified. Voice ID always expects a fraudster to be a part of at least one watchlist. If you try to disassociate a fraudster from its only watchlist, a ValidationException is thrown.
+    @Sendable
+    public func disassociateFraudster(_ input: DisassociateFraudsterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DisassociateFraudsterResponse {
+        return try await self.client.execute(
+            operation: "DisassociateFraudster", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Evaluates a specified session based on audio data accumulated during a streaming Amazon Connect Voice ID call.
-    public func evaluateSession(_ input: EvaluateSessionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<EvaluateSessionResponse> {
-        return self.client.execute(operation: "EvaluateSession", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func evaluateSession(_ input: EvaluateSessionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> EvaluateSessionResponse {
+        return try await self.client.execute(
+            operation: "EvaluateSession", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all the domains in the Amazon Web Services account.
-    public func listDomains(_ input: ListDomainsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListDomainsResponse> {
-        return self.client.execute(operation: "ListDomains", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listDomains(_ input: ListDomainsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListDomainsResponse {
+        return try await self.client.execute(
+            operation: "ListDomains", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all the fraudster registration jobs in the domain with the given JobStatus. If JobStatus is not provided, this lists all fraudster registration jobs in the given domain.
-    public func listFraudsterRegistrationJobs(_ input: ListFraudsterRegistrationJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListFraudsterRegistrationJobsResponse> {
-        return self.client.execute(operation: "ListFraudsterRegistrationJobs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listFraudsterRegistrationJobs(_ input: ListFraudsterRegistrationJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListFraudsterRegistrationJobsResponse {
+        return try await self.client.execute(
+            operation: "ListFraudsterRegistrationJobs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists all fraudsters in a specified watchlist or domain.
+    @Sendable
+    public func listFraudsters(_ input: ListFraudstersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListFraudstersResponse {
+        return try await self.client.execute(
+            operation: "ListFraudsters", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all the speaker enrollment jobs in the domain with the specified JobStatus. If JobStatus is not provided, this lists all jobs with all possible speaker enrollment job statuses.
-    public func listSpeakerEnrollmentJobs(_ input: ListSpeakerEnrollmentJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListSpeakerEnrollmentJobsResponse> {
-        return self.client.execute(operation: "ListSpeakerEnrollmentJobs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listSpeakerEnrollmentJobs(_ input: ListSpeakerEnrollmentJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListSpeakerEnrollmentJobsResponse {
+        return try await self.client.execute(
+            operation: "ListSpeakerEnrollmentJobs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all speakers in a specified domain.
-    public func listSpeakers(_ input: ListSpeakersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListSpeakersResponse> {
-        return self.client.execute(operation: "ListSpeakers", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listSpeakers(_ input: ListSpeakersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListSpeakersResponse {
+        return try await self.client.execute(
+            operation: "ListSpeakers", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all tags associated with a specified Voice ID resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists all watchlists in a specified domain.
+    @Sendable
+    public func listWatchlists(_ input: ListWatchlistsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListWatchlistsResponse {
+        return try await self.client.execute(
+            operation: "ListWatchlists", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Opts out a speaker from Voice ID. A speaker can be opted out regardless of whether or not they already exist in Voice ID. If they don't yet exist, a new speaker is created in an opted out state. If they already exist, their existing status is overridden and they are opted out. Enrollment and evaluation authentication requests are rejected for opted out speakers, and opted out speakers have no voice embeddings stored in Voice ID.
-    public func optOutSpeaker(_ input: OptOutSpeakerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<OptOutSpeakerResponse> {
-        return self.client.execute(operation: "OptOutSpeaker", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func optOutSpeaker(_ input: OptOutSpeakerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> OptOutSpeakerResponse {
+        return try await self.client.execute(
+            operation: "OptOutSpeaker", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Starts a new batch fraudster registration job using provided details.
-    public func startFraudsterRegistrationJob(_ input: StartFraudsterRegistrationJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartFraudsterRegistrationJobResponse> {
-        return self.client.execute(operation: "StartFraudsterRegistrationJob", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startFraudsterRegistrationJob(_ input: StartFraudsterRegistrationJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartFraudsterRegistrationJobResponse {
+        return try await self.client.execute(
+            operation: "StartFraudsterRegistrationJob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Starts a new batch speaker enrollment job using specified details.
-    public func startSpeakerEnrollmentJob(_ input: StartSpeakerEnrollmentJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartSpeakerEnrollmentJobResponse> {
-        return self.client.execute(operation: "StartSpeakerEnrollmentJob", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startSpeakerEnrollmentJob(_ input: StartSpeakerEnrollmentJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartSpeakerEnrollmentJobResponse {
+        return try await self.client.execute(
+            operation: "StartSpeakerEnrollmentJob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Tags a Voice ID resource with the provided list of tags.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Removes specified tags from a specified Amazon Connect Voice ID resource.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the specified domain. This API has clobber behavior, and clears and replaces all attributes. If an optional field, such as 'Description' is not provided, it is removed from the domain.
-    public func updateDomain(_ input: UpdateDomainRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateDomainResponse> {
-        return self.client.execute(operation: "UpdateDomain", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateDomain(_ input: UpdateDomainRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateDomainResponse {
+        return try await self.client.execute(
+            operation: "UpdateDomain", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates the specified watchlist. Every domain has a default watchlist which cannot be updated.
+    @Sendable
+    public func updateWatchlist(_ input: UpdateWatchlistRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateWatchlistResponse {
+        return try await self.client.execute(
+            operation: "UpdateWatchlist", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension VoiceID {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: VoiceID, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -188,216 +472,119 @@ extension VoiceID {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension VoiceID {
-    ///  Lists all the domains in the Amazon Web Services account.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listDomainsPaginator<Result>(
-        _ input: ListDomainsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListDomainsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listDomains,
-            inputKey: \ListDomainsRequest.nextToken,
-            outputKey: \ListDomainsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists all the domains in the Amazon Web Services account.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listDomainsPaginator(
         _ input: ListDomainsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListDomainsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListDomainsRequest, ListDomainsResponse> {
+        return .init(
             input: input,
             command: self.listDomains,
             inputKey: \ListDomainsRequest.nextToken,
             outputKey: \ListDomainsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all the fraudster registration jobs in the domain with the given JobStatus. If JobStatus is not provided, this lists all fraudster registration jobs in the given domain.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listFraudsterRegistrationJobsPaginator<Result>(
-        _ input: ListFraudsterRegistrationJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListFraudsterRegistrationJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listFraudsterRegistrationJobs,
-            inputKey: \ListFraudsterRegistrationJobsRequest.nextToken,
-            outputKey: \ListFraudsterRegistrationJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists all the fraudster registration jobs in the domain with the given JobStatus. If JobStatus is not provided, this lists all fraudster registration jobs in the given domain.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listFraudsterRegistrationJobsPaginator(
         _ input: ListFraudsterRegistrationJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListFraudsterRegistrationJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListFraudsterRegistrationJobsRequest, ListFraudsterRegistrationJobsResponse> {
+        return .init(
             input: input,
             command: self.listFraudsterRegistrationJobs,
             inputKey: \ListFraudsterRegistrationJobsRequest.nextToken,
             outputKey: \ListFraudsterRegistrationJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all the speaker enrollment jobs in the domain with the specified JobStatus. If JobStatus is not provided, this lists all jobs with all possible speaker enrollment job statuses.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listSpeakerEnrollmentJobsPaginator<Result>(
-        _ input: ListSpeakerEnrollmentJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListSpeakerEnrollmentJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listSpeakerEnrollmentJobs,
-            inputKey: \ListSpeakerEnrollmentJobsRequest.nextToken,
-            outputKey: \ListSpeakerEnrollmentJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists all fraudsters in a specified watchlist or domain.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listFraudstersPaginator(
+        _ input: ListFraudstersRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListFraudstersRequest, ListFraudstersResponse> {
+        return .init(
+            input: input,
+            command: self.listFraudsters,
+            inputKey: \ListFraudstersRequest.nextToken,
+            outputKey: \ListFraudstersResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists all the speaker enrollment jobs in the domain with the specified JobStatus. If JobStatus is not provided, this lists all jobs with all possible speaker enrollment job statuses.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listSpeakerEnrollmentJobsPaginator(
         _ input: ListSpeakerEnrollmentJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListSpeakerEnrollmentJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListSpeakerEnrollmentJobsRequest, ListSpeakerEnrollmentJobsResponse> {
+        return .init(
             input: input,
             command: self.listSpeakerEnrollmentJobs,
             inputKey: \ListSpeakerEnrollmentJobsRequest.nextToken,
             outputKey: \ListSpeakerEnrollmentJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all speakers in a specified domain.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listSpeakersPaginator<Result>(
-        _ input: ListSpeakersRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListSpeakersResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listSpeakers,
-            inputKey: \ListSpeakersRequest.nextToken,
-            outputKey: \ListSpeakersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists all speakers in a specified domain.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listSpeakersPaginator(
         _ input: ListSpeakersRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListSpeakersResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListSpeakersRequest, ListSpeakersResponse> {
+        return .init(
             input: input,
             command: self.listSpeakers,
             inputKey: \ListSpeakersRequest.nextToken,
             outputKey: \ListSpeakersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
+        )
+    }
+
+    /// Lists all watchlists in a specified domain.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listWatchlistsPaginator(
+        _ input: ListWatchlistsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListWatchlistsRequest, ListWatchlistsResponse> {
+        return .init(
+            input: input,
+            command: self.listWatchlists,
+            inputKey: \ListWatchlistsRequest.nextToken,
+            outputKey: \ListWatchlistsResponse.nextToken,
+            logger: logger
         )
     }
 }
@@ -422,6 +609,17 @@ extension VoiceID.ListFraudsterRegistrationJobsRequest: AWSPaginateToken {
     }
 }
 
+extension VoiceID.ListFraudstersRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> VoiceID.ListFraudstersRequest {
+        return .init(
+            domainId: self.domainId,
+            maxResults: self.maxResults,
+            nextToken: token,
+            watchlistId: self.watchlistId
+        )
+    }
+}
+
 extension VoiceID.ListSpeakerEnrollmentJobsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> VoiceID.ListSpeakerEnrollmentJobsRequest {
         return .init(
@@ -435,6 +633,16 @@ extension VoiceID.ListSpeakerEnrollmentJobsRequest: AWSPaginateToken {
 
 extension VoiceID.ListSpeakersRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> VoiceID.ListSpeakersRequest {
+        return .init(
+            domainId: self.domainId,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension VoiceID.ListWatchlistsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> VoiceID.ListWatchlistsRequest {
         return .init(
             domainId: self.domainId,
             maxResults: self.maxResults,

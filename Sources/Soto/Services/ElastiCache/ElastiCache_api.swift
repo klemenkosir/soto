@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS ElastiCache service.
 ///
-/// Amazon ElastiCache Amazon ElastiCache is a web service that makes it easier to set up, operate,  and scale a distributed cache in the cloud. With ElastiCache, customers get all of the benefits of a high-performance,  in-memory cache with less of the administrative burden involved in launching and managing a distributed cache.  The service makes setup, scaling,  and cluster failure handling much simpler than in a self-managed cache deployment. In addition, through integration with Amazon CloudWatch,  customers get enhanced visibility into the key performance statistics  associated with their cache and can receive alarms if a part of their cache runs hot.
+/// Amazon ElastiCache Amazon ElastiCache is a web service that makes it easier to set up, operate, and scale a distributed cache in the cloud. With ElastiCache, customers get all of the benefits of a high-performance, in-memory cache with less of the administrative burden involved in launching and managing a distributed cache. The service makes setup, scaling, and cluster failure handling much simpler than in a self-managed cache deployment. In addition, through integration with Amazon CloudWatch, customers get enhanced visibility into the key performance statistics associated with their cache and can receive alarms if a part of their cache runs hot.
 public struct ElastiCache: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct ElastiCache: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,359 +54,1016 @@ public struct ElastiCache: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "elasticache",
+            serviceName: "ElastiCache",
+            serviceIdentifier: "elasticache",
             serviceProtocol: .query,
             apiVersion: "2015-02-02",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "us-east-1": "elasticache-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "elasticache-fips.us-east-2.amazonaws.com",
-                    "us-gov-east-1": "elasticache.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "elasticache.us-gov-west-1.amazonaws.com",
-                    "us-west-1": "elasticache-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "elasticache-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: ElastiCacheErrorType.self,
             xmlNamespace: "http://elasticache.amazonaws.com/doc/2015-02-02/",
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-east-1": "elasticache-fips.us-east-1.amazonaws.com",
+            "us-east-2": "elasticache-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "elasticache.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "elasticache.us-gov-west-1.amazonaws.com",
+            "us-west-1": "elasticache-fips.us-west-1.amazonaws.com",
+            "us-west-2": "elasticache-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
-    /// A  tag is a key-value pair where the key and value are case-sensitive.             You can use tags to categorize and track all your ElastiCache resources, with the exception of global replication group. When you add or remove tags on replication groups, those actions will be replicated to all nodes in the replication group.  For more information, see Resource-level permissions.  For example, you can use cost-allocation tags to your ElastiCache resources,  Amazon generates a cost allocation report as a comma-separated value (CSV) file  with your usage and costs aggregated by your tags.  You can apply tags that represent business categories (such as cost centers, application names, or owners)  to organize your costs across multiple services. For more information,  see Using Cost Allocation Tags in Amazon ElastiCache  in the ElastiCache User Guide.
-    public func addTagsToResource(_ input: AddTagsToResourceMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagListMessage> {
-        return self.client.execute(operation: "AddTagsToResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// A tag is a key-value pair where the key and value are case-sensitive. You can use tags to categorize and track all your ElastiCache resources, with the exception of global replication group. When you add or remove tags on replication groups, those actions will be replicated to all nodes in the replication group. For more information, see Resource-level permissions. For example, you can use cost-allocation tags to your ElastiCache resources, Amazon generates a cost allocation report as a comma-separated value (CSV) file with your usage and costs aggregated by your tags. You can apply tags that represent business categories (such as cost centers, application names, or owners) to organize your costs across multiple services. For more information, see Using Cost Allocation Tags in Amazon ElastiCache in the ElastiCache User Guide.
+    @Sendable
+    public func addTagsToResource(_ input: AddTagsToResourceMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> TagListMessage {
+        return try await self.client.execute(
+            operation: "AddTagsToResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Allows network ingress to a cache security group. Applications using ElastiCache must be running on Amazon EC2, and Amazon EC2 security groups are used as the authorization mechanism.  You cannot authorize ingress from an Amazon EC2 security group in one region to an ElastiCache cluster in another region.
-    public func authorizeCacheSecurityGroupIngress(_ input: AuthorizeCacheSecurityGroupIngressMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AuthorizeCacheSecurityGroupIngressResult> {
-        return self.client.execute(operation: "AuthorizeCacheSecurityGroupIngress", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func authorizeCacheSecurityGroupIngress(_ input: AuthorizeCacheSecurityGroupIngressMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> AuthorizeCacheSecurityGroupIngressResult {
+        return try await self.client.execute(
+            operation: "AuthorizeCacheSecurityGroupIngress", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Apply the service update. For more information on service updates and applying them, see Applying Service Updates.
-    public func batchApplyUpdateAction(_ input: BatchApplyUpdateActionMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateActionResultsMessage> {
-        return self.client.execute(operation: "BatchApplyUpdateAction", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func batchApplyUpdateAction(_ input: BatchApplyUpdateActionMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateActionResultsMessage {
+        return try await self.client.execute(
+            operation: "BatchApplyUpdateAction", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Stop the service update. For more information on service updates and stopping them, see Stopping Service Updates.
-    public func batchStopUpdateAction(_ input: BatchStopUpdateActionMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateActionResultsMessage> {
-        return self.client.execute(operation: "BatchStopUpdateAction", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func batchStopUpdateAction(_ input: BatchStopUpdateActionMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateActionResultsMessage {
+        return try await self.client.execute(
+            operation: "BatchStopUpdateAction", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Complete the migration of data.
-    public func completeMigration(_ input: CompleteMigrationMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CompleteMigrationResponse> {
-        return self.client.execute(operation: "CompleteMigration", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func completeMigration(_ input: CompleteMigrationMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CompleteMigrationResponse {
+        return try await self.client.execute(
+            operation: "CompleteMigration", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Makes a copy of an existing snapshot.  This operation is valid for Redis only.   Users or groups that have permissions to use the CopySnapshot operation   can create their own Amazon S3 buckets and copy snapshots to it.  To control access to your snapshots, use an IAM policy to control who has the ability to use  the CopySnapshot operation.  For more information about using IAM to control the use of ElastiCache operations, see Exporting Snapshots  and Authentication & Access Control.  You could receive the following error messages.  Error Messages     Error Message: The S3 bucket %s is outside of the region.  Solution: Create an Amazon S3 bucket in the same region as your snapshot.  For more information, see Step 1: Create an Amazon S3 Bucket in the ElastiCache User Guide.    Error Message: The S3 bucket %s does not exist.  Solution: Create an Amazon S3 bucket in the same region as your snapshot. For more information, see Step 1: Create an Amazon S3 Bucket in the ElastiCache User Guide.    Error Message: The S3 bucket %s is not owned by the authenticated user.  Solution: Create an Amazon S3 bucket in the same region as your snapshot. For more information, see Step 1: Create an Amazon S3 Bucket in the ElastiCache User Guide.    Error Message: The authenticated user does not have sufficient permissions to perform the desired activity.  Solution: Contact your system administrator to get the needed permissions.    Error Message: The S3 bucket %s already contains an object with key %s.  Solution: Give the TargetSnapshotName a new and unique value. If exporting a snapshot,  you could alternatively create a new Amazon S3 bucket  and use this same value for TargetSnapshotName.    Error Message:  ElastiCache has not been granted READ permissions %s on the S3 Bucket.  Solution: Add List and Read permissions on the bucket. For more information, see Step 2: Grant ElastiCache Access to Your Amazon S3 Bucket in the ElastiCache User Guide.    Error Message:  ElastiCache has not been granted WRITE permissions %s on the S3 Bucket.  Solution: Add Upload/Delete permissions on the bucket. For more information, see Step 2: Grant ElastiCache Access to Your Amazon S3 Bucket in the ElastiCache User Guide.    Error Message:  ElastiCache has not been granted READ_ACP permissions %s on the S3 Bucket.  Solution: Add View Permissions on the bucket. For more information, see Step 2: Grant ElastiCache Access to Your Amazon S3 Bucket in the ElastiCache User Guide.
-    public func copySnapshot(_ input: CopySnapshotMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CopySnapshotResult> {
-        return self.client.execute(operation: "CopySnapshot", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a copy of an existing serverless cache’s snapshot. Available for Redis only.
+    @Sendable
+    public func copyServerlessCacheSnapshot(_ input: CopyServerlessCacheSnapshotRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CopyServerlessCacheSnapshotResponse {
+        return try await self.client.execute(
+            operation: "CopyServerlessCacheSnapshot", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Makes a copy of an existing snapshot.  This operation is valid for Redis only.   Users or groups that have permissions to use the CopySnapshot operation can create their own Amazon S3 buckets and copy snapshots to it. To control access to your snapshots, use an IAM policy to control who has the ability to use the CopySnapshot operation. For more information about using IAM to control the use of ElastiCache operations, see Exporting Snapshots and Authentication & Access Control.  You could receive the following error messages.  Error Messages     Error Message: The S3 bucket %s is outside of the region.  Solution: Create an Amazon S3 bucket in the same region as your snapshot. For more information, see Step 1: Create an Amazon S3 Bucket in the ElastiCache User Guide.    Error Message: The S3 bucket %s does not exist.  Solution: Create an Amazon S3 bucket in the same region as your snapshot. For more information, see Step 1: Create an Amazon S3 Bucket in the ElastiCache User Guide.    Error Message: The S3 bucket %s is not owned by the authenticated user.  Solution: Create an Amazon S3 bucket in the same region as your snapshot. For more information, see Step 1: Create an Amazon S3 Bucket in the ElastiCache User Guide.    Error Message: The authenticated user does not have sufficient permissions to perform the desired activity.  Solution: Contact your system administrator to get the needed permissions.    Error Message: The S3 bucket %s already contains an object with key %s.  Solution: Give the TargetSnapshotName a new and unique value. If exporting a snapshot, you could alternatively create a new Amazon S3 bucket and use this same value for TargetSnapshotName.    Error Message:  ElastiCache has not been granted READ permissions %s on the S3 Bucket.  Solution: Add List and Read permissions on the bucket. For more information, see Step 2: Grant ElastiCache Access to Your Amazon S3 Bucket in the ElastiCache User Guide.    Error Message:  ElastiCache has not been granted WRITE permissions %s on the S3 Bucket.  Solution: Add Upload/Delete permissions on the bucket. For more information, see Step 2: Grant ElastiCache Access to Your Amazon S3 Bucket in the ElastiCache User Guide.    Error Message:  ElastiCache has not been granted READ_ACP permissions %s on the S3 Bucket.  Solution: Add View Permissions on the bucket. For more information, see Step 2: Grant ElastiCache Access to Your Amazon S3 Bucket in the ElastiCache User Guide.
+    @Sendable
+    public func copySnapshot(_ input: CopySnapshotMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CopySnapshotResult {
+        return try await self.client.execute(
+            operation: "CopySnapshot", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a cluster. All nodes in the cluster run the same protocol-compliant cache engine software, either Memcached or Redis. This operation is not supported for Redis (cluster mode enabled) clusters.
-    public func createCacheCluster(_ input: CreateCacheClusterMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateCacheClusterResult> {
-        return self.client.execute(operation: "CreateCacheCluster", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createCacheCluster(_ input: CreateCacheClusterMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCacheClusterResult {
+        return try await self.client.execute(
+            operation: "CreateCacheCluster", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new Amazon ElastiCache cache parameter group. An ElastiCache cache parameter group is a collection of parameters and their values that are applied to all of the nodes in any cluster or replication group using the CacheParameterGroup. A newly created CacheParameterGroup is an exact duplicate of the default parameter group for the CacheParameterGroupFamily. To customize the newly created CacheParameterGroup you can change the values of specific parameters. For more information, see:    ModifyCacheParameterGroup in the ElastiCache API Reference.    Parameters and Parameter Groups in the ElastiCache User Guide.
-    public func createCacheParameterGroup(_ input: CreateCacheParameterGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateCacheParameterGroupResult> {
-        return self.client.execute(operation: "CreateCacheParameterGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createCacheParameterGroup(_ input: CreateCacheParameterGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCacheParameterGroupResult {
+        return try await self.client.execute(
+            operation: "CreateCacheParameterGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates a new cache security group. Use a cache security group to control access to one or more clusters. Cache security groups are only used when you are creating a cluster outside of an Amazon Virtual Private Cloud (Amazon VPC). If you are creating a cluster inside of a VPC, use a cache subnet group instead. For more information,  see CreateCacheSubnetGroup.
-    public func createCacheSecurityGroup(_ input: CreateCacheSecurityGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateCacheSecurityGroupResult> {
-        return self.client.execute(operation: "CreateCacheSecurityGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a new cache security group. Use a cache security group to control access to one or more clusters. Cache security groups are only used when you are creating a cluster outside of an Amazon Virtual Private Cloud (Amazon VPC). If you are creating a cluster inside of a VPC, use a cache subnet group instead. For more information, see CreateCacheSubnetGroup.
+    @Sendable
+    public func createCacheSecurityGroup(_ input: CreateCacheSecurityGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCacheSecurityGroupResult {
+        return try await self.client.execute(
+            operation: "CreateCacheSecurityGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new cache subnet group. Use this parameter only when you are creating a cluster in an Amazon Virtual Private Cloud (Amazon VPC).
-    public func createCacheSubnetGroup(_ input: CreateCacheSubnetGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateCacheSubnetGroupResult> {
-        return self.client.execute(operation: "CreateCacheSubnetGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createCacheSubnetGroup(_ input: CreateCacheSubnetGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateCacheSubnetGroupResult {
+        return try await self.client.execute(
+            operation: "CreateCacheSubnetGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Global Datastore for Redis offers fully managed, fast,  reliable and secure cross-region replication. Using Global Datastore for Redis, you can create cross-region read replica clusters for ElastiCache for Redis to enable low-latency reads and disaster recovery across regions. For more information,
-    ///  see Replication Across Regions Using Global Datastore.    The GlobalReplicationGroupIdSuffix is the name of the Global datastore.   The PrimaryReplicationGroupId represents the name of the primary cluster that accepts writes and will replicate updates to the secondary cluster.
-    public func createGlobalReplicationGroup(_ input: CreateGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateGlobalReplicationGroupResult> {
-        return self.client.execute(operation: "CreateGlobalReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Global Datastore for Redis offers fully managed, fast, reliable and secure cross-region replication. Using Global Datastore for Redis, you can create cross-region read replica clusters for ElastiCache for Redis to enable low-latency reads and disaster recovery across regions. For more information, see Replication Across Regions Using Global Datastore.    The GlobalReplicationGroupIdSuffix is the name of the Global datastore.   The PrimaryReplicationGroupId represents the name of the primary cluster that accepts writes and will replicate updates to the secondary cluster.
+    @Sendable
+    public func createGlobalReplicationGroup(_ input: CreateGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateGlobalReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "CreateGlobalReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates a Redis (cluster mode disabled) or a Redis (cluster mode enabled) replication group. This API can be used to create a standalone regional replication group or a secondary replication group associated with a Global datastore. A Redis (cluster mode disabled) replication group is a collection of clusters,  where one of the clusters is a read/write primary and the others are read-only replicas.  Writes to the primary are asynchronously propagated to the replicas. A Redis cluster-mode enabled cluster is comprised of from 1 to 90 shards (API/CLI: node groups).  Each shard has a primary node and up to 5 read-only replica nodes. The configuration can range from 90 shards and 0 replicas to 15 shards and 5 replicas, which is the maximum number or replicas allowed.   The node or shard limit can be increased to a maximum of 500 per cluster if the Redis engine version is 5.0.6 or higher. For example, you can choose to configure a 500 node cluster that ranges between  83 shards (one primary and 5 replicas per shard) and 500 shards (single primary and no replicas). Make sure there are enough available IP addresses to accommodate the increase.  Common pitfalls include the subnets in the subnet group have too small a CIDR range or the subnets are shared and heavily used by other clusters. For more information, see  Creating a Subnet Group. For versions below 5.0.6,  the limit is 250 per cluster. To request a limit increase, see  Amazon Service Limits  and choose the limit type Nodes per cluster per instance type.  When a Redis (cluster mode disabled) replication group has been successfully created,  you can add one or more read replicas to it, up to a total of 5 read replicas.  If you need to increase or decrease the number of node groups (console: shards),  you can avail yourself of ElastiCache for Redis' scaling. For more information, see Scaling ElastiCache for Redis Clusters in the ElastiCache User Guide.  This operation is valid for Redis only.
-    public func createReplicationGroup(_ input: CreateReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateReplicationGroupResult> {
-        return self.client.execute(operation: "CreateReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a Redis (cluster mode disabled) or a Redis (cluster mode enabled) replication group. This API can be used to create a standalone regional replication group or a secondary replication group associated with a Global datastore. A Redis (cluster mode disabled) replication group is a collection of nodes, where one of the nodes is a read/write primary and the others are read-only replicas. Writes to the primary are asynchronously propagated to the replicas. A Redis cluster-mode enabled cluster is comprised of from 1 to 90 shards (API/CLI: node groups). Each shard has a primary node and up to 5 read-only replica nodes. The configuration can range from 90 shards and 0 replicas to 15 shards and 5 replicas, which is the maximum number or replicas allowed.  The node or shard limit can be increased to a maximum of 500 per cluster if the Redis engine version is 5.0.6 or higher. For example, you can choose to configure a 500 node cluster that ranges between 83 shards (one primary and 5 replicas per shard) and 500 shards (single primary and no replicas). Make sure there are enough available IP addresses to accommodate the increase. Common pitfalls include the subnets in the subnet group have too small a CIDR range or the subnets are shared and heavily used by other clusters. For more information, see Creating a Subnet Group. For versions below 5.0.6, the limit is 250 per cluster. To request a limit increase, see Amazon Service Limits and choose the limit type Nodes per cluster per instance type.  When a Redis (cluster mode disabled) replication group has been successfully created, you can add one or more read replicas to it, up to a total of 5 read replicas. If you need to increase or decrease the number of node groups (console: shards), you can avail yourself of ElastiCache for Redis' scaling. For more information, see Scaling ElastiCache for Redis Clusters in the ElastiCache User Guide.  This operation is valid for Redis only.
+    @Sendable
+    public func createReplicationGroup(_ input: CreateReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "CreateReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates a serverless cache.
+    @Sendable
+    public func createServerlessCache(_ input: CreateServerlessCacheRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateServerlessCacheResponse {
+        return try await self.client.execute(
+            operation: "CreateServerlessCache", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// This API creates a copy of an entire ServerlessCache at a specific moment in time. Available for Redis only.
+    @Sendable
+    public func createServerlessCacheSnapshot(_ input: CreateServerlessCacheSnapshotRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateServerlessCacheSnapshotResponse {
+        return try await self.client.execute(
+            operation: "CreateServerlessCacheSnapshot", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a copy of an entire cluster or replication group at a specific moment in time.  This operation is valid for Redis only.
-    public func createSnapshot(_ input: CreateSnapshotMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateSnapshotResult> {
-        return self.client.execute(operation: "CreateSnapshot", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createSnapshot(_ input: CreateSnapshotMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateSnapshotResult {
+        return try await self.client.execute(
+            operation: "CreateSnapshot", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// For Redis engine version 6.0 onwards: Creates a Redis user. For more information, see Using Role Based Access Control (RBAC).
-    public func createUser(_ input: CreateUserMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<User> {
-        return self.client.execute(operation: "CreateUser", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createUser(_ input: CreateUserMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> User {
+        return try await self.client.execute(
+            operation: "CreateUser", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// For Redis engine version 6.0 onwards: Creates a Redis user group. For more information, see Using Role Based Access Control (RBAC)
-    public func createUserGroup(_ input: CreateUserGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UserGroup> {
-        return self.client.execute(operation: "CreateUserGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createUserGroup(_ input: CreateUserGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> UserGroup {
+        return try await self.client.execute(
+            operation: "CreateUserGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Decreases the number of node groups in a Global datastore
-    public func decreaseNodeGroupsInGlobalReplicationGroup(_ input: DecreaseNodeGroupsInGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DecreaseNodeGroupsInGlobalReplicationGroupResult> {
-        return self.client.execute(operation: "DecreaseNodeGroupsInGlobalReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func decreaseNodeGroupsInGlobalReplicationGroup(_ input: DecreaseNodeGroupsInGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DecreaseNodeGroupsInGlobalReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "DecreaseNodeGroupsInGlobalReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Dynamically decreases the number of replicas in a Redis (cluster mode disabled) replication group or the number of replica nodes in one or more node groups (shards) of a Redis (cluster mode enabled) replication group. This operation is performed with no cluster down time.
-    public func decreaseReplicaCount(_ input: DecreaseReplicaCountMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DecreaseReplicaCountResult> {
-        return self.client.execute(operation: "DecreaseReplicaCount", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func decreaseReplicaCount(_ input: DecreaseReplicaCountMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DecreaseReplicaCountResult {
+        return try await self.client.execute(
+            operation: "DecreaseReplicaCount", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a previously provisioned cluster. DeleteCacheCluster deletes all associated cache nodes, node endpoints and the cluster itself. When you receive a successful response from this operation, Amazon ElastiCache immediately begins deleting the cluster; you cannot cancel or revert this operation. This operation is not valid for:   Redis (cluster mode enabled) clusters   Redis (cluster mode disabled) clusters   A cluster that is the last read replica of a replication group   A cluster that is the primary node of a replication group   A node group (shard) that has Multi-AZ mode enabled   A cluster from a Redis (cluster mode enabled) replication group   A cluster that is not in the available state
-    public func deleteCacheCluster(_ input: DeleteCacheClusterMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteCacheClusterResult> {
-        return self.client.execute(operation: "DeleteCacheCluster", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteCacheCluster(_ input: DeleteCacheClusterMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteCacheClusterResult {
+        return try await self.client.execute(
+            operation: "DeleteCacheCluster", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the specified cache parameter group. You cannot delete a cache parameter group if it is associated with any cache clusters. You cannot delete the default cache parameter groups in your account.
-    @discardableResult public func deleteCacheParameterGroup(_ input: DeleteCacheParameterGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteCacheParameterGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteCacheParameterGroup(_ input: DeleteCacheParameterGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteCacheParameterGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a cache security group.  You cannot delete a cache security group if it is associated with any clusters.
-    @discardableResult public func deleteCacheSecurityGroup(_ input: DeleteCacheSecurityGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteCacheSecurityGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteCacheSecurityGroup(_ input: DeleteCacheSecurityGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteCacheSecurityGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a cache subnet group.  You cannot delete a default cache subnet group or one that is associated with any clusters.
-    @discardableResult public func deleteCacheSubnetGroup(_ input: DeleteCacheSubnetGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteCacheSubnetGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteCacheSubnetGroup(_ input: DeleteCacheSubnetGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteCacheSubnetGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deleting a Global datastore is a two-step process:    First, you must DisassociateGlobalReplicationGroup to remove the secondary clusters in the Global datastore.   Once the Global datastore contains only the primary cluster, you can use the DeleteGlobalReplicationGroup API to delete the Global datastore while retainining the primary cluster using RetainPrimaryReplicationGroup=true.   Since the Global Datastore has only a primary cluster, you can delete the Global Datastore while retaining the primary by setting RetainPrimaryReplicationGroup=true. The primary cluster is never deleted when deleting a  Global Datastore. It can only be deleted when it no longer is associated with any Global Datastore. When you receive a successful response from this operation, Amazon ElastiCache immediately begins deleting the selected resources;  you cannot cancel or revert this operation.
-    public func deleteGlobalReplicationGroup(_ input: DeleteGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteGlobalReplicationGroupResult> {
-        return self.client.execute(operation: "DeleteGlobalReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deleting a Global datastore is a two-step process:    First, you must DisassociateGlobalReplicationGroup to remove the secondary clusters in the Global datastore.   Once the Global datastore contains only the primary cluster, you can use the DeleteGlobalReplicationGroup API to delete the Global datastore while retainining the primary cluster using RetainPrimaryReplicationGroup=true.   Since the Global Datastore has only a primary cluster, you can delete the Global Datastore while retaining the primary by setting RetainPrimaryReplicationGroup=true. The primary cluster is never deleted when deleting a Global Datastore. It can only be deleted when it no longer is associated with any Global Datastore. When you receive a successful response from this operation, Amazon ElastiCache immediately begins deleting the selected resources; you cannot cancel or revert this operation.
+    @Sendable
+    public func deleteGlobalReplicationGroup(_ input: DeleteGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteGlobalReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "DeleteGlobalReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes an existing replication group.  By default, this operation deletes the entire replication group, including the primary/primaries and all of the read replicas.  If the replication group has only one primary,  you can optionally delete only the read replicas, while retaining the primary by setting RetainPrimaryCluster=true. When you receive a successful response from this operation, Amazon ElastiCache immediately begins deleting the selected resources;  you cannot cancel or revert this operation.  This operation is valid for Redis only.
-    public func deleteReplicationGroup(_ input: DeleteReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteReplicationGroupResult> {
-        return self.client.execute(operation: "DeleteReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes an existing replication group. By default, this operation deletes the entire replication group, including the primary/primaries and all of the read replicas. If the replication group has only one primary, you can optionally delete only the read replicas, while retaining the primary by setting RetainPrimaryCluster=true. When you receive a successful response from this operation, Amazon ElastiCache immediately begins deleting the selected resources; you cannot cancel or revert this operation.  This operation is valid for Redis only.
+    @Sendable
+    public func deleteReplicationGroup(_ input: DeleteReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "DeleteReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes a specified existing serverless cache.
+    @Sendable
+    public func deleteServerlessCache(_ input: DeleteServerlessCacheRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteServerlessCacheResponse {
+        return try await self.client.execute(
+            operation: "DeleteServerlessCache", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes an existing serverless cache snapshot. Available for Redis only.
+    @Sendable
+    public func deleteServerlessCacheSnapshot(_ input: DeleteServerlessCacheSnapshotRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteServerlessCacheSnapshotResponse {
+        return try await self.client.execute(
+            operation: "DeleteServerlessCacheSnapshot", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes an existing snapshot. When you receive a successful response from this operation, ElastiCache immediately begins deleting the snapshot; you cannot cancel or revert this operation.  This operation is valid for Redis only.
-    public func deleteSnapshot(_ input: DeleteSnapshotMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteSnapshotResult> {
-        return self.client.execute(operation: "DeleteSnapshot", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteSnapshot(_ input: DeleteSnapshotMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteSnapshotResult {
+        return try await self.client.execute(
+            operation: "DeleteSnapshot", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// For Redis engine version 6.0 onwards: Deletes a user. The user will be removed from all user groups and in turn removed from all replication groups. For more information, see Using Role Based Access Control (RBAC).
-    public func deleteUser(_ input: DeleteUserMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<User> {
-        return self.client.execute(operation: "DeleteUser", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteUser(_ input: DeleteUserMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> User {
+        return try await self.client.execute(
+            operation: "DeleteUser", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// For Redis engine version 6.0 onwards: Deletes a user group. The user group must first be disassociated from the replication group before it can be deleted. For more information, see Using Role Based Access Control (RBAC).
-    public func deleteUserGroup(_ input: DeleteUserGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UserGroup> {
-        return self.client.execute(operation: "DeleteUserGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteUserGroup(_ input: DeleteUserGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> UserGroup {
+        return try await self.client.execute(
+            operation: "DeleteUserGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns information about all provisioned clusters if no cluster identifier is specified, or about a specific cache cluster if a cluster identifier is supplied. By default, abbreviated information about the clusters is returned. You can use the optional ShowCacheNodeInfo flag to retrieve detailed information about the cache nodes associated with the clusters. These details include the DNS address and port for the cache node endpoint. If the cluster is in the creating state, only cluster-level information is displayed  until all of the nodes are successfully provisioned. If the cluster is in the deleting state, only cluster-level information is displayed. If cache nodes are currently being added to the cluster, node endpoint information and creation time for the additional nodes are not displayed until they are completely provisioned. When the cluster state is available, the cluster is ready for use. If cache nodes are currently being removed from the cluster, no endpoint information  for the removed nodes is displayed.
-    public func describeCacheClusters(_ input: DescribeCacheClustersMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CacheClusterMessage> {
-        return self.client.execute(operation: "DescribeCacheClusters", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns information about all provisioned clusters if no cluster identifier is specified, or about a specific cache cluster if a cluster identifier is supplied. By default, abbreviated information about the clusters is returned. You can use the optional ShowCacheNodeInfo flag to retrieve detailed information about the cache nodes associated with the clusters. These details include the DNS address and port for the cache node endpoint. If the cluster is in the creating state, only cluster-level information is displayed until all of the nodes are successfully provisioned. If the cluster is in the deleting state, only cluster-level information is displayed. If cache nodes are currently being added to the cluster, node endpoint information and creation time for the additional nodes are not displayed until they are completely provisioned. When the cluster state is available, the cluster is ready for use. If cache nodes are currently being removed from the cluster, no endpoint information for the removed nodes is displayed.
+    @Sendable
+    public func describeCacheClusters(_ input: DescribeCacheClustersMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CacheClusterMessage {
+        return try await self.client.execute(
+            operation: "DescribeCacheClusters", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of the available cache engines and their versions.
-    public func describeCacheEngineVersions(_ input: DescribeCacheEngineVersionsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CacheEngineVersionMessage> {
-        return self.client.execute(operation: "DescribeCacheEngineVersions", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCacheEngineVersions(_ input: DescribeCacheEngineVersionsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CacheEngineVersionMessage {
+        return try await self.client.execute(
+            operation: "DescribeCacheEngineVersions", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of cache parameter group descriptions. If a cache parameter group name is specified, the list contains only the descriptions for that group.
-    public func describeCacheParameterGroups(_ input: DescribeCacheParameterGroupsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CacheParameterGroupsMessage> {
-        return self.client.execute(operation: "DescribeCacheParameterGroups", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCacheParameterGroups(_ input: DescribeCacheParameterGroupsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CacheParameterGroupsMessage {
+        return try await self.client.execute(
+            operation: "DescribeCacheParameterGroups", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns the detailed parameter list for a particular cache parameter group.
-    public func describeCacheParameters(_ input: DescribeCacheParametersMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CacheParameterGroupDetails> {
-        return self.client.execute(operation: "DescribeCacheParameters", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCacheParameters(_ input: DescribeCacheParametersMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CacheParameterGroupDetails {
+        return try await self.client.execute(
+            operation: "DescribeCacheParameters", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of cache security group descriptions. If a cache security group name is specified, the list contains only the description of that group. This applicable only when you have ElastiCache in Classic setup
-    public func describeCacheSecurityGroups(_ input: DescribeCacheSecurityGroupsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CacheSecurityGroupMessage> {
-        return self.client.execute(operation: "DescribeCacheSecurityGroups", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCacheSecurityGroups(_ input: DescribeCacheSecurityGroupsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CacheSecurityGroupMessage {
+        return try await self.client.execute(
+            operation: "DescribeCacheSecurityGroups", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns a list of cache subnet group descriptions. If a subnet group name is specified, the list  contains only the description of that group. This is applicable only when you have ElastiCache in VPC setup. All ElastiCache clusters now launch in VPC by default.
-    public func describeCacheSubnetGroups(_ input: DescribeCacheSubnetGroupsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CacheSubnetGroupMessage> {
-        return self.client.execute(operation: "DescribeCacheSubnetGroups", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns a list of cache subnet group descriptions. If a subnet group name is specified, the list contains only the description of that group. This is applicable only when you have ElastiCache in VPC setup. All ElastiCache clusters now launch in VPC by default.
+    @Sendable
+    public func describeCacheSubnetGroups(_ input: DescribeCacheSubnetGroupsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CacheSubnetGroupMessage {
+        return try await self.client.execute(
+            operation: "DescribeCacheSubnetGroups", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns the default engine and system parameter information for the specified cache engine.
-    public func describeEngineDefaultParameters(_ input: DescribeEngineDefaultParametersMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeEngineDefaultParametersResult> {
-        return self.client.execute(operation: "DescribeEngineDefaultParameters", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeEngineDefaultParameters(_ input: DescribeEngineDefaultParametersMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeEngineDefaultParametersResult {
+        return try await self.client.execute(
+            operation: "DescribeEngineDefaultParameters", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns events related to clusters, cache security groups, and cache parameter groups. You can obtain events specific to a particular cluster, cache security group, or cache parameter group by providing the name as a parameter. By default, only the events occurring within the last hour are returned;  however, you can retrieve up to 14 days' worth of events if necessary.
-    public func describeEvents(_ input: DescribeEventsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<EventsMessage> {
-        return self.client.execute(operation: "DescribeEvents", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns events related to clusters, cache security groups, and cache parameter groups. You can obtain events specific to a particular cluster, cache security group, or cache parameter group by providing the name as a parameter. By default, only the events occurring within the last hour are returned; however, you can retrieve up to 14 days' worth of events if necessary.
+    @Sendable
+    public func describeEvents(_ input: DescribeEventsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> EventsMessage {
+        return try await self.client.execute(
+            operation: "DescribeEvents", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns information about a particular global replication group. If no identifier is specified, returns information about all Global datastores.
-    public func describeGlobalReplicationGroups(_ input: DescribeGlobalReplicationGroupsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeGlobalReplicationGroupsResult> {
-        return self.client.execute(operation: "DescribeGlobalReplicationGroups", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeGlobalReplicationGroups(_ input: DescribeGlobalReplicationGroupsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeGlobalReplicationGroupsResult {
+        return try await self.client.execute(
+            operation: "DescribeGlobalReplicationGroups", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns information about a particular replication group. If no identifier is specified, DescribeReplicationGroups returns information about all replication groups.  This operation is valid for Redis only.
-    public func describeReplicationGroups(_ input: DescribeReplicationGroupsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ReplicationGroupMessage> {
-        return self.client.execute(operation: "DescribeReplicationGroups", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeReplicationGroups(_ input: DescribeReplicationGroupsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ReplicationGroupMessage {
+        return try await self.client.execute(
+            operation: "DescribeReplicationGroups", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns information about reserved cache nodes for this account, or about a specified reserved cache node.
-    public func describeReservedCacheNodes(_ input: DescribeReservedCacheNodesMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ReservedCacheNodeMessage> {
-        return self.client.execute(operation: "DescribeReservedCacheNodes", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeReservedCacheNodes(_ input: DescribeReservedCacheNodesMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ReservedCacheNodeMessage {
+        return try await self.client.execute(
+            operation: "DescribeReservedCacheNodes", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists available reserved cache node offerings.
-    public func describeReservedCacheNodesOfferings(_ input: DescribeReservedCacheNodesOfferingsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ReservedCacheNodesOfferingMessage> {
-        return self.client.execute(operation: "DescribeReservedCacheNodesOfferings", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeReservedCacheNodesOfferings(_ input: DescribeReservedCacheNodesOfferingsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ReservedCacheNodesOfferingMessage {
+        return try await self.client.execute(
+            operation: "DescribeReservedCacheNodesOfferings", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns information about serverless cache snapshots.  By default, this API lists all of the customer’s serverless cache snapshots.  It can also describe a single serverless cache snapshot, or the snapshots associated with  a particular serverless cache. Available for Redis only.
+    @Sendable
+    public func describeServerlessCacheSnapshots(_ input: DescribeServerlessCacheSnapshotsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeServerlessCacheSnapshotsResponse {
+        return try await self.client.execute(
+            operation: "DescribeServerlessCacheSnapshots", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns information about a specific serverless cache.  If no identifier is specified, then the API returns information on all the serverless caches belonging to  this Amazon Web Services account.
+    @Sendable
+    public func describeServerlessCaches(_ input: DescribeServerlessCachesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeServerlessCachesResponse {
+        return try await self.client.execute(
+            operation: "DescribeServerlessCaches", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns details of the service updates
-    public func describeServiceUpdates(_ input: DescribeServiceUpdatesMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ServiceUpdatesMessage> {
-        return self.client.execute(operation: "DescribeServiceUpdates", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeServiceUpdates(_ input: DescribeServiceUpdatesMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ServiceUpdatesMessage {
+        return try await self.client.execute(
+            operation: "DescribeServiceUpdates", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns information about cluster or replication group snapshots. By default, DescribeSnapshots lists all of your snapshots; it can optionally describe a single snapshot, or just the snapshots associated with a particular cache cluster.  This operation is valid for Redis only.
-    public func describeSnapshots(_ input: DescribeSnapshotsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeSnapshotsListMessage> {
-        return self.client.execute(operation: "DescribeSnapshots", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeSnapshots(_ input: DescribeSnapshotsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeSnapshotsListMessage {
+        return try await self.client.execute(
+            operation: "DescribeSnapshots", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns details of the update actions
-    public func describeUpdateActions(_ input: DescribeUpdateActionsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateActionsMessage> {
-        return self.client.execute(operation: "DescribeUpdateActions", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeUpdateActions(_ input: DescribeUpdateActionsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateActionsMessage {
+        return try await self.client.execute(
+            operation: "DescribeUpdateActions", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of user groups.
-    public func describeUserGroups(_ input: DescribeUserGroupsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeUserGroupsResult> {
-        return self.client.execute(operation: "DescribeUserGroups", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeUserGroups(_ input: DescribeUserGroupsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeUserGroupsResult {
+        return try await self.client.execute(
+            operation: "DescribeUserGroups", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of users.
-    public func describeUsers(_ input: DescribeUsersMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeUsersResult> {
-        return self.client.execute(operation: "DescribeUsers", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeUsers(_ input: DescribeUsersMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeUsersResult {
+        return try await self.client.execute(
+            operation: "DescribeUsers", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Remove a secondary cluster from the Global datastore using the Global datastore name. The secondary cluster will no longer receive updates from the primary cluster, but will remain as a standalone cluster in that Amazon region.
-    public func disassociateGlobalReplicationGroup(_ input: DisassociateGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DisassociateGlobalReplicationGroupResult> {
-        return self.client.execute(operation: "DisassociateGlobalReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func disassociateGlobalReplicationGroup(_ input: DisassociateGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> DisassociateGlobalReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "DisassociateGlobalReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Provides the functionality to export the serverless cache snapshot data to Amazon S3. Available for Redis only.
+    @Sendable
+    public func exportServerlessCacheSnapshot(_ input: ExportServerlessCacheSnapshotRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ExportServerlessCacheSnapshotResponse {
+        return try await self.client.execute(
+            operation: "ExportServerlessCacheSnapshot", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Used to failover the primary region to a secondary region. The secondary region will become primary, and all other clusters will become secondary.
-    public func failoverGlobalReplicationGroup(_ input: FailoverGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<FailoverGlobalReplicationGroupResult> {
-        return self.client.execute(operation: "FailoverGlobalReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func failoverGlobalReplicationGroup(_ input: FailoverGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> FailoverGlobalReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "FailoverGlobalReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Increase the number of node groups in the Global datastore
-    public func increaseNodeGroupsInGlobalReplicationGroup(_ input: IncreaseNodeGroupsInGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<IncreaseNodeGroupsInGlobalReplicationGroupResult> {
-        return self.client.execute(operation: "IncreaseNodeGroupsInGlobalReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func increaseNodeGroupsInGlobalReplicationGroup(_ input: IncreaseNodeGroupsInGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> IncreaseNodeGroupsInGlobalReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "IncreaseNodeGroupsInGlobalReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Dynamically increases the number of replicas in a Redis (cluster mode disabled) replication group or the number of replica nodes in one or more node groups (shards) of a Redis (cluster mode enabled) replication group. This operation is performed with no cluster down time.
-    public func increaseReplicaCount(_ input: IncreaseReplicaCountMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<IncreaseReplicaCountResult> {
-        return self.client.execute(operation: "IncreaseReplicaCount", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func increaseReplicaCount(_ input: IncreaseReplicaCountMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> IncreaseReplicaCountResult {
+        return try await self.client.execute(
+            operation: "IncreaseReplicaCount", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all available node types that you can scale your Redis cluster's or replication group's current node type. When you use the ModifyCacheCluster or ModifyReplicationGroup operations to scale your cluster or replication group, the value of the CacheNodeType parameter must be one of the node types returned by this operation.
-    public func listAllowedNodeTypeModifications(_ input: ListAllowedNodeTypeModificationsMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AllowedNodeTypeModificationsMessage> {
-        return self.client.execute(operation: "ListAllowedNodeTypeModifications", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listAllowedNodeTypeModifications(_ input: ListAllowedNodeTypeModificationsMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> AllowedNodeTypeModificationsMessage {
+        return try await self.client.execute(
+            operation: "ListAllowedNodeTypeModifications", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists all tags currently on a  named resource. A  tag is a key-value pair where the key and value are case-sensitive.             You can use tags to categorize and track all your ElastiCache resources, with the exception of global replication group. When you add or remove tags on replication groups, those actions will be replicated to all nodes in the replication group.  For more information, see Resource-level permissions. If the cluster is not in the available state, ListTagsForResource returns an error.
-    public func listTagsForResource(_ input: ListTagsForResourceMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagListMessage> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Lists all tags currently on a named resource. A tag is a key-value pair where the key and value are case-sensitive. You can use tags to categorize and track all your ElastiCache resources, with the exception of global replication group. When you add or remove tags on replication groups, those actions will be replicated to all nodes in the replication group. For more information, see Resource-level permissions. If the cluster is not in the available state, ListTagsForResource returns an error.
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> TagListMessage {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Modifies the settings for a cluster. You can use this operation to change one or more cluster configuration parameters by specifying the parameters and the new values.
-    public func modifyCacheCluster(_ input: ModifyCacheClusterMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ModifyCacheClusterResult> {
-        return self.client.execute(operation: "ModifyCacheCluster", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func modifyCacheCluster(_ input: ModifyCacheClusterMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ModifyCacheClusterResult {
+        return try await self.client.execute(
+            operation: "ModifyCacheCluster", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Modifies the parameters of a cache parameter group. You can modify up to 20 parameters in a single request by submitting a list parameter name and value pairs.
-    public func modifyCacheParameterGroup(_ input: ModifyCacheParameterGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CacheParameterGroupNameMessage> {
-        return self.client.execute(operation: "ModifyCacheParameterGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func modifyCacheParameterGroup(_ input: ModifyCacheParameterGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CacheParameterGroupNameMessage {
+        return try await self.client.execute(
+            operation: "ModifyCacheParameterGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Modifies an existing cache subnet group.
-    public func modifyCacheSubnetGroup(_ input: ModifyCacheSubnetGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ModifyCacheSubnetGroupResult> {
-        return self.client.execute(operation: "ModifyCacheSubnetGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func modifyCacheSubnetGroup(_ input: ModifyCacheSubnetGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ModifyCacheSubnetGroupResult {
+        return try await self.client.execute(
+            operation: "ModifyCacheSubnetGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Modifies the settings for a Global datastore.
-    public func modifyGlobalReplicationGroup(_ input: ModifyGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ModifyGlobalReplicationGroupResult> {
-        return self.client.execute(operation: "ModifyGlobalReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func modifyGlobalReplicationGroup(_ input: ModifyGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ModifyGlobalReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "ModifyGlobalReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Modifies the settings for a replication group.    Scaling for Amazon ElastiCache for Redis (cluster mode enabled) in the ElastiCache User Guide    ModifyReplicationGroupShardConfiguration in the ElastiCache API Reference    This operation is valid for Redis only.
-    public func modifyReplicationGroup(_ input: ModifyReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ModifyReplicationGroupResult> {
-        return self.client.execute(operation: "ModifyReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Modifies the settings for a replication group. This is limited to Redis 7 and newer.    Scaling for Amazon ElastiCache for Redis (cluster mode enabled) in the ElastiCache User Guide    ModifyReplicationGroupShardConfiguration in the ElastiCache API Reference    This operation is valid for Redis only.
+    @Sendable
+    public func modifyReplicationGroup(_ input: ModifyReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ModifyReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "ModifyReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Modifies a replication group's shards (node groups) by allowing you to add shards, remove shards, or rebalance the keyspaces among existing shards.
-    public func modifyReplicationGroupShardConfiguration(_ input: ModifyReplicationGroupShardConfigurationMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ModifyReplicationGroupShardConfigurationResult> {
-        return self.client.execute(operation: "ModifyReplicationGroupShardConfiguration", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func modifyReplicationGroupShardConfiguration(_ input: ModifyReplicationGroupShardConfigurationMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> ModifyReplicationGroupShardConfigurationResult {
+        return try await self.client.execute(
+            operation: "ModifyReplicationGroupShardConfiguration", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// This API modifies the attributes of a serverless cache.
+    @Sendable
+    public func modifyServerlessCache(_ input: ModifyServerlessCacheRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ModifyServerlessCacheResponse {
+        return try await self.client.execute(
+            operation: "ModifyServerlessCache", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Changes user password(s) and/or access string.
-    public func modifyUser(_ input: ModifyUserMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<User> {
-        return self.client.execute(operation: "ModifyUser", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func modifyUser(_ input: ModifyUserMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> User {
+        return try await self.client.execute(
+            operation: "ModifyUser", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Changes the list of users that belong to the user group.
-    public func modifyUserGroup(_ input: ModifyUserGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UserGroup> {
-        return self.client.execute(operation: "ModifyUserGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func modifyUserGroup(_ input: ModifyUserGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> UserGroup {
+        return try await self.client.execute(
+            operation: "ModifyUserGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Allows you to purchase a reserved cache node offering. Reserved nodes are not eligible for cancellation and are non-refundable. For more information,  see Managing Costs with Reserved Nodes for Redis or  Managing Costs with Reserved Nodes for Memcached.
-    public func purchaseReservedCacheNodesOffering(_ input: PurchaseReservedCacheNodesOfferingMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<PurchaseReservedCacheNodesOfferingResult> {
-        return self.client.execute(operation: "PurchaseReservedCacheNodesOffering", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Allows you to purchase a reserved cache node offering. Reserved nodes are not eligible for cancellation and are non-refundable. For more information, see Managing Costs with Reserved Nodes for Redis or Managing Costs with Reserved Nodes for Memcached.
+    @Sendable
+    public func purchaseReservedCacheNodesOffering(_ input: PurchaseReservedCacheNodesOfferingMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> PurchaseReservedCacheNodesOfferingResult {
+        return try await self.client.execute(
+            operation: "PurchaseReservedCacheNodesOffering", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Redistribute slots to ensure uniform distribution across existing shards in the cluster.
-    public func rebalanceSlotsInGlobalReplicationGroup(_ input: RebalanceSlotsInGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RebalanceSlotsInGlobalReplicationGroupResult> {
-        return self.client.execute(operation: "RebalanceSlotsInGlobalReplicationGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func rebalanceSlotsInGlobalReplicationGroup(_ input: RebalanceSlotsInGlobalReplicationGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> RebalanceSlotsInGlobalReplicationGroupResult {
+        return try await self.client.execute(
+            operation: "RebalanceSlotsInGlobalReplicationGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Reboots some, or all, of the cache nodes within a provisioned cluster. This operation applies any modified cache parameter groups to the cluster. The reboot operation takes place as soon as possible, and results in a momentary outage to the cluster. During the reboot, the cluster status is set to REBOOTING. The reboot causes the contents of the cache (for each cache node being rebooted) to be lost. When the reboot is complete, a cluster event is created. Rebooting a cluster is currently supported on Memcached and Redis (cluster mode disabled) clusters. Rebooting is not supported on Redis (cluster mode enabled) clusters. If you make changes to parameters that require a Redis (cluster mode enabled) cluster reboot for the changes to be applied, see Rebooting a Cluster for an alternate process.
-    public func rebootCacheCluster(_ input: RebootCacheClusterMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RebootCacheClusterResult> {
-        return self.client.execute(operation: "RebootCacheCluster", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func rebootCacheCluster(_ input: RebootCacheClusterMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> RebootCacheClusterResult {
+        return try await self.client.execute(
+            operation: "RebootCacheCluster", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Removes the tags identified by the TagKeys  list from the named resource. A  tag is a key-value pair where the key and value are case-sensitive.             You can use tags to categorize and track all your ElastiCache resources, with the exception of global replication group. When you add or remove tags on replication groups, those actions will be replicated to all nodes in the replication group.  For more information, see Resource-level permissions.
-    public func removeTagsFromResource(_ input: RemoveTagsFromResourceMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagListMessage> {
-        return self.client.execute(operation: "RemoveTagsFromResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Removes the tags identified by the TagKeys list from the named resource. A tag is a key-value pair where the key and value are case-sensitive. You can use tags to categorize and track all your ElastiCache resources, with the exception of global replication group. When you add or remove tags on replication groups, those actions will be replicated to all nodes in the replication group. For more information, see Resource-level permissions.
+    @Sendable
+    public func removeTagsFromResource(_ input: RemoveTagsFromResourceMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> TagListMessage {
+        return try await self.client.execute(
+            operation: "RemoveTagsFromResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Modifies the parameters of a cache parameter group to the engine or system default value. You can reset specific parameters by submitting a list of parameter names. To reset the entire cache parameter group, specify the ResetAllParameters and CacheParameterGroupName parameters.
-    public func resetCacheParameterGroup(_ input: ResetCacheParameterGroupMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CacheParameterGroupNameMessage> {
-        return self.client.execute(operation: "ResetCacheParameterGroup", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func resetCacheParameterGroup(_ input: ResetCacheParameterGroupMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> CacheParameterGroupNameMessage {
+        return try await self.client.execute(
+            operation: "ResetCacheParameterGroup", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Revokes ingress from a cache security group.  Use this operation to disallow access from an Amazon EC2 security group that had been previously authorized.
-    public func revokeCacheSecurityGroupIngress(_ input: RevokeCacheSecurityGroupIngressMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RevokeCacheSecurityGroupIngressResult> {
-        return self.client.execute(operation: "RevokeCacheSecurityGroupIngress", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Revokes ingress from a cache security group. Use this operation to disallow access from an Amazon EC2 security group that had been previously authorized.
+    @Sendable
+    public func revokeCacheSecurityGroupIngress(_ input: RevokeCacheSecurityGroupIngressMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> RevokeCacheSecurityGroupIngressResult {
+        return try await self.client.execute(
+            operation: "RevokeCacheSecurityGroupIngress", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Start the migration of data.
-    public func startMigration(_ input: StartMigrationMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartMigrationResponse> {
-        return self.client.execute(operation: "StartMigration", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startMigration(_ input: StartMigrationMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> StartMigrationResponse {
+        return try await self.client.execute(
+            operation: "StartMigration", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Represents the input of a TestFailover operation which test automatic failover on a specified node group (called shard in the console) in a replication group (called cluster in the console). This API is designed for testing the behavior of your application in case of ElastiCache failover. It is not designed to be an operational tool  for initiating a failover to overcome a problem you may have with the cluster. Moreover, in certain conditions such as large-scale operational events, Amazon may block this API.   Note the following    A customer can use this operation to test automatic failover on up to 5 shards (called node groups in the ElastiCache API and Amazon CLI)  in any rolling 24-hour period.   If calling this operation on shards in different clusters (called replication groups in the API and CLI), the calls can be made concurrently.    If calling this operation multiple times on different shards in the same Redis (cluster mode enabled) replication group,  the first node replacement must complete before a subsequent call can be made.   To determine whether the node replacement is complete you can check Events using the Amazon ElastiCache console, the Amazon CLI, or the ElastiCache API. Look for the following automatic failover related events, listed here in order of occurrance:   Replication group message: Test Failover API called for node group     Cache cluster message: Failover from primary node  to replica node  completed    Replication group message: Failover from primary node  to replica node  completed    Cache cluster message: Recovering cache nodes     Cache cluster message: Finished recovery for cache nodes     For more information see:    Viewing ElastiCache Events in the ElastiCache User Guide     DescribeEvents in the ElastiCache API Reference     Also see, Testing Multi-AZ  in the ElastiCache User Guide.
-    public func testFailover(_ input: TestFailoverMessage, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TestFailoverResult> {
-        return self.client.execute(operation: "TestFailover", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Represents the input of a TestFailover operation which test automatic failover on a specified node group (called shard in the console) in a replication group (called cluster in the console). This API is designed for testing the behavior of your application in case of ElastiCache failover. It is not designed to be an operational tool for initiating a failover to overcome a problem you may have with the cluster. Moreover, in certain conditions such as large-scale operational events, Amazon may block this API.   Note the following    A customer can use this operation to test automatic failover on up to 5 shards (called node groups in the ElastiCache API and Amazon CLI) in any rolling 24-hour period.   If calling this operation on shards in different clusters (called replication groups in the API and CLI), the calls can be made concurrently.    If calling this operation multiple times on different shards in the same Redis (cluster mode enabled) replication group, the first node replacement must complete before a subsequent call can be made.   To determine whether the node replacement is complete you can check Events using the Amazon ElastiCache console, the Amazon CLI, or the ElastiCache API. Look for the following automatic failover related events, listed here in order of occurrance:   Replication group message: Test Failover API called for node group     Cache cluster message: Failover from primary node to replica node  completed    Replication group message: Failover from primary node to replica node  completed    Cache cluster message: Recovering cache nodes     Cache cluster message: Finished recovery for cache nodes     For more information see:    Viewing ElastiCache Events in the ElastiCache User Guide     DescribeEvents in the ElastiCache API Reference     Also see, Testing Multi-AZ  in the ElastiCache User Guide.
+    @Sendable
+    public func testFailover(_ input: TestFailoverMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> TestFailoverResult {
+        return try await self.client.execute(
+            operation: "TestFailover", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    ///  Async API to test connection between source and target replication group.
+    @Sendable
+    public func testMigration(_ input: TestMigrationMessage, logger: Logger = AWSClient.loggingDisabled) async throws -> TestMigrationResponse {
+        return try await self.client.execute(
+            operation: "TestMigration", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension ElastiCache {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: ElastiCache, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -412,905 +1073,366 @@ extension ElastiCache {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension ElastiCache {
-    ///  Returns information about all provisioned clusters if no cluster identifier is specified, or about a specific cache cluster if a cluster identifier is supplied. By default, abbreviated information about the clusters is returned. You can use the optional ShowCacheNodeInfo flag to retrieve detailed information about the cache nodes associated with the clusters. These details include the DNS address and port for the cache node endpoint. If the cluster is in the creating state, only cluster-level information is displayed  until all of the nodes are successfully provisioned. If the cluster is in the deleting state, only cluster-level information is displayed. If cache nodes are currently being added to the cluster, node endpoint information and creation time for the additional nodes are not displayed until they are completely provisioned. When the cluster state is available, the cluster is ready for use. If cache nodes are currently being removed from the cluster, no endpoint information  for the removed nodes is displayed.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeCacheClustersPaginator<Result>(
-        _ input: DescribeCacheClustersMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, CacheClusterMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeCacheClusters,
-            inputKey: \DescribeCacheClustersMessage.marker,
-            outputKey: \CacheClusterMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information about all provisioned clusters if no cluster identifier is specified, or about a specific cache cluster if a cluster identifier is supplied. By default, abbreviated information about the clusters is returned. You can use the optional ShowCacheNodeInfo flag to retrieve detailed information about the cache nodes associated with the clusters. These details include the DNS address and port for the cache node endpoint. If the cluster is in the creating state, only cluster-level information is displayed until all of the nodes are successfully provisioned. If the cluster is in the deleting state, only cluster-level information is displayed. If cache nodes are currently being added to the cluster, node endpoint information and creation time for the additional nodes are not displayed until they are completely provisioned. When the cluster state is available, the cluster is ready for use. If cache nodes are currently being removed from the cluster, no endpoint information for the removed nodes is displayed.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeCacheClustersPaginator(
         _ input: DescribeCacheClustersMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (CacheClusterMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeCacheClustersMessage, CacheClusterMessage> {
+        return .init(
             input: input,
             command: self.describeCacheClusters,
             inputKey: \DescribeCacheClustersMessage.marker,
             outputKey: \CacheClusterMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of the available cache engines and their versions.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeCacheEngineVersionsPaginator<Result>(
-        _ input: DescribeCacheEngineVersionsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, CacheEngineVersionMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeCacheEngineVersions,
-            inputKey: \DescribeCacheEngineVersionsMessage.marker,
-            outputKey: \CacheEngineVersionMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of the available cache engines and their versions.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeCacheEngineVersionsPaginator(
         _ input: DescribeCacheEngineVersionsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (CacheEngineVersionMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeCacheEngineVersionsMessage, CacheEngineVersionMessage> {
+        return .init(
             input: input,
             command: self.describeCacheEngineVersions,
             inputKey: \DescribeCacheEngineVersionsMessage.marker,
             outputKey: \CacheEngineVersionMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of cache parameter group descriptions. If a cache parameter group name is specified, the list contains only the descriptions for that group.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeCacheParameterGroupsPaginator<Result>(
-        _ input: DescribeCacheParameterGroupsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, CacheParameterGroupsMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeCacheParameterGroups,
-            inputKey: \DescribeCacheParameterGroupsMessage.marker,
-            outputKey: \CacheParameterGroupsMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of cache parameter group descriptions. If a cache parameter group name is specified, the list contains only the descriptions for that group.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeCacheParameterGroupsPaginator(
         _ input: DescribeCacheParameterGroupsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (CacheParameterGroupsMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeCacheParameterGroupsMessage, CacheParameterGroupsMessage> {
+        return .init(
             input: input,
             command: self.describeCacheParameterGroups,
             inputKey: \DescribeCacheParameterGroupsMessage.marker,
             outputKey: \CacheParameterGroupsMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns the detailed parameter list for a particular cache parameter group.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeCacheParametersPaginator<Result>(
-        _ input: DescribeCacheParametersMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, CacheParameterGroupDetails, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeCacheParameters,
-            inputKey: \DescribeCacheParametersMessage.marker,
-            outputKey: \CacheParameterGroupDetails.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns the detailed parameter list for a particular cache parameter group.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeCacheParametersPaginator(
         _ input: DescribeCacheParametersMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (CacheParameterGroupDetails, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeCacheParametersMessage, CacheParameterGroupDetails> {
+        return .init(
             input: input,
             command: self.describeCacheParameters,
             inputKey: \DescribeCacheParametersMessage.marker,
             outputKey: \CacheParameterGroupDetails.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of cache security group descriptions. If a cache security group name is specified, the list contains only the description of that group. This applicable only when you have ElastiCache in Classic setup
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeCacheSecurityGroupsPaginator<Result>(
-        _ input: DescribeCacheSecurityGroupsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, CacheSecurityGroupMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeCacheSecurityGroups,
-            inputKey: \DescribeCacheSecurityGroupsMessage.marker,
-            outputKey: \CacheSecurityGroupMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of cache security group descriptions. If a cache security group name is specified, the list contains only the description of that group. This applicable only when you have ElastiCache in Classic setup
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeCacheSecurityGroupsPaginator(
         _ input: DescribeCacheSecurityGroupsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (CacheSecurityGroupMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeCacheSecurityGroupsMessage, CacheSecurityGroupMessage> {
+        return .init(
             input: input,
             command: self.describeCacheSecurityGroups,
             inputKey: \DescribeCacheSecurityGroupsMessage.marker,
             outputKey: \CacheSecurityGroupMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of cache subnet group descriptions. If a subnet group name is specified, the list  contains only the description of that group. This is applicable only when you have ElastiCache in VPC setup. All ElastiCache clusters now launch in VPC by default.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeCacheSubnetGroupsPaginator<Result>(
-        _ input: DescribeCacheSubnetGroupsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, CacheSubnetGroupMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeCacheSubnetGroups,
-            inputKey: \DescribeCacheSubnetGroupsMessage.marker,
-            outputKey: \CacheSubnetGroupMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of cache subnet group descriptions. If a subnet group name is specified, the list contains only the description of that group. This is applicable only when you have ElastiCache in VPC setup. All ElastiCache clusters now launch in VPC by default.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeCacheSubnetGroupsPaginator(
         _ input: DescribeCacheSubnetGroupsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (CacheSubnetGroupMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeCacheSubnetGroupsMessage, CacheSubnetGroupMessage> {
+        return .init(
             input: input,
             command: self.describeCacheSubnetGroups,
             inputKey: \DescribeCacheSubnetGroupsMessage.marker,
             outputKey: \CacheSubnetGroupMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns the default engine and system parameter information for the specified cache engine.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeEngineDefaultParametersPaginator<Result>(
-        _ input: DescribeEngineDefaultParametersMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeEngineDefaultParametersResult, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeEngineDefaultParameters,
-            inputKey: \DescribeEngineDefaultParametersMessage.marker,
-            outputKey: \DescribeEngineDefaultParametersResult.engineDefaults?.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns the default engine and system parameter information for the specified cache engine.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeEngineDefaultParametersPaginator(
         _ input: DescribeEngineDefaultParametersMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeEngineDefaultParametersResult, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeEngineDefaultParametersMessage, DescribeEngineDefaultParametersResult> {
+        return .init(
             input: input,
             command: self.describeEngineDefaultParameters,
             inputKey: \DescribeEngineDefaultParametersMessage.marker,
             outputKey: \DescribeEngineDefaultParametersResult.engineDefaults?.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns events related to clusters, cache security groups, and cache parameter groups. You can obtain events specific to a particular cluster, cache security group, or cache parameter group by providing the name as a parameter. By default, only the events occurring within the last hour are returned;  however, you can retrieve up to 14 days' worth of events if necessary.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeEventsPaginator<Result>(
-        _ input: DescribeEventsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, EventsMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeEvents,
-            inputKey: \DescribeEventsMessage.marker,
-            outputKey: \EventsMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns events related to clusters, cache security groups, and cache parameter groups. You can obtain events specific to a particular cluster, cache security group, or cache parameter group by providing the name as a parameter. By default, only the events occurring within the last hour are returned; however, you can retrieve up to 14 days' worth of events if necessary.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeEventsPaginator(
         _ input: DescribeEventsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (EventsMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeEventsMessage, EventsMessage> {
+        return .init(
             input: input,
             command: self.describeEvents,
             inputKey: \DescribeEventsMessage.marker,
             outputKey: \EventsMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns information about a particular global replication group. If no identifier is specified, returns information about all Global datastores.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeGlobalReplicationGroupsPaginator<Result>(
-        _ input: DescribeGlobalReplicationGroupsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeGlobalReplicationGroupsResult, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeGlobalReplicationGroups,
-            inputKey: \DescribeGlobalReplicationGroupsMessage.marker,
-            outputKey: \DescribeGlobalReplicationGroupsResult.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information about a particular global replication group. If no identifier is specified, returns information about all Global datastores.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeGlobalReplicationGroupsPaginator(
         _ input: DescribeGlobalReplicationGroupsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeGlobalReplicationGroupsResult, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeGlobalReplicationGroupsMessage, DescribeGlobalReplicationGroupsResult> {
+        return .init(
             input: input,
             command: self.describeGlobalReplicationGroups,
             inputKey: \DescribeGlobalReplicationGroupsMessage.marker,
             outputKey: \DescribeGlobalReplicationGroupsResult.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns information about a particular replication group. If no identifier is specified, DescribeReplicationGroups returns information about all replication groups.  This operation is valid for Redis only.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeReplicationGroupsPaginator<Result>(
-        _ input: DescribeReplicationGroupsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ReplicationGroupMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeReplicationGroups,
-            inputKey: \DescribeReplicationGroupsMessage.marker,
-            outputKey: \ReplicationGroupMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information about a particular replication group. If no identifier is specified, DescribeReplicationGroups returns information about all replication groups.  This operation is valid for Redis only.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeReplicationGroupsPaginator(
         _ input: DescribeReplicationGroupsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ReplicationGroupMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeReplicationGroupsMessage, ReplicationGroupMessage> {
+        return .init(
             input: input,
             command: self.describeReplicationGroups,
             inputKey: \DescribeReplicationGroupsMessage.marker,
             outputKey: \ReplicationGroupMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns information about reserved cache nodes for this account, or about a specified reserved cache node.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeReservedCacheNodesPaginator<Result>(
-        _ input: DescribeReservedCacheNodesMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ReservedCacheNodeMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeReservedCacheNodes,
-            inputKey: \DescribeReservedCacheNodesMessage.marker,
-            outputKey: \ReservedCacheNodeMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information about reserved cache nodes for this account, or about a specified reserved cache node.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeReservedCacheNodesPaginator(
         _ input: DescribeReservedCacheNodesMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ReservedCacheNodeMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeReservedCacheNodesMessage, ReservedCacheNodeMessage> {
+        return .init(
             input: input,
             command: self.describeReservedCacheNodes,
             inputKey: \DescribeReservedCacheNodesMessage.marker,
             outputKey: \ReservedCacheNodeMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists available reserved cache node offerings.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeReservedCacheNodesOfferingsPaginator<Result>(
-        _ input: DescribeReservedCacheNodesOfferingsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ReservedCacheNodesOfferingMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeReservedCacheNodesOfferings,
-            inputKey: \DescribeReservedCacheNodesOfferingsMessage.marker,
-            outputKey: \ReservedCacheNodesOfferingMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists available reserved cache node offerings.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeReservedCacheNodesOfferingsPaginator(
         _ input: DescribeReservedCacheNodesOfferingsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ReservedCacheNodesOfferingMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeReservedCacheNodesOfferingsMessage, ReservedCacheNodesOfferingMessage> {
+        return .init(
             input: input,
             command: self.describeReservedCacheNodesOfferings,
             inputKey: \DescribeReservedCacheNodesOfferingsMessage.marker,
             outputKey: \ReservedCacheNodesOfferingMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns details of the service updates
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeServiceUpdatesPaginator<Result>(
-        _ input: DescribeServiceUpdatesMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ServiceUpdatesMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeServiceUpdates,
-            inputKey: \DescribeServiceUpdatesMessage.marker,
-            outputKey: \ServiceUpdatesMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information about serverless cache snapshots.  By default, this API lists all of the customer’s serverless cache snapshots.  It can also describe a single serverless cache snapshot, or the snapshots associated with  a particular serverless cache. Available for Redis only.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func describeServerlessCacheSnapshotsPaginator(
+        _ input: DescribeServerlessCacheSnapshotsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeServerlessCacheSnapshotsRequest, DescribeServerlessCacheSnapshotsResponse> {
+        return .init(
+            input: input,
+            command: self.describeServerlessCacheSnapshots,
+            inputKey: \DescribeServerlessCacheSnapshotsRequest.nextToken,
+            outputKey: \DescribeServerlessCacheSnapshotsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns information about a specific serverless cache.  If no identifier is specified, then the API returns information on all the serverless caches belonging to  this Amazon Web Services account.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func describeServerlessCachesPaginator(
+        _ input: DescribeServerlessCachesRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeServerlessCachesRequest, DescribeServerlessCachesResponse> {
+        return .init(
+            input: input,
+            command: self.describeServerlessCaches,
+            inputKey: \DescribeServerlessCachesRequest.nextToken,
+            outputKey: \DescribeServerlessCachesResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns details of the service updates
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func describeServiceUpdatesPaginator(
         _ input: DescribeServiceUpdatesMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ServiceUpdatesMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeServiceUpdatesMessage, ServiceUpdatesMessage> {
+        return .init(
             input: input,
             command: self.describeServiceUpdates,
             inputKey: \DescribeServiceUpdatesMessage.marker,
             outputKey: \ServiceUpdatesMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns information about cluster or replication group snapshots. By default, DescribeSnapshots lists all of your snapshots; it can optionally describe a single snapshot, or just the snapshots associated with a particular cache cluster.  This operation is valid for Redis only.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeSnapshotsPaginator<Result>(
-        _ input: DescribeSnapshotsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeSnapshotsListMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeSnapshots,
-            inputKey: \DescribeSnapshotsMessage.marker,
-            outputKey: \DescribeSnapshotsListMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information about cluster or replication group snapshots. By default, DescribeSnapshots lists all of your snapshots; it can optionally describe a single snapshot, or just the snapshots associated with a particular cache cluster.  This operation is valid for Redis only.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeSnapshotsPaginator(
         _ input: DescribeSnapshotsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeSnapshotsListMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeSnapshotsMessage, DescribeSnapshotsListMessage> {
+        return .init(
             input: input,
             command: self.describeSnapshots,
             inputKey: \DescribeSnapshotsMessage.marker,
             outputKey: \DescribeSnapshotsListMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns details of the update actions
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeUpdateActionsPaginator<Result>(
-        _ input: DescribeUpdateActionsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, UpdateActionsMessage, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeUpdateActions,
-            inputKey: \DescribeUpdateActionsMessage.marker,
-            outputKey: \UpdateActionsMessage.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns details of the update actions
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeUpdateActionsPaginator(
         _ input: DescribeUpdateActionsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (UpdateActionsMessage, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeUpdateActionsMessage, UpdateActionsMessage> {
+        return .init(
             input: input,
             command: self.describeUpdateActions,
             inputKey: \DescribeUpdateActionsMessage.marker,
             outputKey: \UpdateActionsMessage.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of user groups.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeUserGroupsPaginator<Result>(
-        _ input: DescribeUserGroupsMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeUserGroupsResult, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeUserGroups,
-            inputKey: \DescribeUserGroupsMessage.marker,
-            outputKey: \DescribeUserGroupsResult.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of user groups.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeUserGroupsPaginator(
         _ input: DescribeUserGroupsMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeUserGroupsResult, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeUserGroupsMessage, DescribeUserGroupsResult> {
+        return .init(
             input: input,
             command: self.describeUserGroups,
             inputKey: \DescribeUserGroupsMessage.marker,
             outputKey: \DescribeUserGroupsResult.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of users.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeUsersPaginator<Result>(
-        _ input: DescribeUsersMessage,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeUsersResult, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeUsers,
-            inputKey: \DescribeUsersMessage.marker,
-            outputKey: \DescribeUsersResult.marker,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of users.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeUsersPaginator(
         _ input: DescribeUsersMessage,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeUsersResult, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeUsersMessage, DescribeUsersResult> {
+        return .init(
             input: input,
             command: self.describeUsers,
             inputKey: \DescribeUsersMessage.marker,
             outputKey: \DescribeUsersResult.marker,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
@@ -1455,6 +1577,28 @@ extension ElastiCache.DescribeReservedCacheNodesOfferingsMessage: AWSPaginateTok
     }
 }
 
+extension ElastiCache.DescribeServerlessCacheSnapshotsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> ElastiCache.DescribeServerlessCacheSnapshotsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token,
+            serverlessCacheName: self.serverlessCacheName,
+            serverlessCacheSnapshotName: self.serverlessCacheSnapshotName,
+            snapshotType: self.snapshotType
+        )
+    }
+}
+
+extension ElastiCache.DescribeServerlessCachesRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> ElastiCache.DescribeServerlessCachesRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token,
+            serverlessCacheName: self.serverlessCacheName
+        )
+    }
+}
+
 extension ElastiCache.DescribeServiceUpdatesMessage: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> ElastiCache.DescribeServiceUpdatesMessage {
         return .init(
@@ -1521,14 +1665,13 @@ extension ElastiCache.DescribeUsersMessage: AWSPaginateToken {
 
 // MARK: Waiters
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension ElastiCache {
-    /// Wait until ElastiCache cluster is available.
     public func waitUntilCacheClusterAvailable(
         _ input: DescribeCacheClustersMessage,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESAllPathMatcher("cacheClusters[].cacheClusterStatus", expected: "available")),
@@ -1540,16 +1683,14 @@ extension ElastiCache {
             minDelayTime: .seconds(15),
             command: self.describeCacheClusters
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until ElastiCache cluster is deleted.
     public func waitUntilCacheClusterDeleted(
         _ input: DescribeCacheClustersMessage,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESAllPathMatcher("cacheClusters[].cacheClusterStatus", expected: "deleted")),
@@ -1564,16 +1705,14 @@ extension ElastiCache {
             minDelayTime: .seconds(15),
             command: self.describeCacheClusters
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until ElastiCache replication group is available.
     public func waitUntilReplicationGroupAvailable(
         _ input: DescribeReplicationGroupsMessage,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESAllPathMatcher("replicationGroups[].status", expected: "available")),
@@ -1582,16 +1721,14 @@ extension ElastiCache {
             minDelayTime: .seconds(15),
             command: self.describeReplicationGroups
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 
-    /// Wait until ElastiCache replication group is deleted.
     public func waitUntilReplicationGroupDeleted(
         _ input: DescribeReplicationGroupsMessage,
         maxWaitTime: TimeAmount? = nil,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil
-    ) -> EventLoopFuture<Void> {
+        logger: Logger = AWSClient.loggingDisabled
+    ) async throws {
         let waiter = AWSClient.Waiter(
             acceptors: [
                 .init(state: .success, matcher: try! JMESAllPathMatcher("replicationGroups[].status", expected: "deleted")),
@@ -1601,6 +1738,6 @@ extension ElastiCache {
             minDelayTime: .seconds(15),
             command: self.describeReplicationGroups
         )
-        return self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger, on: eventLoop)
+        return try await self.client.waitUntil(input, waiter: waiter, maxWaitTime: maxWaitTime, logger: logger)
     }
 }

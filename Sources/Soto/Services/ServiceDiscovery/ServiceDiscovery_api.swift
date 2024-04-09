@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct ServiceDiscovery: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -51,195 +55,440 @@ public struct ServiceDiscovery: AWSService {
             region: region,
             partition: region?.partition ?? partition,
             amzTarget: "Route53AutoNaming_v20170314",
-            service: "servicediscovery",
+            serviceName: "ServiceDiscovery",
+            serviceIdentifier: "servicediscovery",
             serviceProtocol: .json(version: "1.1"),
             apiVersion: "2017-03-14",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.dualstack]: .init(endpoints: [
-                    "af-south-1": "servicediscovery.af-south-1.amazonaws.com",
-                    "ap-east-1": "servicediscovery.ap-east-1.amazonaws.com",
-                    "ap-northeast-1": "servicediscovery.ap-northeast-1.amazonaws.com",
-                    "ap-northeast-2": "servicediscovery.ap-northeast-2.amazonaws.com",
-                    "ap-northeast-3": "servicediscovery.ap-northeast-3.amazonaws.com",
-                    "ap-south-1": "servicediscovery.ap-south-1.amazonaws.com",
-                    "ap-south-2": "servicediscovery.ap-south-2.amazonaws.com",
-                    "ap-southeast-1": "servicediscovery.ap-southeast-1.amazonaws.com",
-                    "ap-southeast-2": "servicediscovery.ap-southeast-2.amazonaws.com",
-                    "ap-southeast-3": "servicediscovery.ap-southeast-3.amazonaws.com",
-                    "ca-central-1": "servicediscovery.ca-central-1.amazonaws.com",
-                    "cn-north-1": "servicediscovery.cn-north-1.amazonaws.com.cn",
-                    "cn-northwest-1": "servicediscovery.cn-northwest-1.amazonaws.com.cn",
-                    "eu-central-1": "servicediscovery.eu-central-1.amazonaws.com",
-                    "eu-central-2": "servicediscovery.eu-central-2.amazonaws.com",
-                    "eu-north-1": "servicediscovery.eu-north-1.amazonaws.com",
-                    "eu-south-1": "servicediscovery.eu-south-1.amazonaws.com",
-                    "eu-south-2": "servicediscovery.eu-south-2.amazonaws.com",
-                    "eu-west-1": "servicediscovery.eu-west-1.amazonaws.com",
-                    "eu-west-2": "servicediscovery.eu-west-2.amazonaws.com",
-                    "eu-west-3": "servicediscovery.eu-west-3.amazonaws.com",
-                    "me-central-1": "servicediscovery.me-central-1.amazonaws.com",
-                    "me-south-1": "servicediscovery.me-south-1.amazonaws.com",
-                    "sa-east-1": "servicediscovery.sa-east-1.amazonaws.com",
-                    "us-east-1": "servicediscovery.us-east-1.amazonaws.com",
-                    "us-east-2": "servicediscovery.us-east-2.amazonaws.com",
-                    "us-gov-east-1": "servicediscovery.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "servicediscovery.us-gov-west-1.amazonaws.com",
-                    "us-west-1": "servicediscovery.us-west-1.amazonaws.com",
-                    "us-west-2": "servicediscovery.us-west-2.amazonaws.com"
-                ]),
-                [.fips]: .init(endpoints: [
-                    "ca-central-1": "servicediscovery-fips.ca-central-1.amazonaws.com",
-                    "us-east-1": "servicediscovery-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "servicediscovery-fips.us-east-2.amazonaws.com",
-                    "us-gov-east-1": "servicediscovery-fips.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "servicediscovery-fips.us-gov-west-1.amazonaws.com",
-                    "us-west-1": "servicediscovery-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "servicediscovery-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: ServiceDiscoveryErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.dualstack]: .init(endpoints: [
+            "af-south-1": "servicediscovery.af-south-1.api.aws",
+            "ap-east-1": "servicediscovery.ap-east-1.api.aws",
+            "ap-northeast-1": "servicediscovery.ap-northeast-1.api.aws",
+            "ap-northeast-2": "servicediscovery.ap-northeast-2.api.aws",
+            "ap-northeast-3": "servicediscovery.ap-northeast-3.api.aws",
+            "ap-south-1": "servicediscovery.ap-south-1.api.aws",
+            "ap-south-2": "servicediscovery.ap-south-2.api.aws",
+            "ap-southeast-1": "servicediscovery.ap-southeast-1.api.aws",
+            "ap-southeast-2": "servicediscovery.ap-southeast-2.api.aws",
+            "ap-southeast-3": "servicediscovery.ap-southeast-3.api.aws",
+            "ap-southeast-4": "servicediscovery.ap-southeast-4.api.aws",
+            "ca-central-1": "servicediscovery.ca-central-1.api.aws",
+            "ca-west-1": "servicediscovery.ca-west-1.api.aws",
+            "cn-north-1": "servicediscovery.cn-north-1.api.amazonwebservices.com.cn",
+            "cn-northwest-1": "servicediscovery.cn-northwest-1.api.amazonwebservices.com.cn",
+            "eu-central-1": "servicediscovery.eu-central-1.api.aws",
+            "eu-central-2": "servicediscovery.eu-central-2.api.aws",
+            "eu-north-1": "servicediscovery.eu-north-1.api.aws",
+            "eu-south-1": "servicediscovery.eu-south-1.api.aws",
+            "eu-south-2": "servicediscovery.eu-south-2.api.aws",
+            "eu-west-1": "servicediscovery.eu-west-1.api.aws",
+            "eu-west-2": "servicediscovery.eu-west-2.api.aws",
+            "eu-west-3": "servicediscovery.eu-west-3.api.aws",
+            "il-central-1": "servicediscovery.il-central-1.api.aws",
+            "me-central-1": "servicediscovery.me-central-1.api.aws",
+            "me-south-1": "servicediscovery.me-south-1.api.aws",
+            "sa-east-1": "servicediscovery.sa-east-1.api.aws",
+            "us-east-1": "servicediscovery.us-east-1.api.aws",
+            "us-east-2": "servicediscovery.us-east-2.api.aws",
+            "us-gov-east-1": "servicediscovery.us-gov-east-1.api.aws",
+            "us-gov-west-1": "servicediscovery.us-gov-west-1.api.aws",
+            "us-west-1": "servicediscovery.us-west-1.api.aws",
+            "us-west-2": "servicediscovery.us-west-2.api.aws"
+        ]),
+        [.dualstack, .fips]: .init(endpoints: [
+            "ca-central-1": "servicediscovery-fips.ca-central-1.api.aws",
+            "ca-west-1": "servicediscovery-fips.ca-west-1.api.aws",
+            "us-east-1": "servicediscovery-fips.us-east-1.api.aws",
+            "us-east-2": "servicediscovery-fips.us-east-2.api.aws",
+            "us-gov-east-1": "servicediscovery-fips.us-gov-east-1.api.aws",
+            "us-gov-west-1": "servicediscovery-fips.us-gov-west-1.api.aws",
+            "us-west-1": "servicediscovery-fips.us-west-1.api.aws",
+            "us-west-2": "servicediscovery-fips.us-west-2.api.aws"
+        ]),
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "servicediscovery-fips.ca-central-1.amazonaws.com",
+            "ca-west-1": "servicediscovery-fips.ca-west-1.amazonaws.com",
+            "us-east-1": "servicediscovery-fips.us-east-1.amazonaws.com",
+            "us-east-2": "servicediscovery-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "servicediscovery-fips.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "servicediscovery-fips.us-gov-west-1.amazonaws.com",
+            "us-west-1": "servicediscovery-fips.us-west-1.amazonaws.com",
+            "us-west-2": "servicediscovery-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
     /// Creates an HTTP namespace. Service instances registered using an HTTP namespace can be discovered using a DiscoverInstances request but can't be discovered using DNS. For the current quota on the number of namespaces that you can create using the same Amazon Web Services account, see Cloud Map quotas in the Cloud Map Developer Guide.
-    public func createHttpNamespace(_ input: CreateHttpNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateHttpNamespaceResponse> {
-        return self.client.execute(operation: "CreateHttpNamespace", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createHttpNamespace(_ input: CreateHttpNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateHttpNamespaceResponse {
+        return try await self.client.execute(
+            operation: "CreateHttpNamespace", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a private namespace based on DNS, which is visible only inside a specified Amazon VPC. The namespace defines your service naming scheme. For example, if you name your namespace example.com and name your service backend, the resulting DNS name for the service is backend.example.com. Service instances that are registered using a private DNS namespace can be discovered using either a DiscoverInstances request or using DNS. For the current quota on the number of namespaces that you can create using the same Amazon Web Services account, see Cloud Map quotas in the Cloud Map Developer Guide.
-    public func createPrivateDnsNamespace(_ input: CreatePrivateDnsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreatePrivateDnsNamespaceResponse> {
-        return self.client.execute(operation: "CreatePrivateDnsNamespace", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createPrivateDnsNamespace(_ input: CreatePrivateDnsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreatePrivateDnsNamespaceResponse {
+        return try await self.client.execute(
+            operation: "CreatePrivateDnsNamespace", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates a public namespace based on DNS, which is visible on the internet. The namespace defines your service naming scheme. For example, if you name your namespace example.com and name your service backend, the resulting DNS name for the service is backend.example.com. You can discover instances that were registered with a public DNS namespace by using either a DiscoverInstances request or using DNS. For the current quota on the number of namespaces that you can create using the same Amazon Web Services account, see Cloud Map quotas in the Cloud Map Developer Guide.   The CreatePublicDnsNamespace API operation is not supported in the Amazon Web Services GovCloud (US) Regions.
-    public func createPublicDnsNamespace(_ input: CreatePublicDnsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreatePublicDnsNamespaceResponse> {
-        return self.client.execute(operation: "CreatePublicDnsNamespace", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a public namespace based on DNS, which is visible on the internet. The namespace defines your service naming scheme. For example, if you name your namespace example.com and name your service backend, the resulting DNS name for the service is backend.example.com. You can discover instances that were registered with a public DNS namespace by using either a DiscoverInstances request or using DNS. For the current quota on the number of namespaces that you can create using the same Amazon Web Services account, see Cloud Map quotas in the Cloud Map Developer Guide.  The CreatePublicDnsNamespace API operation is not supported in the Amazon Web Services GovCloud (US) Regions.
+    @Sendable
+    public func createPublicDnsNamespace(_ input: CreatePublicDnsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreatePublicDnsNamespaceResponse {
+        return try await self.client.execute(
+            operation: "CreatePublicDnsNamespace", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a service. This action defines the configuration for the following entities:   For public and private DNS namespaces, one of the following combinations of DNS records in Amazon Route 53:    A     AAAA     A and AAAA     SRV     CNAME      Optionally, a health check   After you create the service, you can submit a RegisterInstance request, and Cloud Map uses the values in the configuration to create the specified entities. For the current quota on the number of instances that you can register using the same namespace and using the same service, see Cloud Map quotas in the Cloud Map Developer Guide.
-    public func createService(_ input: CreateServiceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateServiceResponse> {
-        return self.client.execute(operation: "CreateService", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createService(_ input: CreateServiceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateServiceResponse {
+        return try await self.client.execute(
+            operation: "CreateService", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a namespace from the current account. If the namespace still contains one or more services, the request fails.
-    public func deleteNamespace(_ input: DeleteNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteNamespaceResponse> {
-        return self.client.execute(operation: "DeleteNamespace", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteNamespace(_ input: DeleteNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteNamespaceResponse {
+        return try await self.client.execute(
+            operation: "DeleteNamespace", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a specified service. If the service still contains one or more registered instances, the request fails.
-    public func deleteService(_ input: DeleteServiceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteServiceResponse> {
-        return self.client.execute(operation: "DeleteService", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteService(_ input: DeleteServiceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteServiceResponse {
+        return try await self.client.execute(
+            operation: "DeleteService", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the Amazon Route 53 DNS records and health check, if any, that Cloud Map created for the specified instance.
-    public func deregisterInstance(_ input: DeregisterInstanceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeregisterInstanceResponse> {
-        return self.client.execute(operation: "DeregisterInstance", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deregisterInstance(_ input: DeregisterInstanceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeregisterInstanceResponse {
+        return try await self.client.execute(
+            operation: "DeregisterInstance", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Discovers registered instances for a specified namespace and service. You can use DiscoverInstances to discover instances for any type of namespace. For public and private DNS namespaces, you can also use DNS queries to discover instances.
-    public func discoverInstances(_ input: DiscoverInstancesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DiscoverInstancesResponse> {
-        return self.client.execute(operation: "DiscoverInstances", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, hostPrefix: "data-", logger: logger, on: eventLoop)
+    /// Discovers registered instances for a specified namespace and service. You can use DiscoverInstances to discover instances for any type of namespace. DiscoverInstances returns a randomized list of instances allowing customers to distribute traffic evenly across instances. For public and private DNS namespaces, you can also use DNS queries to discover instances.
+    @Sendable
+    public func discoverInstances(_ input: DiscoverInstancesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DiscoverInstancesResponse {
+        return try await self.client.execute(
+            operation: "DiscoverInstances", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "data-", 
+            logger: logger
+        )
+    }
+
+    /// Discovers the increasing revision associated with an instance.
+    @Sendable
+    public func discoverInstancesRevision(_ input: DiscoverInstancesRevisionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DiscoverInstancesRevisionResponse {
+        return try await self.client.execute(
+            operation: "DiscoverInstancesRevision", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "data-", 
+            logger: logger
+        )
     }
 
     /// Gets information about a specified instance.
-    public func getInstance(_ input: GetInstanceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetInstanceResponse> {
-        return self.client.execute(operation: "GetInstance", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getInstance(_ input: GetInstanceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetInstanceResponse {
+        return try await self.client.execute(
+            operation: "GetInstance", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets the current health status (Healthy, Unhealthy, or Unknown) of one or more instances that are associated with a specified service.  There's a brief delay between when you register an instance and when the health status for the instance is available.
-    public func getInstancesHealthStatus(_ input: GetInstancesHealthStatusRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetInstancesHealthStatusResponse> {
-        return self.client.execute(operation: "GetInstancesHealthStatus", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getInstancesHealthStatus(_ input: GetInstancesHealthStatusRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetInstancesHealthStatusResponse {
+        return try await self.client.execute(
+            operation: "GetInstancesHealthStatus", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets information about a namespace.
-    public func getNamespace(_ input: GetNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetNamespaceResponse> {
-        return self.client.execute(operation: "GetNamespace", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getNamespace(_ input: GetNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetNamespaceResponse {
+        return try await self.client.execute(
+            operation: "GetNamespace", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Gets information about any operation that returns an operation ID in the response, such as a CreateService request.  To get a list of operations that match specified criteria, see ListOperations.
-    public func getOperation(_ input: GetOperationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetOperationResponse> {
-        return self.client.execute(operation: "GetOperation", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Gets information about any operation that returns an operation ID in the response, such as a CreateHttpNamespace request.  To get a list of operations that match specified criteria, see ListOperations.
+    @Sendable
+    public func getOperation(_ input: GetOperationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetOperationResponse {
+        return try await self.client.execute(
+            operation: "GetOperation", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets the settings for a specified service.
-    public func getService(_ input: GetServiceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetServiceResponse> {
-        return self.client.execute(operation: "GetService", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getService(_ input: GetServiceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetServiceResponse {
+        return try await self.client.execute(
+            operation: "GetService", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists summary information about the instances that you registered by using a specified service.
-    public func listInstances(_ input: ListInstancesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListInstancesResponse> {
-        return self.client.execute(operation: "ListInstances", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listInstances(_ input: ListInstancesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListInstancesResponse {
+        return try await self.client.execute(
+            operation: "ListInstances", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists summary information about the namespaces that were created by the current Amazon Web Services account.
-    public func listNamespaces(_ input: ListNamespacesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListNamespacesResponse> {
-        return self.client.execute(operation: "ListNamespaces", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listNamespaces(_ input: ListNamespacesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListNamespacesResponse {
+        return try await self.client.execute(
+            operation: "ListNamespaces", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists operations that match the criteria that you specify.
-    public func listOperations(_ input: ListOperationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListOperationsResponse> {
-        return self.client.execute(operation: "ListOperations", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listOperations(_ input: ListOperationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListOperationsResponse {
+        return try await self.client.execute(
+            operation: "ListOperations", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists summary information for all the services that are associated with one or more specified namespaces.
-    public func listServices(_ input: ListServicesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListServicesResponse> {
-        return self.client.execute(operation: "ListServices", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listServices(_ input: ListServicesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListServicesResponse {
+        return try await self.client.execute(
+            operation: "ListServices", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists tags for the specified resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates or updates one or more records and, optionally, creates a health check based on the settings in a specified service. When you submit a RegisterInstance request, the following occurs:   For each DNS record that you define in the service that's specified by ServiceId, a record is created or updated in the hosted zone that's associated with the corresponding namespace.   If the service includes HealthCheckConfig, a health check is created based on the settings in the health check configuration.   The health check, if any, is associated with each of the new or updated records.    One RegisterInstance request must complete before you can submit another request and specify the same service ID and instance ID.  For more information, see CreateService. When Cloud Map receives a DNS query for the specified DNS name, it returns the applicable value:    If the health check is healthy: returns all the records    If the health check is unhealthy: returns the applicable value for the last healthy instance    If you didn't specify a health check configuration: returns all the records   For the current quota on the number of instances that you can register using the same namespace and using the same service, see Cloud Map quotas in the Cloud Map Developer Guide.
-    public func registerInstance(_ input: RegisterInstanceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RegisterInstanceResponse> {
-        return self.client.execute(operation: "RegisterInstance", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func registerInstance(_ input: RegisterInstanceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> RegisterInstanceResponse {
+        return try await self.client.execute(
+            operation: "RegisterInstance", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Adds one or more tags to the specified resource.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Removes one or more tags from the specified resource.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates an HTTP namespace.
-    public func updateHttpNamespace(_ input: UpdateHttpNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateHttpNamespaceResponse> {
-        return self.client.execute(operation: "UpdateHttpNamespace", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateHttpNamespace(_ input: UpdateHttpNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateHttpNamespaceResponse {
+        return try await self.client.execute(
+            operation: "UpdateHttpNamespace", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Submits a request to change the health status of a custom health check to healthy or unhealthy. You can use UpdateInstanceCustomHealthStatus to change the status only for custom health checks, which you define using HealthCheckCustomConfig when you create a service. You can't use it to change the status for Route 53 health checks, which you define using HealthCheckConfig. For more information, see HealthCheckCustomConfig.
-    @discardableResult public func updateInstanceCustomHealthStatus(_ input: UpdateInstanceCustomHealthStatusRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "UpdateInstanceCustomHealthStatus", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateInstanceCustomHealthStatus(_ input: UpdateInstanceCustomHealthStatusRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "UpdateInstanceCustomHealthStatus", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates a private DNS namespace.
-    public func updatePrivateDnsNamespace(_ input: UpdatePrivateDnsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdatePrivateDnsNamespaceResponse> {
-        return self.client.execute(operation: "UpdatePrivateDnsNamespace", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updatePrivateDnsNamespace(_ input: UpdatePrivateDnsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdatePrivateDnsNamespaceResponse {
+        return try await self.client.execute(
+            operation: "UpdatePrivateDnsNamespace", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates a public DNS namespace.
-    public func updatePublicDnsNamespace(_ input: UpdatePublicDnsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdatePublicDnsNamespaceResponse> {
-        return self.client.execute(operation: "UpdatePublicDnsNamespace", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updatePublicDnsNamespace(_ input: UpdatePublicDnsNamespaceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdatePublicDnsNamespaceResponse {
+        return try await self.client.execute(
+            operation: "UpdatePublicDnsNamespace", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Submits a request to perform the following operations:   Update the TTL setting for existing DnsRecords configurations   Add, update, or delete HealthCheckConfig for a specified service  You can't add, update, or delete a HealthCheckCustomConfig configuration.    For public and private DNS namespaces, note the following:   If you omit any existing DnsRecords or HealthCheckConfig configurations from an UpdateService request, the configurations are deleted from the service.   If you omit an existing HealthCheckCustomConfig configuration from an UpdateService request, the configuration isn't deleted from the service.   When you update settings for a service, Cloud Map also updates the corresponding settings in all the records and health checks that were created by using the specified service.
-    public func updateService(_ input: UpdateServiceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateServiceResponse> {
-        return self.client.execute(operation: "UpdateService", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateService(_ input: UpdateServiceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateServiceResponse {
+        return try await self.client.execute(
+            operation: "UpdateService", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension ServiceDiscovery {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: ServiceDiscovery, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -249,269 +498,100 @@ extension ServiceDiscovery {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension ServiceDiscovery {
-    ///  Gets the current health status (Healthy, Unhealthy, or Unknown) of one or more instances that are associated with a specified service.  There's a brief delay between when you register an instance and when the health status for the instance is available.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func getInstancesHealthStatusPaginator<Result>(
-        _ input: GetInstancesHealthStatusRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, GetInstancesHealthStatusResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.getInstancesHealthStatus,
-            inputKey: \GetInstancesHealthStatusRequest.nextToken,
-            outputKey: \GetInstancesHealthStatusResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Gets the current health status (Healthy, Unhealthy, or Unknown) of one or more instances that are associated with a specified service.  There's a brief delay between when you register an instance and when the health status for the instance is available.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func getInstancesHealthStatusPaginator(
         _ input: GetInstancesHealthStatusRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (GetInstancesHealthStatusResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<GetInstancesHealthStatusRequest, GetInstancesHealthStatusResponse> {
+        return .init(
             input: input,
             command: self.getInstancesHealthStatus,
             inputKey: \GetInstancesHealthStatusRequest.nextToken,
             outputKey: \GetInstancesHealthStatusResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists summary information about the instances that you registered by using a specified service.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listInstancesPaginator<Result>(
-        _ input: ListInstancesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListInstancesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listInstances,
-            inputKey: \ListInstancesRequest.nextToken,
-            outputKey: \ListInstancesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists summary information about the instances that you registered by using a specified service.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listInstancesPaginator(
         _ input: ListInstancesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListInstancesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListInstancesRequest, ListInstancesResponse> {
+        return .init(
             input: input,
             command: self.listInstances,
             inputKey: \ListInstancesRequest.nextToken,
             outputKey: \ListInstancesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists summary information about the namespaces that were created by the current Amazon Web Services account.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listNamespacesPaginator<Result>(
-        _ input: ListNamespacesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListNamespacesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listNamespaces,
-            inputKey: \ListNamespacesRequest.nextToken,
-            outputKey: \ListNamespacesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists summary information about the namespaces that were created by the current Amazon Web Services account.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listNamespacesPaginator(
         _ input: ListNamespacesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListNamespacesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListNamespacesRequest, ListNamespacesResponse> {
+        return .init(
             input: input,
             command: self.listNamespaces,
             inputKey: \ListNamespacesRequest.nextToken,
             outputKey: \ListNamespacesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists operations that match the criteria that you specify.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listOperationsPaginator<Result>(
-        _ input: ListOperationsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListOperationsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listOperations,
-            inputKey: \ListOperationsRequest.nextToken,
-            outputKey: \ListOperationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists operations that match the criteria that you specify.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listOperationsPaginator(
         _ input: ListOperationsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListOperationsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListOperationsRequest, ListOperationsResponse> {
+        return .init(
             input: input,
             command: self.listOperations,
             inputKey: \ListOperationsRequest.nextToken,
             outputKey: \ListOperationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists summary information for all the services that are associated with one or more specified namespaces.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listServicesPaginator<Result>(
-        _ input: ListServicesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListServicesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listServices,
-            inputKey: \ListServicesRequest.nextToken,
-            outputKey: \ListServicesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists summary information for all the services that are associated with one or more specified namespaces.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listServicesPaginator(
         _ input: ListServicesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListServicesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListServicesRequest, ListServicesResponse> {
+        return .init(
             input: input,
             command: self.listServices,
             inputKey: \ListServicesRequest.nextToken,
             outputKey: \ListServicesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }

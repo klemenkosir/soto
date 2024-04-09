@@ -17,29 +17,27 @@ import NIOCore
 import SotoCore
 
 /// Protocol providing a Cognito Identity id and tokens
-public protocol IdentityProvider: _SotoSendableProtocol {
-    func getIdentity(on eventLoop: EventLoop, logger: Logger) -> EventLoopFuture<CognitoIdentity.IdentityParams>
-    func shutdown(on eventLoop: EventLoop) -> EventLoopFuture<Void>
+public protocol IdentityProvider: Sendable {
+    func getIdentity(logger: Logger) async throws -> CognitoIdentity.IdentityParams
+    func shutdown() async throws
 }
 
 extension IdentityProvider {
-    public func shutdown(on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-        return eventLoop.makeSucceededFuture(())
-    }
+    public func shutdown() async throws {}
 }
 
 /// A helper struct to defer the creation of an `IdentityProvider` until after the `IdentityCredentialProvider` has been created.
-public struct IdentityProviderFactory {
+public struct IdentityProviderFactory: Sendable {
     /// The initialization context for a `IdentityProvider`
-    public struct Context: _SotoSendable {
+    public struct Context: Sendable {
         public let cognitoIdentity: CognitoIdentity
         public let identityPoolId: String
         public let logger: Logger
     }
 
-    private let cb: (Context) -> IdentityProvider
+    private let cb: @Sendable (Context) -> IdentityProvider
 
-    private init(cb: @escaping (Context) -> IdentityProvider) {
+    private init(cb: @escaping @Sendable (Context) -> IdentityProvider) {
         self.cb = cb
     }
 
@@ -49,7 +47,7 @@ public struct IdentityProviderFactory {
 }
 
 extension CognitoIdentity {
-    public struct IdentityParams: _SotoSendable {
+    public struct IdentityParams: Sendable {
         let id: String
         let logins: [String: String]?
 
@@ -61,54 +59,42 @@ extension CognitoIdentity {
 
     struct StaticIdentityProvider: IdentityProvider {
         let logins: [String: String]?
-        let identityIdPromise: EventLoopPromise<String>
+        let getIdentityIdTask: Task<String, Error>
 
         init(logins: [String: String]?, context: IdentityProviderFactory.Context) {
             self.logins = logins
-            // create identity id promise
-            let eventLoop = context.cognitoIdentity.client.eventLoopGroup.next()
-            let identityIdPromise = eventLoop.makePromise(of: String.self)
-            self.identityIdPromise = identityIdPromise
-            // request identity id and fulfill promise on completion
-            let request = CognitoIdentity.GetIdInput(identityPoolId: context.identityPoolId, logins: logins)
-            context.cognitoIdentity.getId(request, logger: context.logger, on: eventLoop).whenComplete { result in
-                switch result {
-                case .failure:
-                    identityIdPromise.fail(CredentialProviderError.noProvider)
-                case .success(let response):
+            self.getIdentityIdTask = Task {
+                do {
+                    let request = CognitoIdentity.GetIdInput(identityPoolId: context.identityPoolId, logins: logins)
+                    let response = try await context.cognitoIdentity.getId(request, logger: context.logger)
                     guard let identityId = response.identityId else {
-                        identityIdPromise.fail(CredentialProviderError.noProvider)
-                        return
+                        throw CredentialProviderError.noProvider
                     }
-                    identityIdPromise.succeed(identityId)
+                    return identityId
+                } catch {
+                    throw CredentialProviderError.noProvider
                 }
             }
         }
 
-        func shutdown(on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-            return self.identityIdPromise.futureResult.map { _ in }.hop(to: eventLoop)
+        func shutdown() async throws {
+            self.getIdentityIdTask.cancel()
         }
 
-        func getIdentity(on eventLoop: EventLoop, logger: Logger) -> EventLoopFuture<IdentityParams> {
-            return self.identityIdPromise.futureResult.map { identityId in
-                return .init(id: identityId, logins: self.logins)
-            }.hop(to: eventLoop)
+        func getIdentity(logger: Logger) async throws -> IdentityParams {
+            let identityId = try await getIdentityIdTask.value
+            return .init(id: identityId, logins: self.logins)
         }
     }
 
     /// Protocol providing Cognito Identity id and tokens
     public struct ExternalIdentityProvider: IdentityProvider {
-        #if compiler(>=5.6)
-        typealias LoginProvider = @Sendable (Context) -> EventLoopFuture<[String: String]>
-        #else
-        typealias LoginProvider = (Context) -> EventLoopFuture<[String: String]>
-        #endif
+        typealias LoginProvider = @Sendable (Context) async throws -> [String: String]
         /// The context passed to the logins provider closure
-        public struct Context: _SotoSendable {
+        public struct Context: Sendable {
             public let client: AWSClient
             public let region: Region
             public let identityPoolId: String
-            public let eventLoop: EventLoop
             public let logger: Logger
         }
 
@@ -124,31 +110,26 @@ extension CognitoIdentity {
         }
 
         /// Get Identity from external identity provider and get Cognito Identity from this
-        public func getIdentity(on eventLoop: EventLoop, logger: Logger) -> EventLoopFuture<IdentityParams> {
+        public func getIdentity(logger: Logger) async throws -> IdentityParams {
             let context = Context(
                 client: self.identityProviderContext.cognitoIdentity.client,
                 region: self.identityProviderContext.cognitoIdentity.region,
                 identityPoolId: self.identityProviderContext.identityPoolId,
-                eventLoop: eventLoop,
                 logger: logger
             )
-            return self.loginsProvider(context)
-                .flatMap { logins in
-                    let request = CognitoIdentity.GetIdInput(identityPoolId: context.identityPoolId, logins: logins)
-                    return self.identityProviderContext.cognitoIdentity.getId(request, logger: context.logger, on: eventLoop).map { (logins: logins, response: $0) }
-                }
-                .flatMapThrowing { (result: (logins: [String: String], response: GetIdResponse)) -> IdentityParams in
-                    guard let identityId = result.response.identityId else { throw CredentialProviderError.noProvider }
-                    return IdentityParams(id: identityId, logins: result.logins)
-                }
-                .hop(to: eventLoop)
+
+            let logins = try await self.loginsProvider(context)
+            let request = CognitoIdentity.GetIdInput(identityPoolId: context.identityPoolId, logins: logins)
+            let response = try await self.identityProviderContext.cognitoIdentity.getId(request, logger: context.logger)
+            guard let identityId = response.identityId else { throw CredentialProviderError.noProvider }
+            return IdentityParams(id: identityId, logins: logins)
         }
     }
 }
 
 extension IdentityProviderFactory {
     /// Create your owncustom `IdentityProvider` given the IdentityProvider Context
-    public static func custom(_ factory: @escaping (Context) -> IdentityProvider) -> Self {
+    public static func custom(_ factory: @escaping @Sendable (Context) -> IdentityProvider) -> Self {
         Self(cb: factory)
     }
 
@@ -178,7 +159,7 @@ extension IdentityProviderFactory {
     ///             authParameters: ["USERNAME": "my-username", "PASSWORD": "my-password"],
     ///             clientId: "my-client-id"
     ///         )
-    ///         return cognitoIdentityProvider.initiateAuth(request, logger: context.logger, on: context.eventLoop)
+    ///         return cognitoIdentityProvider.initiateAuth(request, logger: context.logger)
     ///             .flatMapThrowing { response in
     ///                 guard let idToken = response.authenticationResult?.idToken else { throw CredentialProviderError.noProvider }
     ///                 return [userPoolIdentityProvider: idToken]
@@ -188,11 +169,11 @@ extension IdentityProviderFactory {
     /// )
     /// ```
     public static func externalIdentityProvider(
-        tokenProvider: @escaping (CognitoIdentity.ExternalIdentityProvider.Context) -> EventLoopFuture<[String: String]>
+        tokenProvider: @escaping @Sendable (CognitoIdentity.ExternalIdentityProvider.Context) async throws -> [String: String]
     ) -> Self {
         return Self { context in
             return CognitoIdentity.ExternalIdentityProvider(context: context) { context in
-                return tokenProvider(context)
+                return try await tokenProvider(context)
             }
         }
     }

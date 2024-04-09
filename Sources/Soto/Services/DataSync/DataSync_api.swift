@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS DataSync service.
 ///
-/// DataSync DataSync is a managed data transfer service that makes it simpler for you to automate moving data between on-premises storage and Amazon Web Services storage services. You also can use DataSync to transfer data between other cloud providers and Amazon Web Services storage services. This API interface reference includes documentation for using DataSync programmatically. For complete information, see the  DataSync User Guide .
+/// DataSync DataSync is an online data movement and discovery service that simplifies data migration and helps you quickly, easily, and securely transfer your file or object data to, from, and between Amazon Web Services storage services. This API interface reference includes documentation for using DataSync programmatically. For complete information, see the  DataSync User Guide .
 public struct DataSync: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct DataSync: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -51,253 +55,837 @@ public struct DataSync: AWSService {
             region: region,
             partition: region?.partition ?? partition,
             amzTarget: "FmrsService",
-            service: "datasync",
+            serviceName: "DataSync",
+            serviceIdentifier: "datasync",
             serviceProtocol: .json(version: "1.1"),
             apiVersion: "2018-11-09",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "ca-central-1": "datasync-fips.ca-central-1.amazonaws.com",
-                    "us-east-1": "datasync-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "datasync-fips.us-east-2.amazonaws.com",
-                    "us-gov-east-1": "datasync-fips.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "datasync-fips.us-gov-west-1.amazonaws.com",
-                    "us-west-1": "datasync-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "datasync-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: DataSyncErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "datasync-fips.ca-central-1.amazonaws.com",
+            "ca-west-1": "datasync-fips.ca-west-1.amazonaws.com",
+            "us-east-1": "datasync-fips.us-east-1.amazonaws.com",
+            "us-east-2": "datasync-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "datasync-fips.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "datasync-fips.us-gov-west-1.amazonaws.com",
+            "us-iso-east-1": "datasync-fips.us-iso-east-1.c2s.ic.gov",
+            "us-iso-west-1": "datasync-fips.us-iso-west-1.c2s.ic.gov",
+            "us-west-1": "datasync-fips.us-west-1.amazonaws.com",
+            "us-west-2": "datasync-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
+    /// Creates an Amazon Web Services resource for an on-premises storage system that you want DataSync Discovery to collect information about.
+    @Sendable
+    public func addStorageSystem(_ input: AddStorageSystemRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AddStorageSystemResponse {
+        return try await self.client.execute(
+            operation: "AddStorageSystem", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
+    }
+
     /// Stops an DataSync task execution that's in progress. The transfer of some files are abruptly interrupted. File contents that're transferred to the destination might be incomplete or inconsistent with the source files. However, if you start a new task execution using the same task and allow it to finish, file content on the destination will be complete and consistent. This applies to other unexpected failures that interrupt a task execution. In all of these cases, DataSync successfully completes the transfer when you start the next task execution.
-    public func cancelTaskExecution(_ input: CancelTaskExecutionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CancelTaskExecutionResponse> {
-        return self.client.execute(operation: "CancelTaskExecution", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func cancelTaskExecution(_ input: CancelTaskExecutionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CancelTaskExecutionResponse {
+        return try await self.client.execute(
+            operation: "CancelTaskExecution", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Activates an DataSync agent that you have deployed in your storage environment. The activation process associates your agent with your account. In the activation process, you specify information such as the Amazon Web Services Region that you want to activate the agent in. You activate the agent in the Amazon Web Services Region where your target locations (in Amazon S3 or Amazon EFS) reside. Your tasks are created in this Amazon Web Services Region. You can activate the agent in a VPC (virtual private cloud) or provide the agent access to a VPC endpoint so you can run tasks without going over the public internet. You can use an agent for more than one location. If a task uses multiple agents, all of them need to have status AVAILABLE for the task to run. If you use multiple agents for a source location, the status of all the agents must be AVAILABLE for the task to run.  Agents are automatically updated by Amazon Web Services on a regular basis, using a mechanism that ensures minimal interruption to your tasks.
-    public func createAgent(_ input: CreateAgentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateAgentResponse> {
-        return self.client.execute(operation: "CreateAgent", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Activates an DataSync agent that you've deployed in your storage environment. The activation process associates the agent with your Amazon Web Services account. If you haven't deployed an agent yet, see the following topics to learn more:    Agent requirements     Create an agent     If you're transferring between Amazon Web Services storage services, you don't need a DataSync agent.
+    @Sendable
+    public func createAgent(_ input: CreateAgentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateAgentResponse {
+        return try await self.client.execute(
+            operation: "CreateAgent", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates an endpoint for an Amazon EFS file system that DataSync can access for a transfer. For more information, see Creating a location for Amazon EFS.
-    public func createLocationEfs(_ input: CreateLocationEfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationEfsResponse> {
-        return self.client.execute(operation: "CreateLocationEfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for a Microsoft Azure Blob Storage container. DataSync can use this location as a transfer source or destination. Before you begin, make sure you know how DataSync accesses Azure Blob Storage and works with access tiers and blob types. You also need a DataSync agent that can connect to your container.
+    @Sendable
+    public func createLocationAzureBlob(_ input: CreateLocationAzureBlobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationAzureBlobResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationAzureBlob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates an endpoint for an Amazon FSx for Lustre file system.
-    public func createLocationFsxLustre(_ input: CreateLocationFsxLustreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationFsxLustreResponse> {
-        return self.client.execute(operation: "CreateLocationFsxLustre", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for an Amazon EFS file system. DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand how DataSync accesses Amazon EFS file systems.
+    @Sendable
+    public func createLocationEfs(_ input: CreateLocationEfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationEfsResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationEfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates an endpoint for an Amazon FSx for NetApp ONTAP file system that DataSync can access for a transfer. For more information, see Creating a location for FSx for ONTAP.
-    public func createLocationFsxOntap(_ input: CreateLocationFsxOntapRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationFsxOntapResponse> {
-        return self.client.execute(operation: "CreateLocationFsxOntap", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for an Amazon FSx for Lustre file system. DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand how DataSync accesses FSx for Lustre file systems.
+    @Sendable
+    public func createLocationFsxLustre(_ input: CreateLocationFsxLustreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationFsxLustreResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationFsxLustre", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates an endpoint for an Amazon FSx for OpenZFS file system that DataSync can access for a transfer. For more information, see Creating a location for FSx for OpenZFS.  Request parameters related to SMB aren't supported with the CreateLocationFsxOpenZfs operation.
-    public func createLocationFsxOpenZfs(_ input: CreateLocationFsxOpenZfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationFsxOpenZfsResponse> {
-        return self.client.execute(operation: "CreateLocationFsxOpenZfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for an Amazon FSx for NetApp ONTAP file system. DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand how DataSync accesses FSx for ONTAP file systems.
+    @Sendable
+    public func createLocationFsxOntap(_ input: CreateLocationFsxOntapRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationFsxOntapResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationFsxOntap", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates an endpoint for an Amazon FSx for Windows File Server file system.
-    public func createLocationFsxWindows(_ input: CreateLocationFsxWindowsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationFsxWindowsResponse> {
-        return self.client.execute(operation: "CreateLocationFsxWindows", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for an Amazon FSx for OpenZFS file system. DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand how DataSync accesses FSx for OpenZFS file systems.  Request parameters related to SMB aren't supported with the CreateLocationFsxOpenZfs operation.
+    @Sendable
+    public func createLocationFsxOpenZfs(_ input: CreateLocationFsxOpenZfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationFsxOpenZfsResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationFsxOpenZfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates an endpoint for a Hadoop Distributed File System (HDFS).
-    public func createLocationHdfs(_ input: CreateLocationHdfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationHdfsResponse> {
-        return self.client.execute(operation: "CreateLocationHdfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for an Amazon FSx for Windows File Server file system. DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand how DataSync accesses FSx for Windows File Server file systems.
+    @Sendable
+    public func createLocationFsxWindows(_ input: CreateLocationFsxWindowsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationFsxWindowsResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationFsxWindows", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Defines a file system on a Network File System (NFS) server that can be read from or written to.
-    public func createLocationNfs(_ input: CreateLocationNfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationNfsResponse> {
-        return self.client.execute(operation: "CreateLocationNfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for a Hadoop Distributed File System (HDFS). DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand how DataSync accesses HDFS clusters.
+    @Sendable
+    public func createLocationHdfs(_ input: CreateLocationHdfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationHdfsResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationHdfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates an endpoint for an object storage system that DataSync can access for a transfer. For more information, see Creating a location for object storage.
-    public func createLocationObjectStorage(_ input: CreateLocationObjectStorageRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationObjectStorageResponse> {
-        return self.client.execute(operation: "CreateLocationObjectStorage", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for a Network File System (NFS) file server. DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand how DataSync accesses NFS file servers.  If you're copying data to or from an Snowcone device, you can also use CreateLocationNfs to create your transfer location. For more information, see Configuring transfers with Snowcone.
+    @Sendable
+    public func createLocationNfs(_ input: CreateLocationNfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationNfsResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationNfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates an endpoint for an Amazon S3 bucket that DataSync can access for a transfer. For more information, see Create an Amazon S3 location in the DataSync User Guide.
-    public func createLocationS3(_ input: CreateLocationS3Request, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationS3Response> {
-        return self.client.execute(operation: "CreateLocationS3", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for an object storage system. DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand the prerequisites for DataSync to work with object storage systems.
+    @Sendable
+    public func createLocationObjectStorage(_ input: CreateLocationObjectStorageRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationObjectStorageResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationObjectStorage", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Defines a file system on a Server Message Block (SMB) server that can be read from or written to.
-    public func createLocationSmb(_ input: CreateLocationSmbRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateLocationSmbResponse> {
-        return self.client.execute(operation: "CreateLocationSmb", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for an Amazon S3 bucket. DataSync can use this location as a source or destination for transferring data.  Before you begin, make sure that you read the following topics:    Storage class considerations with Amazon S3 locations     Evaluating S3 request costs when using DataSync     For more information, see Configuring transfers with Amazon S3.
+    @Sendable
+    public func createLocationS3(_ input: CreateLocationS3Request, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationS3Response {
+        return try await self.client.execute(
+            operation: "CreateLocationS3", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Configures a task, which defines where and how DataSync transfers your data. A task includes a source location, a destination location, and the preferences for how and when you want to transfer your data (such as bandwidth limits, scheduling, among other options).
-    public func createTask(_ input: CreateTaskRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateTaskResponse> {
-        return self.client.execute(operation: "CreateTask", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a transfer location for a Server Message Block (SMB) file server. DataSync can use this location as a source or destination for transferring data. Before you begin, make sure that you understand how DataSync accesses SMB file servers.
+    @Sendable
+    public func createLocationSmb(_ input: CreateLocationSmbRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLocationSmbResponse {
+        return try await self.client.execute(
+            operation: "CreateLocationSmb", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes an agent. To specify which agent to delete, use the Amazon Resource Name (ARN) of the agent in your request. The operation disassociates the agent from your Amazon Web Services account. However, it doesn't delete the agent virtual machine (VM) from your on-premises environment.
-    public func deleteAgent(_ input: DeleteAgentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteAgentResponse> {
-        return self.client.execute(operation: "DeleteAgent", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Configures a transfer task, which defines where and how DataSync moves your data. A task includes a source location, destination location, and the options for how and when you want to transfer your data (such as bandwidth limits, scheduling, among other options).  If you're planning to transfer data to or from an Amazon S3 location, review how DataSync can affect your S3 request charges and the DataSync pricing page before you begin.
+    @Sendable
+    public func createTask(_ input: CreateTaskRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateTaskResponse {
+        return try await self.client.execute(
+            operation: "CreateTask", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes the configuration of a location used by DataSync.
-    public func deleteLocation(_ input: DeleteLocationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteLocationResponse> {
-        return self.client.execute(operation: "DeleteLocation", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Removes an DataSync agent resource from your Amazon Web Services account. Keep in mind that this operation (which can't be undone) doesn't remove the agent's virtual machine (VM) or Amazon EC2 instance from your storage environment. For next steps, you can delete the VM or instance from your storage environment or reuse it to activate a new agent.
+    @Sendable
+    public func deleteAgent(_ input: DeleteAgentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteAgentResponse {
+        return try await self.client.execute(
+            operation: "DeleteAgent", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes an DataSync task.
-    public func deleteTask(_ input: DeleteTaskRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteTaskResponse> {
-        return self.client.execute(operation: "DeleteTask", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes a transfer location resource from DataSync.
+    @Sendable
+    public func deleteLocation(_ input: DeleteLocationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteLocationResponse {
+        return try await self.client.execute(
+            operation: "DeleteLocation", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata such as the name, the network interfaces, and the status (that is, whether the agent is running or not) for an agent. To specify which agent to describe, use the Amazon Resource Name (ARN) of the agent in your request.
-    public func describeAgent(_ input: DescribeAgentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeAgentResponse> {
-        return self.client.execute(operation: "DescribeAgent", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes a transfer task resource from DataSync.
+    @Sendable
+    public func deleteTask(_ input: DeleteTaskRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteTaskResponse {
+        return try await self.client.execute(
+            operation: "DeleteTask", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata about your DataSync location for an Amazon EFS file system.
-    public func describeLocationEfs(_ input: DescribeLocationEfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationEfsResponse> {
-        return self.client.execute(operation: "DescribeLocationEfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns information about an DataSync agent, such as its name, service endpoint type, and status.
+    @Sendable
+    public func describeAgent(_ input: DescribeAgentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeAgentResponse {
+        return try await self.client.execute(
+            operation: "DescribeAgent", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Provides details about how an DataSync location for an Amazon FSx for Lustre file system is configured.
-    public func describeLocationFsxLustre(_ input: DescribeLocationFsxLustreRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationFsxLustreResponse> {
-        return self.client.execute(operation: "DescribeLocationFsxLustre", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns information about a DataSync discovery job.
+    @Sendable
+    public func describeDiscoveryJob(_ input: DescribeDiscoveryJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeDiscoveryJobResponse {
+        return try await self.client.execute(
+            operation: "DescribeDiscoveryJob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
     }
 
-    /// Provides details about how an DataSync location for an Amazon FSx for NetApp ONTAP file system is configured.  If your location uses SMB, the DescribeLocationFsxOntap operation doesn't actually return a Password.
-    public func describeLocationFsxOntap(_ input: DescribeLocationFsxOntapRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationFsxOntapResponse> {
-        return self.client.execute(operation: "DescribeLocationFsxOntap", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for Microsoft Azure Blob Storage is configured.
+    @Sendable
+    public func describeLocationAzureBlob(_ input: DescribeLocationAzureBlobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationAzureBlobResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationAzureBlob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Provides details about how an DataSync location for an Amazon FSx for OpenZFS file system is configured.  Response elements related to SMB aren't supported with the DescribeLocationFsxOpenZfs operation.
-    public func describeLocationFsxOpenZfs(_ input: DescribeLocationFsxOpenZfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationFsxOpenZfsResponse> {
-        return self.client.execute(operation: "DescribeLocationFsxOpenZfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for an Amazon EFS file system is configured.
+    @Sendable
+    public func describeLocationEfs(_ input: DescribeLocationEfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationEfsResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationEfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata about an Amazon FSx for Windows File Server location, such as information about its path.
-    public func describeLocationFsxWindows(_ input: DescribeLocationFsxWindowsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationFsxWindowsResponse> {
-        return self.client.execute(operation: "DescribeLocationFsxWindows", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for an Amazon FSx for Lustre file system is configured.
+    @Sendable
+    public func describeLocationFsxLustre(_ input: DescribeLocationFsxLustreRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationFsxLustreResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationFsxLustre", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata, such as the authentication information about the Hadoop Distributed File System (HDFS) location.
-    public func describeLocationHdfs(_ input: DescribeLocationHdfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationHdfsResponse> {
-        return self.client.execute(operation: "DescribeLocationHdfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for an Amazon FSx for NetApp ONTAP file system is configured.  If your location uses SMB, the DescribeLocationFsxOntap operation doesn't actually return a Password.
+    @Sendable
+    public func describeLocationFsxOntap(_ input: DescribeLocationFsxOntapRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationFsxOntapResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationFsxOntap", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata, such as the path information, about an NFS location.
-    public func describeLocationNfs(_ input: DescribeLocationNfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationNfsResponse> {
-        return self.client.execute(operation: "DescribeLocationNfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for an Amazon FSx for OpenZFS file system is configured.  Response elements related to SMB aren't supported with the DescribeLocationFsxOpenZfs operation.
+    @Sendable
+    public func describeLocationFsxOpenZfs(_ input: DescribeLocationFsxOpenZfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationFsxOpenZfsResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationFsxOpenZfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata about your DataSync location for an object storage system.
-    public func describeLocationObjectStorage(_ input: DescribeLocationObjectStorageRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationObjectStorageResponse> {
-        return self.client.execute(operation: "DescribeLocationObjectStorage", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for an Amazon FSx for Windows File Server file system is configured.
+    @Sendable
+    public func describeLocationFsxWindows(_ input: DescribeLocationFsxWindowsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationFsxWindowsResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationFsxWindows", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata, such as bucket name, about an Amazon S3 bucket location.
-    public func describeLocationS3(_ input: DescribeLocationS3Request, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationS3Response> {
-        return self.client.execute(operation: "DescribeLocationS3", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for a Hadoop Distributed File System (HDFS) is configured.
+    @Sendable
+    public func describeLocationHdfs(_ input: DescribeLocationHdfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationHdfsResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationHdfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata, such as the path and user information about an SMB location.
-    public func describeLocationSmb(_ input: DescribeLocationSmbRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLocationSmbResponse> {
-        return self.client.execute(operation: "DescribeLocationSmb", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for a Network File System (NFS) file server is configured.
+    @Sendable
+    public func describeLocationNfs(_ input: DescribeLocationNfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationNfsResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationNfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns metadata about a task.
-    public func describeTask(_ input: DescribeTaskRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeTaskResponse> {
-        return self.client.execute(operation: "DescribeTask", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for an object storage system is configured.
+    @Sendable
+    public func describeLocationObjectStorage(_ input: DescribeLocationObjectStorageRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationObjectStorageResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationObjectStorage", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns detailed metadata about a task that is being executed.
-    public func describeTaskExecution(_ input: DescribeTaskExecutionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeTaskExecutionResponse> {
-        return self.client.execute(operation: "DescribeTaskExecution", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for an S3 bucket is configured.
+    @Sendable
+    public func describeLocationS3(_ input: DescribeLocationS3Request, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationS3Response {
+        return try await self.client.execute(
+            operation: "DescribeLocationS3", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns a list of agents owned by an Amazon Web Services account in the Amazon Web Services Region specified in the request. The returned list is ordered by agent Amazon Resource Name (ARN). By default, this operation returns a maximum of 100 agents. This operation supports pagination that enables you to optionally reduce the number of agents returned in a response. If you have more agents than are returned in a response (that is, the response returns only a truncated list of your agents), the response contains a marker that you can specify in your next request to fetch the next page of agents.
-    public func listAgents(_ input: ListAgentsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListAgentsResponse> {
-        return self.client.execute(operation: "ListAgents", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Provides details about how an DataSync transfer location for a Server Message Block (SMB) file server is configured.
+    @Sendable
+    public func describeLocationSmb(_ input: DescribeLocationSmbRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLocationSmbResponse {
+        return try await self.client.execute(
+            operation: "DescribeLocationSmb", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns information about an on-premises storage system that you're using with DataSync Discovery.
+    @Sendable
+    public func describeStorageSystem(_ input: DescribeStorageSystemRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeStorageSystemResponse {
+        return try await self.client.execute(
+            operation: "DescribeStorageSystem", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
+    }
+
+    /// Returns information, including performance data and capacity usage, which DataSync Discovery collects about a specific resource in your-premises storage system.
+    @Sendable
+    public func describeStorageSystemResourceMetrics(_ input: DescribeStorageSystemResourceMetricsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeStorageSystemResourceMetricsResponse {
+        return try await self.client.execute(
+            operation: "DescribeStorageSystemResourceMetrics", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
+    }
+
+    /// Returns information that DataSync Discovery collects about resources in your on-premises storage system.
+    @Sendable
+    public func describeStorageSystemResources(_ input: DescribeStorageSystemResourcesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeStorageSystemResourcesResponse {
+        return try await self.client.execute(
+            operation: "DescribeStorageSystemResources", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
+    }
+
+    /// Provides information about an DataSync transfer task.
+    @Sendable
+    public func describeTask(_ input: DescribeTaskRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeTaskResponse {
+        return try await self.client.execute(
+            operation: "DescribeTask", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Provides information about an execution of your DataSync task. You can use this operation to help monitor the progress of an ongoing transfer or check the results of the transfer.
+    @Sendable
+    public func describeTaskExecution(_ input: DescribeTaskExecutionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeTaskExecutionResponse {
+        return try await self.client.execute(
+            operation: "DescribeTaskExecution", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates recommendations about where to migrate your data to in Amazon Web Services. Recommendations are generated based on information that DataSync Discovery collects about your on-premises storage system's resources. For more information, see Recommendations provided by DataSync Discovery. Once generated, you can view your recommendations by using the DescribeStorageSystemResources operation.
+    @Sendable
+    public func generateRecommendations(_ input: GenerateRecommendationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GenerateRecommendationsResponse {
+        return try await self.client.execute(
+            operation: "GenerateRecommendations", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
+    }
+
+    /// Returns a list of DataSync agents that belong to an Amazon Web Services account in the Amazon Web Services Region specified in the request. With pagination, you can reduce the number of agents returned in a response. If you get a truncated list of agents in a response, the response contains a marker that you can specify in your next request to fetch the next page of agents.  ListAgents is eventually consistent. This means the result of running the operation might not reflect that you just created or deleted an agent. For example, if you create an agent with CreateAgent and then immediately run ListAgents, that agent might not show up in the list right away. In situations like this, you can always confirm whether an agent has been created (or deleted) by using DescribeAgent.
+    @Sendable
+    public func listAgents(_ input: ListAgentsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListAgentsResponse {
+        return try await self.client.execute(
+            operation: "ListAgents", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Provides a list of the existing discovery jobs in the Amazon Web Services Region and Amazon Web Services account where you're using DataSync Discovery.
+    @Sendable
+    public func listDiscoveryJobs(_ input: ListDiscoveryJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListDiscoveryJobsResponse {
+        return try await self.client.execute(
+            operation: "ListDiscoveryJobs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
     }
 
     /// Returns a list of source and destination locations. If you have more locations than are returned in a response (that is, the response returns only a truncated list of your agents), the response contains a token that you can specify in your next request to fetch the next page of locations.
-    public func listLocations(_ input: ListLocationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListLocationsResponse> {
-        return self.client.execute(operation: "ListLocations", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listLocations(_ input: ListLocationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListLocationsResponse {
+        return try await self.client.execute(
+            operation: "ListLocations", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists the on-premises storage systems that you're using with DataSync Discovery.
+    @Sendable
+    public func listStorageSystems(_ input: ListStorageSystemsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListStorageSystemsResponse {
+        return try await self.client.execute(
+            operation: "ListStorageSystems", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
     }
 
     /// Returns all the tags associated with an Amazon Web Services resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns a list of executed tasks.
-    public func listTaskExecutions(_ input: ListTaskExecutionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTaskExecutionsResponse> {
-        return self.client.execute(operation: "ListTaskExecutions", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns a list of executions for an DataSync transfer task.
+    @Sendable
+    public func listTaskExecutions(_ input: ListTaskExecutionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTaskExecutionsResponse {
+        return try await self.client.execute(
+            operation: "ListTaskExecutions", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of the DataSync tasks you created.
-    public func listTasks(_ input: ListTasksRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTasksResponse> {
-        return self.client.execute(operation: "ListTasks", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTasks(_ input: ListTasksRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTasksResponse {
+        return try await self.client.execute(
+            operation: "ListTasks", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Starts an DataSync task. For each task, you can only run one task execution at a time. There are several phases to a task execution. For more information, see Task execution statuses.
-    public func startTaskExecution(_ input: StartTaskExecutionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartTaskExecutionResponse> {
-        return self.client.execute(operation: "StartTaskExecution", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Permanently removes a storage system resource from DataSync Discovery, including the associated discovery jobs, collected data, and recommendations.
+    @Sendable
+    public func removeStorageSystem(_ input: RemoveStorageSystemRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> RemoveStorageSystemResponse {
+        return try await self.client.execute(
+            operation: "RemoveStorageSystem", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
+    }
+
+    /// Runs a DataSync discovery job on your on-premises storage system. If you haven't added the storage system to DataSync Discovery yet, do this first by using the AddStorageSystem operation.
+    @Sendable
+    public func startDiscoveryJob(_ input: StartDiscoveryJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartDiscoveryJobResponse {
+        return try await self.client.execute(
+            operation: "StartDiscoveryJob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
+    }
+
+    /// Starts an DataSync transfer task. For each task, you can only run one task execution at a time. There are several phases to a task execution. For more information, see Task execution statuses.  If you're planning to transfer data to or from an Amazon S3 location, review how DataSync can affect your S3 request charges and the DataSync pricing page before you begin.
+    @Sendable
+    public func startTaskExecution(_ input: StartTaskExecutionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartTaskExecutionResponse {
+        return try await self.client.execute(
+            operation: "StartTaskExecution", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Stops a running DataSync discovery job. You can stop a discovery job anytime. A job that's stopped before it's scheduled to end likely will provide you some information about your on-premises storage system resources. To get recommendations for a stopped job, you must use the GenerateRecommendations operation.
+    @Sendable
+    public func stopDiscoveryJob(_ input: StopDiscoveryJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StopDiscoveryJobResponse {
+        return try await self.client.execute(
+            operation: "StopDiscoveryJob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
     }
 
     /// Applies a tag to an Amazon Web Services resource. Tags are key-value pairs that can help you manage, filter, and search for your resources. These include DataSync resources, such as locations, tasks, and task executions.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Removes tags from an Amazon Web Services resource.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Updates the name of an agent.
-    public func updateAgent(_ input: UpdateAgentRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateAgentResponse> {
-        return self.client.execute(operation: "UpdateAgent", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Updates the name of an DataSync agent.
+    @Sendable
+    public func updateAgent(_ input: UpdateAgentRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateAgentResponse {
+        return try await self.client.execute(
+            operation: "UpdateAgent", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Edits a DataSync discovery job configuration.
+    @Sendable
+    public func updateDiscoveryJob(_ input: UpdateDiscoveryJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateDiscoveryJobResponse {
+        return try await self.client.execute(
+            operation: "UpdateDiscoveryJob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
+    }
+
+    /// Modifies some configurations of the Microsoft Azure Blob Storage transfer location that you're using with DataSync.
+    @Sendable
+    public func updateLocationAzureBlob(_ input: UpdateLocationAzureBlobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateLocationAzureBlobResponse {
+        return try await self.client.execute(
+            operation: "UpdateLocationAzureBlob", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates some parameters of a previously created location for a Hadoop Distributed File System cluster.
-    public func updateLocationHdfs(_ input: UpdateLocationHdfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateLocationHdfsResponse> {
-        return self.client.execute(operation: "UpdateLocationHdfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateLocationHdfs(_ input: UpdateLocationHdfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateLocationHdfsResponse {
+        return try await self.client.execute(
+            operation: "UpdateLocationHdfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Updates some of the parameters of a previously created location for Network File System (NFS) access. For information about creating an NFS location, see Creating a location for NFS.
-    public func updateLocationNfs(_ input: UpdateLocationNfsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateLocationNfsResponse> {
-        return self.client.execute(operation: "UpdateLocationNfs", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Modifies some configurations of the Network File System (NFS) transfer location that you're using with DataSync. For more information, see Configuring transfers to or from an NFS file server.
+    @Sendable
+    public func updateLocationNfs(_ input: UpdateLocationNfsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateLocationNfsResponse {
+        return try await self.client.execute(
+            operation: "UpdateLocationNfs", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates some parameters of an existing object storage location that DataSync accesses for a transfer. For information about creating a self-managed object storage location, see Creating a location for object storage.
-    public func updateLocationObjectStorage(_ input: UpdateLocationObjectStorageRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateLocationObjectStorageResponse> {
-        return self.client.execute(operation: "UpdateLocationObjectStorage", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateLocationObjectStorage(_ input: UpdateLocationObjectStorageRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateLocationObjectStorageResponse {
+        return try await self.client.execute(
+            operation: "UpdateLocationObjectStorage", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Updates some of the parameters of a previously created location for Server Message Block (SMB) file system access. For information about creating an SMB location, see  Creating a location for SMB.
-    public func updateLocationSmb(_ input: UpdateLocationSmbRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateLocationSmbResponse> {
-        return self.client.execute(operation: "UpdateLocationSmb", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Updates some of the parameters of a Server Message Block (SMB) file server location that you can use for DataSync transfers.
+    @Sendable
+    public func updateLocationSmb(_ input: UpdateLocationSmbRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateLocationSmbResponse {
+        return try await self.client.execute(
+            operation: "UpdateLocationSmb", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Updates the metadata associated with a task.
-    public func updateTask(_ input: UpdateTaskRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateTaskResponse> {
-        return self.client.execute(operation: "UpdateTask", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Modifies some configurations of an on-premises storage system resource that you're using with DataSync Discovery.
+    @Sendable
+    public func updateStorageSystem(_ input: UpdateStorageSystemRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateStorageSystemResponse {
+        return try await self.client.execute(
+            operation: "UpdateStorageSystem", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            hostPrefix: "discovery-", 
+            logger: logger
+        )
     }
 
-    /// Updates execution of a task. You can modify bandwidth throttling for a task execution that is running or queued. For more information, see Adjusting Bandwidth Throttling for a Task Execution.  The only Option that can be modified by UpdateTaskExecution  is  BytesPerSecond .
-    public func updateTaskExecution(_ input: UpdateTaskExecutionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateTaskExecutionResponse> {
-        return self.client.execute(operation: "UpdateTaskExecution", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Updates the configuration of an DataSync transfer task.
+    @Sendable
+    public func updateTask(_ input: UpdateTaskRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateTaskResponse {
+        return try await self.client.execute(
+            operation: "UpdateTask", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates the configuration of a running DataSync task execution.  Currently, the only Option that you can modify with UpdateTaskExecution is  BytesPerSecond , which throttles bandwidth for a running or queued task execution.
+    @Sendable
+    public func updateTaskExecution(_ input: UpdateTaskExecutionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateTaskExecutionResponse {
+        return try await self.client.execute(
+            operation: "UpdateTaskExecution", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension DataSync {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: DataSync, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -307,269 +895,203 @@ extension DataSync {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension DataSync {
-    ///  Returns a list of agents owned by an Amazon Web Services account in the Amazon Web Services Region specified in the request. The returned list is ordered by agent Amazon Resource Name (ARN). By default, this operation returns a maximum of 100 agents. This operation supports pagination that enables you to optionally reduce the number of agents returned in a response. If you have more agents than are returned in a response (that is, the response returns only a truncated list of your agents), the response contains a marker that you can specify in your next request to fetch the next page of agents.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listAgentsPaginator<Result>(
-        _ input: ListAgentsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListAgentsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listAgents,
-            inputKey: \ListAgentsRequest.nextToken,
-            outputKey: \ListAgentsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information, including performance data and capacity usage, which DataSync Discovery collects about a specific resource in your-premises storage system.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func describeStorageSystemResourceMetricsPaginator(
+        _ input: DescribeStorageSystemResourceMetricsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeStorageSystemResourceMetricsRequest, DescribeStorageSystemResourceMetricsResponse> {
+        return .init(
+            input: input,
+            command: self.describeStorageSystemResourceMetrics,
+            inputKey: \DescribeStorageSystemResourceMetricsRequest.nextToken,
+            outputKey: \DescribeStorageSystemResourceMetricsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns information that DataSync Discovery collects about resources in your on-premises storage system.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func describeStorageSystemResourcesPaginator(
+        _ input: DescribeStorageSystemResourcesRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeStorageSystemResourcesRequest, DescribeStorageSystemResourcesResponse> {
+        return .init(
+            input: input,
+            command: self.describeStorageSystemResources,
+            inputKey: \DescribeStorageSystemResourcesRequest.nextToken,
+            outputKey: \DescribeStorageSystemResourcesResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a list of DataSync agents that belong to an Amazon Web Services account in the Amazon Web Services Region specified in the request. With pagination, you can reduce the number of agents returned in a response. If you get a truncated list of agents in a response, the response contains a marker that you can specify in your next request to fetch the next page of agents.  ListAgents is eventually consistent. This means the result of running the operation might not reflect that you just created or deleted an agent. For example, if you create an agent with CreateAgent and then immediately run ListAgents, that agent might not show up in the list right away. In situations like this, you can always confirm whether an agent has been created (or deleted) by using DescribeAgent.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listAgentsPaginator(
         _ input: ListAgentsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListAgentsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListAgentsRequest, ListAgentsResponse> {
+        return .init(
             input: input,
             command: self.listAgents,
             inputKey: \ListAgentsRequest.nextToken,
             outputKey: \ListAgentsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of source and destination locations. If you have more locations than are returned in a response (that is, the response returns only a truncated list of your agents), the response contains a token that you can specify in your next request to fetch the next page of locations.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listLocationsPaginator<Result>(
-        _ input: ListLocationsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListLocationsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listLocations,
-            inputKey: \ListLocationsRequest.nextToken,
-            outputKey: \ListLocationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Provides a list of the existing discovery jobs in the Amazon Web Services Region and Amazon Web Services account where you're using DataSync Discovery.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listDiscoveryJobsPaginator(
+        _ input: ListDiscoveryJobsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListDiscoveryJobsRequest, ListDiscoveryJobsResponse> {
+        return .init(
+            input: input,
+            command: self.listDiscoveryJobs,
+            inputKey: \ListDiscoveryJobsRequest.nextToken,
+            outputKey: \ListDiscoveryJobsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a list of source and destination locations. If you have more locations than are returned in a response (that is, the response returns only a truncated list of your agents), the response contains a token that you can specify in your next request to fetch the next page of locations.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listLocationsPaginator(
         _ input: ListLocationsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListLocationsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListLocationsRequest, ListLocationsResponse> {
+        return .init(
             input: input,
             command: self.listLocations,
             inputKey: \ListLocationsRequest.nextToken,
             outputKey: \ListLocationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns all the tags associated with an Amazon Web Services resource.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listTagsForResourcePaginator<Result>(
-        _ input: ListTagsForResourceRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListTagsForResourceResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listTagsForResource,
-            inputKey: \ListTagsForResourceRequest.nextToken,
-            outputKey: \ListTagsForResourceResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the on-premises storage systems that you're using with DataSync Discovery.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listStorageSystemsPaginator(
+        _ input: ListStorageSystemsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListStorageSystemsRequest, ListStorageSystemsResponse> {
+        return .init(
+            input: input,
+            command: self.listStorageSystems,
+            inputKey: \ListStorageSystemsRequest.nextToken,
+            outputKey: \ListStorageSystemsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns all the tags associated with an Amazon Web Services resource.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listTagsForResourcePaginator(
         _ input: ListTagsForResourceRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListTagsForResourceResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListTagsForResourceRequest, ListTagsForResourceResponse> {
+        return .init(
             input: input,
             command: self.listTagsForResource,
             inputKey: \ListTagsForResourceRequest.nextToken,
             outputKey: \ListTagsForResourceResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of executed tasks.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listTaskExecutionsPaginator<Result>(
-        _ input: ListTaskExecutionsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListTaskExecutionsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listTaskExecutions,
-            inputKey: \ListTaskExecutionsRequest.nextToken,
-            outputKey: \ListTaskExecutionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of executions for an DataSync transfer task.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listTaskExecutionsPaginator(
         _ input: ListTaskExecutionsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListTaskExecutionsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListTaskExecutionsRequest, ListTaskExecutionsResponse> {
+        return .init(
             input: input,
             command: self.listTaskExecutions,
             inputKey: \ListTaskExecutionsRequest.nextToken,
             outputKey: \ListTaskExecutionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of the DataSync tasks you created.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listTasksPaginator<Result>(
-        _ input: ListTasksRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListTasksResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listTasks,
-            inputKey: \ListTasksRequest.nextToken,
-            outputKey: \ListTasksResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of the DataSync tasks you created.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listTasksPaginator(
         _ input: ListTasksRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListTasksResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListTasksRequest, ListTasksResponse> {
+        return .init(
             input: input,
             command: self.listTasks,
             inputKey: \ListTasksRequest.nextToken,
             outputKey: \ListTasksResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
+        )
+    }
+}
+
+extension DataSync.DescribeStorageSystemResourceMetricsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> DataSync.DescribeStorageSystemResourceMetricsRequest {
+        return .init(
+            discoveryJobArn: self.discoveryJobArn,
+            endTime: self.endTime,
+            maxResults: self.maxResults,
+            nextToken: token,
+            resourceId: self.resourceId,
+            resourceType: self.resourceType,
+            startTime: self.startTime
+        )
+    }
+}
+
+extension DataSync.DescribeStorageSystemResourcesRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> DataSync.DescribeStorageSystemResourcesRequest {
+        return .init(
+            discoveryJobArn: self.discoveryJobArn,
+            filter: self.filter,
+            maxResults: self.maxResults,
+            nextToken: token,
+            resourceIds: self.resourceIds,
+            resourceType: self.resourceType
         )
     }
 }
@@ -583,10 +1105,29 @@ extension DataSync.ListAgentsRequest: AWSPaginateToken {
     }
 }
 
+extension DataSync.ListDiscoveryJobsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> DataSync.ListDiscoveryJobsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token,
+            storageSystemArn: self.storageSystemArn
+        )
+    }
+}
+
 extension DataSync.ListLocationsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> DataSync.ListLocationsRequest {
         return .init(
             filters: self.filters,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension DataSync.ListStorageSystemsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> DataSync.ListStorageSystemsRequest {
+        return .init(
             maxResults: self.maxResults,
             nextToken: token
         )

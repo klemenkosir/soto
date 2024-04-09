@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -37,12 +37,16 @@ public struct AutoScalingPlans: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -52,52 +56,106 @@ public struct AutoScalingPlans: AWSService {
             region: region,
             partition: region?.partition ?? partition,
             amzTarget: "AnyScaleScalingPlannerFrontendService",
-            service: "autoscaling-plans",
+            serviceName: "AutoScalingPlans",
+            serviceIdentifier: "autoscaling-plans",
             serviceProtocol: .json(version: "1.1"),
             apiVersion: "2018-01-06",
             endpoint: endpoint,
             errorType: AutoScalingPlansErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
     /// Creates a scaling plan.
-    public func createScalingPlan(_ input: CreateScalingPlanRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateScalingPlanResponse> {
-        return self.client.execute(operation: "CreateScalingPlan", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createScalingPlan(_ input: CreateScalingPlanRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateScalingPlanResponse {
+        return try await self.client.execute(
+            operation: "CreateScalingPlan", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the specified scaling plan. Deleting a scaling plan deletes the underlying ScalingInstruction for all of the scalable resources that are covered by the plan. If the plan has launched resources or has scaling activities in progress, you must delete those resources separately.
-    public func deleteScalingPlan(_ input: DeleteScalingPlanRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteScalingPlanResponse> {
-        return self.client.execute(operation: "DeleteScalingPlan", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteScalingPlan(_ input: DeleteScalingPlanRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteScalingPlanResponse {
+        return try await self.client.execute(
+            operation: "DeleteScalingPlan", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describes the scalable resources in the specified scaling plan.
-    public func describeScalingPlanResources(_ input: DescribeScalingPlanResourcesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeScalingPlanResourcesResponse> {
-        return self.client.execute(operation: "DescribeScalingPlanResources", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeScalingPlanResources(_ input: DescribeScalingPlanResourcesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeScalingPlanResourcesResponse {
+        return try await self.client.execute(
+            operation: "DescribeScalingPlanResources", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describes one or more of your scaling plans.
-    public func describeScalingPlans(_ input: DescribeScalingPlansRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeScalingPlansResponse> {
-        return self.client.execute(operation: "DescribeScalingPlans", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeScalingPlans(_ input: DescribeScalingPlansRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeScalingPlansResponse {
+        return try await self.client.execute(
+            operation: "DescribeScalingPlans", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves the forecast data for a scalable resource. Capacity forecasts are represented as predicted values, or data points, that are calculated using historical data points from a specified CloudWatch load metric. Data points are available for up to 56 days.
-    public func getScalingPlanResourceForecastData(_ input: GetScalingPlanResourceForecastDataRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetScalingPlanResourceForecastDataResponse> {
-        return self.client.execute(operation: "GetScalingPlanResourceForecastData", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getScalingPlanResourceForecastData(_ input: GetScalingPlanResourceForecastDataRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetScalingPlanResourceForecastDataResponse {
+        return try await self.client.execute(
+            operation: "GetScalingPlanResourceForecastData", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the specified scaling plan. You cannot update a scaling plan if it is in the process of being created, updated, or deleted.
-    public func updateScalingPlan(_ input: UpdateScalingPlanRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateScalingPlanResponse> {
-        return self.client.execute(operation: "UpdateScalingPlan", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateScalingPlan(_ input: UpdateScalingPlanRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateScalingPlanResponse {
+        return try await self.client.execute(
+            operation: "UpdateScalingPlan", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension AutoScalingPlans {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: AutoScalingPlans, patch: AWSServiceConfig.Patch) {
         self.client = from.client

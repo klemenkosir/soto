@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct Kafka: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,202 +54,723 @@ public struct Kafka: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "kafka",
+            serviceName: "Kafka",
+            serviceIdentifier: "kafka",
             serviceProtocol: .restjson,
             apiVersion: "2018-11-14",
             endpoint: endpoint,
+            serviceEndpoints: Self.serviceEndpoints,
+            variantEndpoints: Self.variantEndpoints,
             errorType: KafkaErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+    /// custom endpoints for regions
+    static var serviceEndpoints: [String: String] {[
+        "us-gov-east-1": "kafka.us-gov-east-1.amazonaws.com",
+        "us-gov-west-1": "kafka.us-gov-west-1.amazonaws.com"
+    ]}
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "kafka-fips.ca-central-1.amazonaws.com",
+            "us-east-1": "kafka-fips.us-east-1.amazonaws.com",
+            "us-east-2": "kafka-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "kafka.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "kafka.us-gov-west-1.amazonaws.com",
+            "us-west-1": "kafka-fips.us-west-1.amazonaws.com",
+            "us-west-2": "kafka-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
     /// Associates one or more Scram Secrets with an Amazon MSK cluster.
-    public func batchAssociateScramSecret(_ input: BatchAssociateScramSecretRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<BatchAssociateScramSecretResponse> {
-        return self.client.execute(operation: "BatchAssociateScramSecret", path: "/v1/clusters/{ClusterArn}/scram-secrets", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func batchAssociateScramSecret(_ input: BatchAssociateScramSecretRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchAssociateScramSecretResponse {
+        return try await self.client.execute(
+            operation: "BatchAssociateScramSecret", 
+            path: "/v1/clusters/{ClusterArn}/scram-secrets", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Disassociates one or more Scram Secrets from an Amazon MSK cluster.
-    public func batchDisassociateScramSecret(_ input: BatchDisassociateScramSecretRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<BatchDisassociateScramSecretResponse> {
-        return self.client.execute(operation: "BatchDisassociateScramSecret", path: "/v1/clusters/{ClusterArn}/scram-secrets", httpMethod: .PATCH, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func batchDisassociateScramSecret(_ input: BatchDisassociateScramSecretRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> BatchDisassociateScramSecretResponse {
+        return try await self.client.execute(
+            operation: "BatchDisassociateScramSecret", 
+            path: "/v1/clusters/{ClusterArn}/scram-secrets", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new MSK cluster.
-    public func createCluster(_ input: CreateClusterRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateClusterResponse> {
-        return self.client.execute(operation: "CreateCluster", path: "/v1/clusters", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createCluster(_ input: CreateClusterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateClusterResponse {
+        return try await self.client.execute(
+            operation: "CreateCluster", 
+            path: "/v1/clusters", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new MSK cluster.
-    public func createClusterV2(_ input: CreateClusterV2Request, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateClusterV2Response> {
-        return self.client.execute(operation: "CreateClusterV2", path: "/api/v2/clusters", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createClusterV2(_ input: CreateClusterV2Request, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateClusterV2Response {
+        return try await self.client.execute(
+            operation: "CreateClusterV2", 
+            path: "/api/v2/clusters", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new MSK configuration.
-    public func createConfiguration(_ input: CreateConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateConfigurationResponse> {
-        return self.client.execute(operation: "CreateConfiguration", path: "/v1/configurations", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createConfiguration(_ input: CreateConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateConfigurationResponse {
+        return try await self.client.execute(
+            operation: "CreateConfiguration", 
+            path: "/v1/configurations", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates the replicator.
+    @Sendable
+    public func createReplicator(_ input: CreateReplicatorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateReplicatorResponse {
+        return try await self.client.execute(
+            operation: "CreateReplicator", 
+            path: "/replication/v1/replicators", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates a new MSK VPC connection.
+    @Sendable
+    public func createVpcConnection(_ input: CreateVpcConnectionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateVpcConnectionResponse {
+        return try await self.client.execute(
+            operation: "CreateVpcConnection", 
+            path: "/v1/vpc-connection", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the MSK cluster specified by the Amazon Resource Name (ARN) in the request.
-    public func deleteCluster(_ input: DeleteClusterRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteClusterResponse> {
-        return self.client.execute(operation: "DeleteCluster", path: "/v1/clusters/{ClusterArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteCluster(_ input: DeleteClusterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteClusterResponse {
+        return try await self.client.execute(
+            operation: "DeleteCluster", 
+            path: "/v1/clusters/{ClusterArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes the MSK cluster policy specified by the Amazon Resource Name (ARN) in the request.
+    @Sendable
+    public func deleteClusterPolicy(_ input: DeleteClusterPolicyRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteClusterPolicyResponse {
+        return try await self.client.execute(
+            operation: "DeleteClusterPolicy", 
+            path: "/v1/clusters/{ClusterArn}/policy", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes an MSK Configuration.
-    public func deleteConfiguration(_ input: DeleteConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteConfigurationResponse> {
-        return self.client.execute(operation: "DeleteConfiguration", path: "/v1/configurations/{Arn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteConfiguration(_ input: DeleteConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteConfigurationResponse {
+        return try await self.client.execute(
+            operation: "DeleteConfiguration", 
+            path: "/v1/configurations/{Arn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes a replicator.
+    @Sendable
+    public func deleteReplicator(_ input: DeleteReplicatorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteReplicatorResponse {
+        return try await self.client.execute(
+            operation: "DeleteReplicator", 
+            path: "/replication/v1/replicators/{ReplicatorArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Deletes a MSK VPC connection.
+    @Sendable
+    public func deleteVpcConnection(_ input: DeleteVpcConnectionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteVpcConnectionResponse {
+        return try await self.client.execute(
+            operation: "DeleteVpcConnection", 
+            path: "/v1/vpc-connection/{Arn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a description of the MSK cluster whose Amazon Resource Name (ARN) is specified in the request.
-    public func describeCluster(_ input: DescribeClusterRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeClusterResponse> {
-        return self.client.execute(operation: "DescribeCluster", path: "/v1/clusters/{ClusterArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeCluster(_ input: DescribeClusterRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeClusterResponse {
+        return try await self.client.execute(
+            operation: "DescribeCluster", 
+            path: "/v1/clusters/{ClusterArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a description of the cluster operation specified by the ARN.
-    public func describeClusterOperation(_ input: DescribeClusterOperationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeClusterOperationResponse> {
-        return self.client.execute(operation: "DescribeClusterOperation", path: "/v1/operations/{ClusterOperationArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeClusterOperation(_ input: DescribeClusterOperationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeClusterOperationResponse {
+        return try await self.client.execute(
+            operation: "DescribeClusterOperation", 
+            path: "/v1/operations/{ClusterOperationArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a description of the cluster operation specified by the ARN.
+    @Sendable
+    public func describeClusterOperationV2(_ input: DescribeClusterOperationV2Request, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeClusterOperationV2Response {
+        return try await self.client.execute(
+            operation: "DescribeClusterOperationV2", 
+            path: "/api/v2/operations/{ClusterOperationArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a description of the MSK cluster whose Amazon Resource Name (ARN) is specified in the request.
-    public func describeClusterV2(_ input: DescribeClusterV2Request, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeClusterV2Response> {
-        return self.client.execute(operation: "DescribeClusterV2", path: "/api/v2/clusters/{ClusterArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeClusterV2(_ input: DescribeClusterV2Request, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeClusterV2Response {
+        return try await self.client.execute(
+            operation: "DescribeClusterV2", 
+            path: "/api/v2/clusters/{ClusterArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a description of this MSK configuration.
-    public func describeConfiguration(_ input: DescribeConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeConfigurationResponse> {
-        return self.client.execute(operation: "DescribeConfiguration", path: "/v1/configurations/{Arn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeConfiguration(_ input: DescribeConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeConfigurationResponse {
+        return try await self.client.execute(
+            operation: "DescribeConfiguration", 
+            path: "/v1/configurations/{Arn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a description of this revision of the configuration.
-    public func describeConfigurationRevision(_ input: DescribeConfigurationRevisionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeConfigurationRevisionResponse> {
-        return self.client.execute(operation: "DescribeConfigurationRevision", path: "/v1/configurations/{Arn}/revisions/{Revision}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeConfigurationRevision(_ input: DescribeConfigurationRevisionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeConfigurationRevisionResponse {
+        return try await self.client.execute(
+            operation: "DescribeConfigurationRevision", 
+            path: "/v1/configurations/{Arn}/revisions/{Revision}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Describes a replicator.
+    @Sendable
+    public func describeReplicator(_ input: DescribeReplicatorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeReplicatorResponse {
+        return try await self.client.execute(
+            operation: "DescribeReplicator", 
+            path: "/replication/v1/replicators/{ReplicatorArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a description of this MSK VPC connection.
+    @Sendable
+    public func describeVpcConnection(_ input: DescribeVpcConnectionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeVpcConnectionResponse {
+        return try await self.client.execute(
+            operation: "DescribeVpcConnection", 
+            path: "/v1/vpc-connection/{Arn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// A list of brokers that a client application can use to bootstrap.
-    public func getBootstrapBrokers(_ input: GetBootstrapBrokersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetBootstrapBrokersResponse> {
-        return self.client.execute(operation: "GetBootstrapBrokers", path: "/v1/clusters/{ClusterArn}/bootstrap-brokers", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getBootstrapBrokers(_ input: GetBootstrapBrokersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetBootstrapBrokersResponse {
+        return try await self.client.execute(
+            operation: "GetBootstrapBrokers", 
+            path: "/v1/clusters/{ClusterArn}/bootstrap-brokers", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Get the MSK cluster policy specified by the Amazon Resource Name (ARN) in the request.
+    @Sendable
+    public func getClusterPolicy(_ input: GetClusterPolicyRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetClusterPolicyResponse {
+        return try await self.client.execute(
+            operation: "GetClusterPolicy", 
+            path: "/v1/clusters/{ClusterArn}/policy", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets the Apache Kafka versions to which you can update the MSK cluster.
-    public func getCompatibleKafkaVersions(_ input: GetCompatibleKafkaVersionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetCompatibleKafkaVersionsResponse> {
-        return self.client.execute(operation: "GetCompatibleKafkaVersions", path: "/v1/compatible-kafka-versions", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getCompatibleKafkaVersions(_ input: GetCompatibleKafkaVersionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetCompatibleKafkaVersionsResponse {
+        return try await self.client.execute(
+            operation: "GetCompatibleKafkaVersions", 
+            path: "/v1/compatible-kafka-versions", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a list of all the VPC connections in this Region.
+    @Sendable
+    public func listClientVpcConnections(_ input: ListClientVpcConnectionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListClientVpcConnectionsResponse {
+        return try await self.client.execute(
+            operation: "ListClientVpcConnections", 
+            path: "/v1/clusters/{ClusterArn}/client-vpc-connections", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of all the operations that have been performed on the specified MSK cluster.
-    public func listClusterOperations(_ input: ListClusterOperationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListClusterOperationsResponse> {
-        return self.client.execute(operation: "ListClusterOperations", path: "/v1/clusters/{ClusterArn}/operations", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listClusterOperations(_ input: ListClusterOperationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListClusterOperationsResponse {
+        return try await self.client.execute(
+            operation: "ListClusterOperations", 
+            path: "/v1/clusters/{ClusterArn}/operations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a list of all the operations that have been performed on the specified MSK cluster.
+    @Sendable
+    public func listClusterOperationsV2(_ input: ListClusterOperationsV2Request, logger: Logger = AWSClient.loggingDisabled) async throws -> ListClusterOperationsV2Response {
+        return try await self.client.execute(
+            operation: "ListClusterOperationsV2", 
+            path: "/api/v2/clusters/{ClusterArn}/operations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of all the MSK clusters in the current Region.
-    public func listClusters(_ input: ListClustersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListClustersResponse> {
-        return self.client.execute(operation: "ListClusters", path: "/v1/clusters", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listClusters(_ input: ListClustersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListClustersResponse {
+        return try await self.client.execute(
+            operation: "ListClusters", 
+            path: "/v1/clusters", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of all the MSK clusters in the current Region.
-    public func listClustersV2(_ input: ListClustersV2Request, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListClustersV2Response> {
-        return self.client.execute(operation: "ListClustersV2", path: "/api/v2/clusters", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listClustersV2(_ input: ListClustersV2Request, logger: Logger = AWSClient.loggingDisabled) async throws -> ListClustersV2Response {
+        return try await self.client.execute(
+            operation: "ListClustersV2", 
+            path: "/api/v2/clusters", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of all the MSK configurations in this Region.
-    public func listConfigurationRevisions(_ input: ListConfigurationRevisionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListConfigurationRevisionsResponse> {
-        return self.client.execute(operation: "ListConfigurationRevisions", path: "/v1/configurations/{Arn}/revisions", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listConfigurationRevisions(_ input: ListConfigurationRevisionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListConfigurationRevisionsResponse {
+        return try await self.client.execute(
+            operation: "ListConfigurationRevisions", 
+            path: "/v1/configurations/{Arn}/revisions", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of all the MSK configurations in this Region.
-    public func listConfigurations(_ input: ListConfigurationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListConfigurationsResponse> {
-        return self.client.execute(operation: "ListConfigurations", path: "/v1/configurations", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listConfigurations(_ input: ListConfigurationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListConfigurationsResponse {
+        return try await self.client.execute(
+            operation: "ListConfigurations", 
+            path: "/v1/configurations", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of Apache Kafka versions.
-    public func listKafkaVersions(_ input: ListKafkaVersionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListKafkaVersionsResponse> {
-        return self.client.execute(operation: "ListKafkaVersions", path: "/v1/kafka-versions", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listKafkaVersions(_ input: ListKafkaVersionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListKafkaVersionsResponse {
+        return try await self.client.execute(
+            operation: "ListKafkaVersions", 
+            path: "/v1/kafka-versions", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of the broker nodes in the cluster.
-    public func listNodes(_ input: ListNodesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListNodesResponse> {
-        return self.client.execute(operation: "ListNodes", path: "/v1/clusters/{ClusterArn}/nodes", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listNodes(_ input: ListNodesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListNodesResponse {
+        return try await self.client.execute(
+            operation: "ListNodes", 
+            path: "/v1/clusters/{ClusterArn}/nodes", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists the replicators.
+    @Sendable
+    public func listReplicators(_ input: ListReplicatorsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListReplicatorsResponse {
+        return try await self.client.execute(
+            operation: "ListReplicators", 
+            path: "/replication/v1/replicators", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of the Scram Secrets associated with an Amazon MSK cluster.
-    public func listScramSecrets(_ input: ListScramSecretsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListScramSecretsResponse> {
-        return self.client.execute(operation: "ListScramSecrets", path: "/v1/clusters/{ClusterArn}/scram-secrets", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listScramSecrets(_ input: ListScramSecretsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListScramSecretsResponse {
+        return try await self.client.execute(
+            operation: "ListScramSecrets", 
+            path: "/v1/clusters/{ClusterArn}/scram-secrets", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of the tags associated with the specified resource.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/v1/tags/{ResourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/v1/tags/{ResourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a list of all the VPC connections in this Region.
+    @Sendable
+    public func listVpcConnections(_ input: ListVpcConnectionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListVpcConnectionsResponse {
+        return try await self.client.execute(
+            operation: "ListVpcConnections", 
+            path: "/v1/vpc-connections", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Creates or updates the MSK cluster policy specified by the cluster Amazon Resource Name (ARN) in the request.
+    @Sendable
+    public func putClusterPolicy(_ input: PutClusterPolicyRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> PutClusterPolicyResponse {
+        return try await self.client.execute(
+            operation: "PutClusterPolicy", 
+            path: "/v1/clusters/{ClusterArn}/policy", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Reboots brokers.
-    public func rebootBroker(_ input: RebootBrokerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RebootBrokerResponse> {
-        return self.client.execute(operation: "RebootBroker", path: "/v1/clusters/{ClusterArn}/reboot-broker", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func rebootBroker(_ input: RebootBrokerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> RebootBrokerResponse {
+        return try await self.client.execute(
+            operation: "RebootBroker", 
+            path: "/v1/clusters/{ClusterArn}/reboot-broker", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns empty response.
+    @Sendable
+    public func rejectClientVpcConnection(_ input: RejectClientVpcConnectionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> RejectClientVpcConnectionResponse {
+        return try await self.client.execute(
+            operation: "RejectClientVpcConnection", 
+            path: "/v1/clusters/{ClusterArn}/client-vpc-connection", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Adds tags to the specified MSK resource.
-    @discardableResult public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "TagResource", path: "/v1/tags/{ResourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/v1/tags/{ResourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Removes the tags associated with the keys that are provided in the query.
-    @discardableResult public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "UntagResource", path: "/v1/tags/{ResourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/v1/tags/{ResourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the number of broker nodes in the cluster.
-    public func updateBrokerCount(_ input: UpdateBrokerCountRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateBrokerCountResponse> {
-        return self.client.execute(operation: "UpdateBrokerCount", path: "/v1/clusters/{ClusterArn}/nodes/count", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateBrokerCount(_ input: UpdateBrokerCountRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateBrokerCountResponse {
+        return try await self.client.execute(
+            operation: "UpdateBrokerCount", 
+            path: "/v1/clusters/{ClusterArn}/nodes/count", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the EBS storage associated with MSK brokers.
-    public func updateBrokerStorage(_ input: UpdateBrokerStorageRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateBrokerStorageResponse> {
-        return self.client.execute(operation: "UpdateBrokerStorage", path: "/v1/clusters/{ClusterArn}/nodes/storage", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateBrokerStorage(_ input: UpdateBrokerStorageRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateBrokerStorageResponse {
+        return try await self.client.execute(
+            operation: "UpdateBrokerStorage", 
+            path: "/v1/clusters/{ClusterArn}/nodes/storage", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates EC2 instance type.
-    public func updateBrokerType(_ input: UpdateBrokerTypeRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateBrokerTypeResponse> {
-        return self.client.execute(operation: "UpdateBrokerType", path: "/v1/clusters/{ClusterArn}/nodes/type", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateBrokerType(_ input: UpdateBrokerTypeRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateBrokerTypeResponse {
+        return try await self.client.execute(
+            operation: "UpdateBrokerType", 
+            path: "/v1/clusters/{ClusterArn}/nodes/type", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the cluster with the configuration that is specified in the request body.
-    public func updateClusterConfiguration(_ input: UpdateClusterConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateClusterConfigurationResponse> {
-        return self.client.execute(operation: "UpdateClusterConfiguration", path: "/v1/clusters/{ClusterArn}/configuration", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateClusterConfiguration(_ input: UpdateClusterConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateClusterConfigurationResponse {
+        return try await self.client.execute(
+            operation: "UpdateClusterConfiguration", 
+            path: "/v1/clusters/{ClusterArn}/configuration", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the Apache Kafka version for the cluster.
-    public func updateClusterKafkaVersion(_ input: UpdateClusterKafkaVersionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateClusterKafkaVersionResponse> {
-        return self.client.execute(operation: "UpdateClusterKafkaVersion", path: "/v1/clusters/{ClusterArn}/version", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateClusterKafkaVersion(_ input: UpdateClusterKafkaVersionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateClusterKafkaVersionResponse {
+        return try await self.client.execute(
+            operation: "UpdateClusterKafkaVersion", 
+            path: "/v1/clusters/{ClusterArn}/version", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates an MSK configuration.
-    public func updateConfiguration(_ input: UpdateConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateConfigurationResponse> {
-        return self.client.execute(operation: "UpdateConfiguration", path: "/v1/configurations/{Arn}", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateConfiguration(_ input: UpdateConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateConfigurationResponse {
+        return try await self.client.execute(
+            operation: "UpdateConfiguration", 
+            path: "/v1/configurations/{Arn}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the cluster's connectivity configuration.
-    public func updateConnectivity(_ input: UpdateConnectivityRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateConnectivityResponse> {
-        return self.client.execute(operation: "UpdateConnectivity", path: "/v1/clusters/{ClusterArn}/connectivity", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateConnectivity(_ input: UpdateConnectivityRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateConnectivityResponse {
+        return try await self.client.execute(
+            operation: "UpdateConnectivity", 
+            path: "/v1/clusters/{ClusterArn}/connectivity", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the monitoring settings for the cluster. You can use this operation to specify which Apache Kafka metrics you want Amazon MSK to send to Amazon CloudWatch. You can also specify settings for open monitoring with Prometheus.
-    public func updateMonitoring(_ input: UpdateMonitoringRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateMonitoringResponse> {
-        return self.client.execute(operation: "UpdateMonitoring", path: "/v1/clusters/{ClusterArn}/monitoring", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateMonitoring(_ input: UpdateMonitoringRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateMonitoringResponse {
+        return try await self.client.execute(
+            operation: "UpdateMonitoring", 
+            path: "/v1/clusters/{ClusterArn}/monitoring", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates replication info of a replicator.
+    @Sendable
+    public func updateReplicationInfo(_ input: UpdateReplicationInfoRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateReplicationInfoResponse {
+        return try await self.client.execute(
+            operation: "UpdateReplicationInfo", 
+            path: "/replication/v1/replicators/{ReplicatorArn}/replication-info", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the security settings for the cluster. You can use this operation to specify encryption and authentication on existing clusters.
-    public func updateSecurity(_ input: UpdateSecurityRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateSecurityResponse> {
-        return self.client.execute(operation: "UpdateSecurity", path: "/v1/clusters/{ClusterArn}/security", httpMethod: .PATCH, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateSecurity(_ input: UpdateSecurityRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateSecurityResponse {
+        return try await self.client.execute(
+            operation: "UpdateSecurity", 
+            path: "/v1/clusters/{ClusterArn}/security", 
+            httpMethod: .PATCH, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates cluster broker volume size (or) sets cluster storage mode to TIERED.
-    public func updateStorage(_ input: UpdateStorageRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateStorageResponse> {
-        return self.client.execute(operation: "UpdateStorage", path: "/v1/clusters/{ClusterArn}/storage", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateStorage(_ input: UpdateStorageRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateStorageResponse {
+        return try await self.client.execute(
+            operation: "UpdateStorage", 
+            path: "/v1/clusters/{ClusterArn}/storage", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Kafka {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Kafka, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -255,434 +780,259 @@ extension Kafka {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Kafka {
-    ///  Returns a list of all the operations that have been performed on the specified MSK cluster.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listClusterOperationsPaginator<Result>(
-        _ input: ListClusterOperationsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListClusterOperationsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listClusterOperations,
-            inputKey: \ListClusterOperationsRequest.nextToken,
-            outputKey: \ListClusterOperationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of all the VPC connections in this Region.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listClientVpcConnectionsPaginator(
+        _ input: ListClientVpcConnectionsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListClientVpcConnectionsRequest, ListClientVpcConnectionsResponse> {
+        return .init(
+            input: input,
+            command: self.listClientVpcConnections,
+            inputKey: \ListClientVpcConnectionsRequest.nextToken,
+            outputKey: \ListClientVpcConnectionsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a list of all the operations that have been performed on the specified MSK cluster.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listClusterOperationsPaginator(
         _ input: ListClusterOperationsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListClusterOperationsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListClusterOperationsRequest, ListClusterOperationsResponse> {
+        return .init(
             input: input,
             command: self.listClusterOperations,
             inputKey: \ListClusterOperationsRequest.nextToken,
             outputKey: \ListClusterOperationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of all the MSK clusters in the current Region.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listClustersPaginator<Result>(
-        _ input: ListClustersRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListClustersResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listClusters,
-            inputKey: \ListClustersRequest.nextToken,
-            outputKey: \ListClustersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of all the operations that have been performed on the specified MSK cluster.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listClusterOperationsV2Paginator(
+        _ input: ListClusterOperationsV2Request,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListClusterOperationsV2Request, ListClusterOperationsV2Response> {
+        return .init(
+            input: input,
+            command: self.listClusterOperationsV2,
+            inputKey: \ListClusterOperationsV2Request.nextToken,
+            outputKey: \ListClusterOperationsV2Response.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a list of all the MSK clusters in the current Region.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listClustersPaginator(
         _ input: ListClustersRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListClustersResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListClustersRequest, ListClustersResponse> {
+        return .init(
             input: input,
             command: self.listClusters,
             inputKey: \ListClustersRequest.nextToken,
             outputKey: \ListClustersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of all the MSK clusters in the current Region.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listClustersV2Paginator<Result>(
-        _ input: ListClustersV2Request,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListClustersV2Response, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listClustersV2,
-            inputKey: \ListClustersV2Request.nextToken,
-            outputKey: \ListClustersV2Response.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of all the MSK clusters in the current Region.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listClustersV2Paginator(
         _ input: ListClustersV2Request,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListClustersV2Response, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListClustersV2Request, ListClustersV2Response> {
+        return .init(
             input: input,
             command: self.listClustersV2,
             inputKey: \ListClustersV2Request.nextToken,
             outputKey: \ListClustersV2Response.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of all the MSK configurations in this Region.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listConfigurationRevisionsPaginator<Result>(
-        _ input: ListConfigurationRevisionsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListConfigurationRevisionsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listConfigurationRevisions,
-            inputKey: \ListConfigurationRevisionsRequest.nextToken,
-            outputKey: \ListConfigurationRevisionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of all the MSK configurations in this Region.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listConfigurationRevisionsPaginator(
         _ input: ListConfigurationRevisionsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListConfigurationRevisionsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListConfigurationRevisionsRequest, ListConfigurationRevisionsResponse> {
+        return .init(
             input: input,
             command: self.listConfigurationRevisions,
             inputKey: \ListConfigurationRevisionsRequest.nextToken,
             outputKey: \ListConfigurationRevisionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of all the MSK configurations in this Region.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listConfigurationsPaginator<Result>(
-        _ input: ListConfigurationsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListConfigurationsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listConfigurations,
-            inputKey: \ListConfigurationsRequest.nextToken,
-            outputKey: \ListConfigurationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of all the MSK configurations in this Region.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listConfigurationsPaginator(
         _ input: ListConfigurationsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListConfigurationsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListConfigurationsRequest, ListConfigurationsResponse> {
+        return .init(
             input: input,
             command: self.listConfigurations,
             inputKey: \ListConfigurationsRequest.nextToken,
             outputKey: \ListConfigurationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of Apache Kafka versions.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listKafkaVersionsPaginator<Result>(
-        _ input: ListKafkaVersionsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListKafkaVersionsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listKafkaVersions,
-            inputKey: \ListKafkaVersionsRequest.nextToken,
-            outputKey: \ListKafkaVersionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of Apache Kafka versions.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listKafkaVersionsPaginator(
         _ input: ListKafkaVersionsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListKafkaVersionsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListKafkaVersionsRequest, ListKafkaVersionsResponse> {
+        return .init(
             input: input,
             command: self.listKafkaVersions,
             inputKey: \ListKafkaVersionsRequest.nextToken,
             outputKey: \ListKafkaVersionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of the broker nodes in the cluster.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listNodesPaginator<Result>(
-        _ input: ListNodesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListNodesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listNodes,
-            inputKey: \ListNodesRequest.nextToken,
-            outputKey: \ListNodesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of the broker nodes in the cluster.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listNodesPaginator(
         _ input: ListNodesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListNodesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListNodesRequest, ListNodesResponse> {
+        return .init(
             input: input,
             command: self.listNodes,
             inputKey: \ListNodesRequest.nextToken,
             outputKey: \ListNodesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of the Scram Secrets associated with an Amazon MSK cluster.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listScramSecretsPaginator<Result>(
-        _ input: ListScramSecretsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListScramSecretsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listScramSecrets,
-            inputKey: \ListScramSecretsRequest.nextToken,
-            outputKey: \ListScramSecretsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the replicators.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listReplicatorsPaginator(
+        _ input: ListReplicatorsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListReplicatorsRequest, ListReplicatorsResponse> {
+        return .init(
+            input: input,
+            command: self.listReplicators,
+            inputKey: \ListReplicatorsRequest.nextToken,
+            outputKey: \ListReplicatorsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a list of the Scram Secrets associated with an Amazon MSK cluster.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listScramSecretsPaginator(
         _ input: ListScramSecretsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListScramSecretsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListScramSecretsRequest, ListScramSecretsResponse> {
+        return .init(
             input: input,
             command: self.listScramSecrets,
             inputKey: \ListScramSecretsRequest.nextToken,
             outputKey: \ListScramSecretsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
+        )
+    }
+
+    /// Returns a list of all the VPC connections in this Region.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listVpcConnectionsPaginator(
+        _ input: ListVpcConnectionsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListVpcConnectionsRequest, ListVpcConnectionsResponse> {
+        return .init(
+            input: input,
+            command: self.listVpcConnections,
+            inputKey: \ListVpcConnectionsRequest.nextToken,
+            outputKey: \ListVpcConnectionsResponse.nextToken,
+            logger: logger
+        )
+    }
+}
+
+extension Kafka.ListClientVpcConnectionsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Kafka.ListClientVpcConnectionsRequest {
+        return .init(
+            clusterArn: self.clusterArn,
+            maxResults: self.maxResults,
+            nextToken: token
         )
     }
 }
 
 extension Kafka.ListClusterOperationsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Kafka.ListClusterOperationsRequest {
+        return .init(
+            clusterArn: self.clusterArn,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Kafka.ListClusterOperationsV2Request: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Kafka.ListClusterOperationsV2Request {
         return .init(
             clusterArn: self.clusterArn,
             maxResults: self.maxResults,
@@ -750,10 +1100,29 @@ extension Kafka.ListNodesRequest: AWSPaginateToken {
     }
 }
 
+extension Kafka.ListReplicatorsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Kafka.ListReplicatorsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token,
+            replicatorNameFilter: self.replicatorNameFilter
+        )
+    }
+}
+
 extension Kafka.ListScramSecretsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Kafka.ListScramSecretsRequest {
         return .init(
             clusterArn: self.clusterArn,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Kafka.ListVpcConnectionsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Kafka.ListVpcConnectionsRequest {
+        return .init(
             maxResults: self.maxResults,
             nextToken: token
         )

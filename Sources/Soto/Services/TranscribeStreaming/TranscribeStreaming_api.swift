@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS TranscribeStreaming service.
 ///
-/// Amazon Transcribe streaming offers three main types of real-time transcription:  Standard, Medical, and  Call Analytics.    Standard transcriptions are the most common option. Refer to  for details.     Medical transcriptions are tailored to medical professionals  and incorporate medical terms. A common use case for this service is transcribing doctor-patient  dialogue in real time, so doctors can focus on their patient instead of taking notes. Refer to for details.    Call Analytics transcriptions are designed for use with call center audio on two different channels; if you're looking for insight into customer service calls, use this  option. Refer to  for details.
+/// Amazon Transcribe streaming offers three main types of real-time transcription:  Standard, Medical, and  Call Analytics.    Standard transcriptions are the most common option. Refer to  for details.    Medical transcriptions are tailored to medical professionals  and incorporate medical terms. A common use case for this service is transcribing doctor-patient  dialogue in real time, so doctors can focus on their patient instead of taking notes. Refer to for details.    Call Analytics transcriptions are designed for use with call center audio on two different channels; if you're looking for insight into customer service calls, use this  option. Refer to  for details.
 public struct TranscribeStreaming: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct TranscribeStreaming: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,38 +54,68 @@ public struct TranscribeStreaming: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "transcribestreaming",
+            serviceName: "TranscribeStreaming",
+            serviceIdentifier: "transcribestreaming",
             signingName: "transcribe",
             serviceProtocol: .restjson,
             apiVersion: "2017-10-26",
             endpoint: endpoint,
             errorType: TranscribeStreamingErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
     /// Starts a bidirectional HTTP/2 or WebSocket stream where audio is streamed to  Amazon Transcribe and the transcription results are streamed to your application. Use this operation for Call Analytics transcriptions. The following parameters are required:    language-code     media-encoding     sample-rate    For more information on streaming with Amazon Transcribe, see Transcribing streaming audio.
-    public func startCallAnalyticsStreamTranscription(_ input: StartCallAnalyticsStreamTranscriptionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartCallAnalyticsStreamTranscriptionResponse> {
-        return self.client.execute(operation: "StartCallAnalyticsStreamTranscription", path: "/call-analytics-stream-transcription", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startCallAnalyticsStreamTranscription(_ input: StartCallAnalyticsStreamTranscriptionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartCallAnalyticsStreamTranscriptionResponse {
+        return try await self.client.execute(
+            operation: "StartCallAnalyticsStreamTranscription", 
+            path: "/call-analytics-stream-transcription", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Starts a bidirectional HTTP/2 or WebSocket stream where audio is streamed to  Amazon Transcribe Medical and the transcription results are streamed to your application.   The following parameters are required:    language-code     media-encoding     sample-rate    For more information on streaming with Amazon Transcribe Medical, see  Transcribing streaming audio.
-    public func startMedicalStreamTranscription(_ input: StartMedicalStreamTranscriptionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartMedicalStreamTranscriptionResponse> {
-        return self.client.execute(operation: "StartMedicalStreamTranscription", path: "/medical-stream-transcription", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Starts a bidirectional HTTP/2 or WebSocket stream where audio is streamed to  Amazon Transcribe Medical and the transcription results are streamed to your application. The following parameters are required:    language-code     media-encoding     sample-rate    For more information on streaming with Amazon Transcribe Medical, see  Transcribing streaming audio.
+    @Sendable
+    public func startMedicalStreamTranscription(_ input: StartMedicalStreamTranscriptionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartMedicalStreamTranscriptionResponse {
+        return try await self.client.execute(
+            operation: "StartMedicalStreamTranscription", 
+            path: "/medical-stream-transcription", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Starts a bidirectional HTTP/2 or WebSocket stream where audio is streamed to  Amazon Transcribe and the transcription results are streamed to your application. The following parameters are required:    language-code or identify-language     media-encoding     sample-rate    For more information on streaming with Amazon Transcribe, see Transcribing streaming audio.
-    public func startStreamTranscription(_ input: StartStreamTranscriptionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartStreamTranscriptionResponse> {
-        return self.client.execute(operation: "StartStreamTranscription", path: "/stream-transcription", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Starts a bidirectional HTTP/2 or WebSocket stream where audio is streamed to  Amazon Transcribe and the transcription results are streamed to your application. The following parameters are required:    language-code or identify-language or identify-multiple-language     media-encoding     sample-rate    For more information on streaming with Amazon Transcribe, see Transcribing streaming audio.
+    @Sendable
+    public func startStreamTranscription(_ input: StartStreamTranscriptionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartStreamTranscriptionResponse {
+        return try await self.client.execute(
+            operation: "StartStreamTranscription", 
+            path: "/stream-transcription", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension TranscribeStreaming {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: TranscribeStreaming, patch: AWSServiceConfig.Patch) {
         self.client = from.client

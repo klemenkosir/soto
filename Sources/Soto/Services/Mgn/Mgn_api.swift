@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct Mgn: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,305 +54,950 @@ public struct Mgn: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "mgn",
+            serviceName: "Mgn",
+            serviceIdentifier: "mgn",
             serviceProtocol: .restjson,
             apiVersion: "2020-02-26",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "us-east-1": "mgn-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "mgn-fips.us-east-2.amazonaws.com",
-                    "us-west-1": "mgn-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "mgn-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: MgnErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-east-1": "mgn-fips.us-east-1.amazonaws.com",
+            "us-east-2": "mgn-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "mgn-fips.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "mgn-fips.us-gov-west-1.amazonaws.com",
+            "us-west-1": "mgn-fips.us-west-1.amazonaws.com",
+            "us-west-2": "mgn-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
     /// Archive application.
-    public func archiveApplication(_ input: ArchiveApplicationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Application> {
-        return self.client.execute(operation: "ArchiveApplication", path: "/ArchiveApplication", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func archiveApplication(_ input: ArchiveApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Application {
+        return try await self.client.execute(
+            operation: "ArchiveApplication", 
+            path: "/ArchiveApplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Archive wave.
-    public func archiveWave(_ input: ArchiveWaveRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Wave> {
-        return self.client.execute(operation: "ArchiveWave", path: "/ArchiveWave", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func archiveWave(_ input: ArchiveWaveRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Wave {
+        return try await self.client.execute(
+            operation: "ArchiveWave", 
+            path: "/ArchiveWave", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Associate applications to wave.
-    public func associateApplications(_ input: AssociateApplicationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AssociateApplicationsResponse> {
-        return self.client.execute(operation: "AssociateApplications", path: "/AssociateApplications", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func associateApplications(_ input: AssociateApplicationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AssociateApplicationsResponse {
+        return try await self.client.execute(
+            operation: "AssociateApplications", 
+            path: "/AssociateApplications", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Associate source servers to application.
-    public func associateSourceServers(_ input: AssociateSourceServersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<AssociateSourceServersResponse> {
-        return self.client.execute(operation: "AssociateSourceServers", path: "/AssociateSourceServers", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func associateSourceServers(_ input: AssociateSourceServersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> AssociateSourceServersResponse {
+        return try await self.client.execute(
+            operation: "AssociateSourceServers", 
+            path: "/AssociateSourceServers", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Allows the user to set the SourceServer.LifeCycle.state property for specific Source Server IDs to one of the following: READY_FOR_TEST or READY_FOR_CUTOVER. This command only works if the Source Server is already launchable (dataReplicationInfo.lagDuration is not null.)
-    public func changeServerLifeCycleState(_ input: ChangeServerLifeCycleStateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<SourceServer> {
-        return self.client.execute(operation: "ChangeServerLifeCycleState", path: "/ChangeServerLifeCycleState", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func changeServerLifeCycleState(_ input: ChangeServerLifeCycleStateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "ChangeServerLifeCycleState", 
+            path: "/ChangeServerLifeCycleState", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Create application.
-    public func createApplication(_ input: CreateApplicationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Application> {
-        return self.client.execute(operation: "CreateApplication", path: "/CreateApplication", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createApplication(_ input: CreateApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Application {
+        return try await self.client.execute(
+            operation: "CreateApplication", 
+            path: "/CreateApplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Create Connector.
+    @Sendable
+    public func createConnector(_ input: CreateConnectorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Connector {
+        return try await self.client.execute(
+            operation: "CreateConnector", 
+            path: "/CreateConnector", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new Launch Configuration Template.
-    public func createLaunchConfigurationTemplate(_ input: CreateLaunchConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<LaunchConfigurationTemplate> {
-        return self.client.execute(operation: "CreateLaunchConfigurationTemplate", path: "/CreateLaunchConfigurationTemplate", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createLaunchConfigurationTemplate(_ input: CreateLaunchConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> LaunchConfigurationTemplate {
+        return try await self.client.execute(
+            operation: "CreateLaunchConfigurationTemplate", 
+            path: "/CreateLaunchConfigurationTemplate", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a new ReplicationConfigurationTemplate.
-    public func createReplicationConfigurationTemplate(_ input: CreateReplicationConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ReplicationConfigurationTemplate> {
-        return self.client.execute(operation: "CreateReplicationConfigurationTemplate", path: "/CreateReplicationConfigurationTemplate", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createReplicationConfigurationTemplate(_ input: CreateReplicationConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ReplicationConfigurationTemplate {
+        return try await self.client.execute(
+            operation: "CreateReplicationConfigurationTemplate", 
+            path: "/CreateReplicationConfigurationTemplate", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Create wave.
-    public func createWave(_ input: CreateWaveRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Wave> {
-        return self.client.execute(operation: "CreateWave", path: "/CreateWave", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createWave(_ input: CreateWaveRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Wave {
+        return try await self.client.execute(
+            operation: "CreateWave", 
+            path: "/CreateWave", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Delete application.
-    public func deleteApplication(_ input: DeleteApplicationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteApplicationResponse> {
-        return self.client.execute(operation: "DeleteApplication", path: "/DeleteApplication", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteApplication(_ input: DeleteApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteApplicationResponse {
+        return try await self.client.execute(
+            operation: "DeleteApplication", 
+            path: "/DeleteApplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Delete Connector.
+    @Sendable
+    public func deleteConnector(_ input: DeleteConnectorRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteConnector", 
+            path: "/DeleteConnector", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a single Job by ID.
-    public func deleteJob(_ input: DeleteJobRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteJobResponse> {
-        return self.client.execute(operation: "DeleteJob", path: "/DeleteJob", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteJob(_ input: DeleteJobRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteJobResponse {
+        return try await self.client.execute(
+            operation: "DeleteJob", 
+            path: "/DeleteJob", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a single Launch Configuration Template by ID.
-    public func deleteLaunchConfigurationTemplate(_ input: DeleteLaunchConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteLaunchConfigurationTemplateResponse> {
-        return self.client.execute(operation: "DeleteLaunchConfigurationTemplate", path: "/DeleteLaunchConfigurationTemplate", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteLaunchConfigurationTemplate(_ input: DeleteLaunchConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteLaunchConfigurationTemplateResponse {
+        return try await self.client.execute(
+            operation: "DeleteLaunchConfigurationTemplate", 
+            path: "/DeleteLaunchConfigurationTemplate", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a single Replication Configuration Template by ID
-    public func deleteReplicationConfigurationTemplate(_ input: DeleteReplicationConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteReplicationConfigurationTemplateResponse> {
-        return self.client.execute(operation: "DeleteReplicationConfigurationTemplate", path: "/DeleteReplicationConfigurationTemplate", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteReplicationConfigurationTemplate(_ input: DeleteReplicationConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteReplicationConfigurationTemplateResponse {
+        return try await self.client.execute(
+            operation: "DeleteReplicationConfigurationTemplate", 
+            path: "/DeleteReplicationConfigurationTemplate", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a single source server by ID.
-    public func deleteSourceServer(_ input: DeleteSourceServerRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteSourceServerResponse> {
-        return self.client.execute(operation: "DeleteSourceServer", path: "/DeleteSourceServer", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteSourceServer(_ input: DeleteSourceServerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteSourceServerResponse {
+        return try await self.client.execute(
+            operation: "DeleteSourceServer", 
+            path: "/DeleteSourceServer", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes a given vCenter client by ID.
-    @discardableResult public func deleteVcenterClient(_ input: DeleteVcenterClientRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteVcenterClient", path: "/DeleteVcenterClient", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteVcenterClient(_ input: DeleteVcenterClientRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteVcenterClient", 
+            path: "/DeleteVcenterClient", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Delete wave.
-    public func deleteWave(_ input: DeleteWaveRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteWaveResponse> {
-        return self.client.execute(operation: "DeleteWave", path: "/DeleteWave", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteWave(_ input: DeleteWaveRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteWaveResponse {
+        return try await self.client.execute(
+            operation: "DeleteWave", 
+            path: "/DeleteWave", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves detailed job log items with paging.
-    public func describeJobLogItems(_ input: DescribeJobLogItemsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeJobLogItemsResponse> {
-        return self.client.execute(operation: "DescribeJobLogItems", path: "/DescribeJobLogItems", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeJobLogItems(_ input: DescribeJobLogItemsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeJobLogItemsResponse {
+        return try await self.client.execute(
+            operation: "DescribeJobLogItems", 
+            path: "/DescribeJobLogItems", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of Jobs. Use the JobsID and fromDate and toData filters to limit which jobs are returned. The response is sorted by creationDataTime - latest date first. Jobs are normally created by the StartTest, StartCutover, and TerminateTargetInstances APIs. Jobs are also created by DiagnosticLaunch and TerminateDiagnosticInstances, which are APIs available only to *Support* and only used in response to relevant support tickets.
-    public func describeJobs(_ input: DescribeJobsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeJobsResponse> {
-        return self.client.execute(operation: "DescribeJobs", path: "/DescribeJobs", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeJobs(_ input: DescribeJobsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeJobsResponse {
+        return try await self.client.execute(
+            operation: "DescribeJobs", 
+            path: "/DescribeJobs", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all Launch Configuration Templates, filtered by Launch Configuration Template IDs
-    public func describeLaunchConfigurationTemplates(_ input: DescribeLaunchConfigurationTemplatesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeLaunchConfigurationTemplatesResponse> {
-        return self.client.execute(operation: "DescribeLaunchConfigurationTemplates", path: "/DescribeLaunchConfigurationTemplates", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeLaunchConfigurationTemplates(_ input: DescribeLaunchConfigurationTemplatesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeLaunchConfigurationTemplatesResponse {
+        return try await self.client.execute(
+            operation: "DescribeLaunchConfigurationTemplates", 
+            path: "/DescribeLaunchConfigurationTemplates", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all ReplicationConfigurationTemplates, filtered by Source Server IDs.
-    public func describeReplicationConfigurationTemplates(_ input: DescribeReplicationConfigurationTemplatesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeReplicationConfigurationTemplatesResponse> {
-        return self.client.execute(operation: "DescribeReplicationConfigurationTemplates", path: "/DescribeReplicationConfigurationTemplates", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeReplicationConfigurationTemplates(_ input: DescribeReplicationConfigurationTemplatesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeReplicationConfigurationTemplatesResponse {
+        return try await self.client.execute(
+            operation: "DescribeReplicationConfigurationTemplates", 
+            path: "/DescribeReplicationConfigurationTemplates", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves all SourceServers or multiple SourceServers by ID.
-    public func describeSourceServers(_ input: DescribeSourceServersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeSourceServersResponse> {
-        return self.client.execute(operation: "DescribeSourceServers", path: "/DescribeSourceServers", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeSourceServers(_ input: DescribeSourceServersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeSourceServersResponse {
+        return try await self.client.execute(
+            operation: "DescribeSourceServers", 
+            path: "/DescribeSourceServers", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Returns a list of the installed vCenter clients.
-    public func describeVcenterClients(_ input: DescribeVcenterClientsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeVcenterClientsResponse> {
-        return self.client.execute(operation: "DescribeVcenterClients", path: "/DescribeVcenterClients", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeVcenterClients(_ input: DescribeVcenterClientsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeVcenterClientsResponse {
+        return try await self.client.execute(
+            operation: "DescribeVcenterClients", 
+            path: "/DescribeVcenterClients", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Disassociate applications from wave.
-    public func disassociateApplications(_ input: DisassociateApplicationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DisassociateApplicationsResponse> {
-        return self.client.execute(operation: "DisassociateApplications", path: "/DisassociateApplications", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func disassociateApplications(_ input: DisassociateApplicationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DisassociateApplicationsResponse {
+        return try await self.client.execute(
+            operation: "DisassociateApplications", 
+            path: "/DisassociateApplications", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Disassociate source servers from application.
-    public func disassociateSourceServers(_ input: DisassociateSourceServersRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DisassociateSourceServersResponse> {
-        return self.client.execute(operation: "DisassociateSourceServers", path: "/DisassociateSourceServers", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func disassociateSourceServers(_ input: DisassociateSourceServersRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DisassociateSourceServersResponse {
+        return try await self.client.execute(
+            operation: "DisassociateSourceServers", 
+            path: "/DisassociateSourceServers", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Disconnects specific Source Servers from Application Migration Service. Data replication is stopped immediately. All AWS resources created by Application Migration Service for enabling the replication of these source servers will be terminated / deleted within 90 minutes. Launched Test or Cutover instances will NOT be terminated. If the agent on the source server has not been prevented from communicating with the Application Migration Service service, then it will receive a command to uninstall itself (within approximately 10 minutes). The following properties of the SourceServer will be changed immediately: dataReplicationInfo.dataReplicationState will be set to DISCONNECTED; The totalStorageBytes property for each of dataReplicationInfo.replicatedDisks will be set to zero; dataReplicationInfo.lagDuration and dataReplicationInfo.lagDuration will be nullified.
-    public func disconnectFromService(_ input: DisconnectFromServiceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<SourceServer> {
-        return self.client.execute(operation: "DisconnectFromService", path: "/DisconnectFromService", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func disconnectFromService(_ input: DisconnectFromServiceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "DisconnectFromService", 
+            path: "/DisconnectFromService", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Finalizes the cutover immediately for specific Source Servers. All AWS resources created by Application Migration Service for enabling the replication of these source servers will be terminated / deleted within 90 minutes. Launched Test or Cutover instances will NOT be terminated. The AWS Replication Agent will receive a command to uninstall itself (within 10 minutes). The following properties of the SourceServer will be changed immediately: dataReplicationInfo.dataReplicationState will be changed to DISCONNECTED; The SourceServer.lifeCycle.state will be changed to CUTOVER; The totalStorageBytes property fo each of dataReplicationInfo.replicatedDisks will be set to zero; dataReplicationInfo.lagDuration and dataReplicationInfo.lagDuration will be nullified.
-    public func finalizeCutover(_ input: FinalizeCutoverRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<SourceServer> {
-        return self.client.execute(operation: "FinalizeCutover", path: "/FinalizeCutover", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func finalizeCutover(_ input: FinalizeCutoverRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "FinalizeCutover", 
+            path: "/FinalizeCutover", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all LaunchConfigurations available, filtered by Source Server IDs.
-    public func getLaunchConfiguration(_ input: GetLaunchConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<LaunchConfiguration> {
-        return self.client.execute(operation: "GetLaunchConfiguration", path: "/GetLaunchConfiguration", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getLaunchConfiguration(_ input: GetLaunchConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> LaunchConfiguration {
+        return try await self.client.execute(
+            operation: "GetLaunchConfiguration", 
+            path: "/GetLaunchConfiguration", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all ReplicationConfigurations, filtered by Source Server ID.
-    public func getReplicationConfiguration(_ input: GetReplicationConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ReplicationConfiguration> {
-        return self.client.execute(operation: "GetReplicationConfiguration", path: "/GetReplicationConfiguration", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getReplicationConfiguration(_ input: GetReplicationConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ReplicationConfiguration {
+        return try await self.client.execute(
+            operation: "GetReplicationConfiguration", 
+            path: "/GetReplicationConfiguration", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Initialize Application Migration Service.
-    public func initializeService(_ input: InitializeServiceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<InitializeServiceResponse> {
-        return self.client.execute(operation: "InitializeService", path: "/InitializeService", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func initializeService(_ input: InitializeServiceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> InitializeServiceResponse {
+        return try await self.client.execute(
+            operation: "InitializeService", 
+            path: "/InitializeService", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves all applications or multiple applications by ID.
-    public func listApplications(_ input: ListApplicationsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListApplicationsResponse> {
-        return self.client.execute(operation: "ListApplications", path: "/ListApplications", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listApplications(_ input: ListApplicationsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListApplicationsResponse {
+        return try await self.client.execute(
+            operation: "ListApplications", 
+            path: "/ListApplications", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List Connectors.
+    @Sendable
+    public func listConnectors(_ input: ListConnectorsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListConnectorsResponse {
+        return try await self.client.execute(
+            operation: "ListConnectors", 
+            path: "/ListConnectors", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List export errors.
+    @Sendable
+    public func listExportErrors(_ input: ListExportErrorsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListExportErrorsResponse {
+        return try await self.client.execute(
+            operation: "ListExportErrors", 
+            path: "/ListExportErrors", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List exports.
+    @Sendable
+    public func listExports(_ input: ListExportsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListExportsResponse {
+        return try await self.client.execute(
+            operation: "ListExports", 
+            path: "/ListExports", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List import errors.
+    @Sendable
+    public func listImportErrors(_ input: ListImportErrorsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListImportErrorsResponse {
+        return try await self.client.execute(
+            operation: "ListImportErrors", 
+            path: "/ListImportErrors", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List imports.
+    @Sendable
+    public func listImports(_ input: ListImportsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListImportsResponse {
+        return try await self.client.execute(
+            operation: "ListImports", 
+            path: "/ListImports", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// List Managed Accounts.
+    @Sendable
+    public func listManagedAccounts(_ input: ListManagedAccountsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListManagedAccountsResponse {
+        return try await self.client.execute(
+            operation: "ListManagedAccounts", 
+            path: "/ListManagedAccounts", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List source server post migration custom actions.
-    public func listSourceServerActions(_ input: ListSourceServerActionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListSourceServerActionsResponse> {
-        return self.client.execute(operation: "ListSourceServerActions", path: "/ListSourceServerActions", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listSourceServerActions(_ input: ListSourceServerActionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListSourceServerActionsResponse {
+        return try await self.client.execute(
+            operation: "ListSourceServerActions", 
+            path: "/ListSourceServerActions", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List all tags for your Application Migration Service resources.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{resourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// List template post migration custom actions.
-    public func listTemplateActions(_ input: ListTemplateActionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTemplateActionsResponse> {
-        return self.client.execute(operation: "ListTemplateActions", path: "/ListTemplateActions", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listTemplateActions(_ input: ListTemplateActionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTemplateActionsResponse {
+        return try await self.client.execute(
+            operation: "ListTemplateActions", 
+            path: "/ListTemplateActions", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Retrieves all waves or multiple waves by ID.
-    public func listWaves(_ input: ListWavesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListWavesResponse> {
-        return self.client.execute(operation: "ListWaves", path: "/ListWaves", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listWaves(_ input: ListWavesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListWavesResponse {
+        return try await self.client.execute(
+            operation: "ListWaves", 
+            path: "/ListWaves", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Archives specific Source Servers by setting the SourceServer.isArchived property to true for specified SourceServers by ID. This command only works for SourceServers with a lifecycle. state which equals DISCONNECTED or CUTOVER.
-    public func markAsArchived(_ input: MarkAsArchivedRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<SourceServer> {
-        return self.client.execute(operation: "MarkAsArchived", path: "/MarkAsArchived", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func markAsArchived(_ input: MarkAsArchivedRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "MarkAsArchived", 
+            path: "/MarkAsArchived", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Pause Replication.
+    @Sendable
+    public func pauseReplication(_ input: PauseReplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "PauseReplication", 
+            path: "/PauseReplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Put source server post migration custom action.
-    public func putSourceServerAction(_ input: PutSourceServerActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<SourceServerActionDocument> {
-        return self.client.execute(operation: "PutSourceServerAction", path: "/PutSourceServerAction", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func putSourceServerAction(_ input: PutSourceServerActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServerActionDocument {
+        return try await self.client.execute(
+            operation: "PutSourceServerAction", 
+            path: "/PutSourceServerAction", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Put template post migration custom action.
-    public func putTemplateAction(_ input: PutTemplateActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TemplateActionDocument> {
-        return self.client.execute(operation: "PutTemplateAction", path: "/PutTemplateAction", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func putTemplateAction(_ input: PutTemplateActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TemplateActionDocument {
+        return try await self.client.execute(
+            operation: "PutTemplateAction", 
+            path: "/PutTemplateAction", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Remove source server post migration custom action.
-    public func removeSourceServerAction(_ input: RemoveSourceServerActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RemoveSourceServerActionResponse> {
-        return self.client.execute(operation: "RemoveSourceServerAction", path: "/RemoveSourceServerAction", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func removeSourceServerAction(_ input: RemoveSourceServerActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> RemoveSourceServerActionResponse {
+        return try await self.client.execute(
+            operation: "RemoveSourceServerAction", 
+            path: "/RemoveSourceServerAction", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Remove template post migration custom action.
-    public func removeTemplateAction(_ input: RemoveTemplateActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RemoveTemplateActionResponse> {
-        return self.client.execute(operation: "RemoveTemplateAction", path: "/RemoveTemplateAction", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func removeTemplateAction(_ input: RemoveTemplateActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> RemoveTemplateActionResponse {
+        return try await self.client.execute(
+            operation: "RemoveTemplateAction", 
+            path: "/RemoveTemplateAction", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Resume Replication.
+    @Sendable
+    public func resumeReplication(_ input: ResumeReplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "ResumeReplication", 
+            path: "/ResumeReplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Causes the data replication initiation sequence to begin immediately upon next Handshake for specified SourceServer IDs, regardless of when the previous initiation started. This command will not work if the SourceServer is not stalled or is in a DISCONNECTED or STOPPED state.
-    public func retryDataReplication(_ input: RetryDataReplicationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<SourceServer> {
-        return self.client.execute(operation: "RetryDataReplication", path: "/RetryDataReplication", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func retryDataReplication(_ input: RetryDataReplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "RetryDataReplication", 
+            path: "/RetryDataReplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Launches a Cutover Instance for specific Source Servers. This command starts a LAUNCH job whose initiatedBy property is StartCutover and changes the SourceServer.lifeCycle.state property to CUTTING_OVER.
-    public func startCutover(_ input: StartCutoverRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartCutoverResponse> {
-        return self.client.execute(operation: "StartCutover", path: "/StartCutover", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startCutover(_ input: StartCutoverRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartCutoverResponse {
+        return try await self.client.execute(
+            operation: "StartCutover", 
+            path: "/StartCutover", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Start export.
+    @Sendable
+    public func startExport(_ input: StartExportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartExportResponse {
+        return try await self.client.execute(
+            operation: "StartExport", 
+            path: "/StartExport", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Start import.
+    @Sendable
+    public func startImport(_ input: StartImportRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartImportResponse {
+        return try await self.client.execute(
+            operation: "StartImport", 
+            path: "/StartImport", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Starts replication for SNAPSHOT_SHIPPING agents.
-    public func startReplication(_ input: StartReplicationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<SourceServer> {
-        return self.client.execute(operation: "StartReplication", path: "/StartReplication", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startReplication(_ input: StartReplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "StartReplication", 
+            path: "/StartReplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Launches a Test Instance for specific Source Servers. This command starts a LAUNCH job whose initiatedBy property is StartTest and changes the SourceServer.lifeCycle.state property to TESTING.
-    public func startTest(_ input: StartTestRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartTestResponse> {
-        return self.client.execute(operation: "StartTest", path: "/StartTest", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startTest(_ input: StartTestRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartTestResponse {
+        return try await self.client.execute(
+            operation: "StartTest", 
+            path: "/StartTest", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Stop Replication.
+    @Sendable
+    public func stopReplication(_ input: StopReplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "StopReplication", 
+            path: "/StopReplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Adds or overwrites only the specified tags for the specified Application Migration Service resource or resources. When you specify an existing tag key, the value is overwritten with the new value. Each resource can have a maximum of 50 tags. Each tag consists of a key and optional value.
-    @discardableResult public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{resourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Starts a job that terminates specific launched EC2 Test and Cutover instances. This command will not work for any Source Server with a lifecycle.state of TESTING, CUTTING_OVER, or CUTOVER.
-    public func terminateTargetInstances(_ input: TerminateTargetInstancesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TerminateTargetInstancesResponse> {
-        return self.client.execute(operation: "TerminateTargetInstances", path: "/TerminateTargetInstances", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func terminateTargetInstances(_ input: TerminateTargetInstancesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TerminateTargetInstancesResponse {
+        return try await self.client.execute(
+            operation: "TerminateTargetInstances", 
+            path: "/TerminateTargetInstances", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Unarchive application.
-    public func unarchiveApplication(_ input: UnarchiveApplicationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Application> {
-        return self.client.execute(operation: "UnarchiveApplication", path: "/UnarchiveApplication", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func unarchiveApplication(_ input: UnarchiveApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Application {
+        return try await self.client.execute(
+            operation: "UnarchiveApplication", 
+            path: "/UnarchiveApplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Unarchive wave.
-    public func unarchiveWave(_ input: UnarchiveWaveRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Wave> {
-        return self.client.execute(operation: "UnarchiveWave", path: "/UnarchiveWave", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func unarchiveWave(_ input: UnarchiveWaveRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Wave {
+        return try await self.client.execute(
+            operation: "UnarchiveWave", 
+            path: "/UnarchiveWave", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Deletes the specified set of tags from the specified set of Application Migration Service resources.
-    @discardableResult public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{resourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Update application.
-    public func updateApplication(_ input: UpdateApplicationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Application> {
-        return self.client.execute(operation: "UpdateApplication", path: "/UpdateApplication", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateApplication(_ input: UpdateApplicationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Application {
+        return try await self.client.execute(
+            operation: "UpdateApplication", 
+            path: "/UpdateApplication", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Update Connector.
+    @Sendable
+    public func updateConnector(_ input: UpdateConnectorRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Connector {
+        return try await self.client.execute(
+            operation: "UpdateConnector", 
+            path: "/UpdateConnector", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates multiple LaunchConfigurations by Source Server ID.
-    public func updateLaunchConfiguration(_ input: UpdateLaunchConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<LaunchConfiguration> {
-        return self.client.execute(operation: "UpdateLaunchConfiguration", path: "/UpdateLaunchConfiguration", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateLaunchConfiguration(_ input: UpdateLaunchConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> LaunchConfiguration {
+        return try await self.client.execute(
+            operation: "UpdateLaunchConfiguration", 
+            path: "/UpdateLaunchConfiguration", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates an existing Launch Configuration Template by ID.
-    public func updateLaunchConfigurationTemplate(_ input: UpdateLaunchConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<LaunchConfigurationTemplate> {
-        return self.client.execute(operation: "UpdateLaunchConfigurationTemplate", path: "/UpdateLaunchConfigurationTemplate", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateLaunchConfigurationTemplate(_ input: UpdateLaunchConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> LaunchConfigurationTemplate {
+        return try await self.client.execute(
+            operation: "UpdateLaunchConfigurationTemplate", 
+            path: "/UpdateLaunchConfigurationTemplate", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Allows you to update multiple ReplicationConfigurations by Source Server ID.
-    public func updateReplicationConfiguration(_ input: UpdateReplicationConfigurationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ReplicationConfiguration> {
-        return self.client.execute(operation: "UpdateReplicationConfiguration", path: "/UpdateReplicationConfiguration", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateReplicationConfiguration(_ input: UpdateReplicationConfigurationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ReplicationConfiguration {
+        return try await self.client.execute(
+            operation: "UpdateReplicationConfiguration", 
+            path: "/UpdateReplicationConfiguration", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates multiple ReplicationConfigurationTemplates by ID.
-    public func updateReplicationConfigurationTemplate(_ input: UpdateReplicationConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ReplicationConfigurationTemplate> {
-        return self.client.execute(operation: "UpdateReplicationConfigurationTemplate", path: "/UpdateReplicationConfigurationTemplate", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateReplicationConfigurationTemplate(_ input: UpdateReplicationConfigurationTemplateRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ReplicationConfigurationTemplate {
+        return try await self.client.execute(
+            operation: "UpdateReplicationConfigurationTemplate", 
+            path: "/UpdateReplicationConfigurationTemplate", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Update Source Server.
+    @Sendable
+    public func updateSourceServer(_ input: UpdateSourceServerRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "UpdateSourceServer", 
+            path: "/UpdateSourceServer", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Allows you to change between the AGENT_BASED replication type and the SNAPSHOT_SHIPPING replication type.
-    public func updateSourceServerReplicationType(_ input: UpdateSourceServerReplicationTypeRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<SourceServer> {
-        return self.client.execute(operation: "UpdateSourceServerReplicationType", path: "/UpdateSourceServerReplicationType", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateSourceServerReplicationType(_ input: UpdateSourceServerReplicationTypeRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> SourceServer {
+        return try await self.client.execute(
+            operation: "UpdateSourceServerReplicationType", 
+            path: "/UpdateSourceServerReplicationType", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Update wave.
-    public func updateWave(_ input: UpdateWaveRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Wave> {
-        return self.client.execute(operation: "UpdateWave", path: "/UpdateWave", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateWave(_ input: UpdateWaveRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> Wave {
+        return try await self.client.execute(
+            operation: "UpdateWave", 
+            path: "/UpdateWave", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Mgn {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Mgn, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -358,534 +1007,309 @@ extension Mgn {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Mgn {
-    ///  Retrieves detailed job log items with paging.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeJobLogItemsPaginator<Result>(
-        _ input: DescribeJobLogItemsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeJobLogItemsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeJobLogItems,
-            inputKey: \DescribeJobLogItemsRequest.nextToken,
-            outputKey: \DescribeJobLogItemsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves detailed job log items with paging.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeJobLogItemsPaginator(
         _ input: DescribeJobLogItemsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeJobLogItemsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeJobLogItemsRequest, DescribeJobLogItemsResponse> {
+        return .init(
             input: input,
             command: self.describeJobLogItems,
             inputKey: \DescribeJobLogItemsRequest.nextToken,
             outputKey: \DescribeJobLogItemsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of Jobs. Use the JobsID and fromDate and toData filters to limit which jobs are returned. The response is sorted by creationDataTime - latest date first. Jobs are normally created by the StartTest, StartCutover, and TerminateTargetInstances APIs. Jobs are also created by DiagnosticLaunch and TerminateDiagnosticInstances, which are APIs available only to *Support* and only used in response to relevant support tickets.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeJobsPaginator<Result>(
-        _ input: DescribeJobsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeJobsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeJobs,
-            inputKey: \DescribeJobsRequest.nextToken,
-            outputKey: \DescribeJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of Jobs. Use the JobsID and fromDate and toData filters to limit which jobs are returned. The response is sorted by creationDataTime - latest date first. Jobs are normally created by the StartTest, StartCutover, and TerminateTargetInstances APIs. Jobs are also created by DiagnosticLaunch and TerminateDiagnosticInstances, which are APIs available only to *Support* and only used in response to relevant support tickets.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeJobsPaginator(
         _ input: DescribeJobsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeJobsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeJobsRequest, DescribeJobsResponse> {
+        return .init(
             input: input,
             command: self.describeJobs,
             inputKey: \DescribeJobsRequest.nextToken,
             outputKey: \DescribeJobsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all Launch Configuration Templates, filtered by Launch Configuration Template IDs
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeLaunchConfigurationTemplatesPaginator<Result>(
-        _ input: DescribeLaunchConfigurationTemplatesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeLaunchConfigurationTemplatesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeLaunchConfigurationTemplates,
-            inputKey: \DescribeLaunchConfigurationTemplatesRequest.nextToken,
-            outputKey: \DescribeLaunchConfigurationTemplatesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists all Launch Configuration Templates, filtered by Launch Configuration Template IDs
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeLaunchConfigurationTemplatesPaginator(
         _ input: DescribeLaunchConfigurationTemplatesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeLaunchConfigurationTemplatesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeLaunchConfigurationTemplatesRequest, DescribeLaunchConfigurationTemplatesResponse> {
+        return .init(
             input: input,
             command: self.describeLaunchConfigurationTemplates,
             inputKey: \DescribeLaunchConfigurationTemplatesRequest.nextToken,
             outputKey: \DescribeLaunchConfigurationTemplatesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all ReplicationConfigurationTemplates, filtered by Source Server IDs.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeReplicationConfigurationTemplatesPaginator<Result>(
-        _ input: DescribeReplicationConfigurationTemplatesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeReplicationConfigurationTemplatesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeReplicationConfigurationTemplates,
-            inputKey: \DescribeReplicationConfigurationTemplatesRequest.nextToken,
-            outputKey: \DescribeReplicationConfigurationTemplatesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists all ReplicationConfigurationTemplates, filtered by Source Server IDs.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeReplicationConfigurationTemplatesPaginator(
         _ input: DescribeReplicationConfigurationTemplatesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeReplicationConfigurationTemplatesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeReplicationConfigurationTemplatesRequest, DescribeReplicationConfigurationTemplatesResponse> {
+        return .init(
             input: input,
             command: self.describeReplicationConfigurationTemplates,
             inputKey: \DescribeReplicationConfigurationTemplatesRequest.nextToken,
             outputKey: \DescribeReplicationConfigurationTemplatesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves all SourceServers or multiple SourceServers by ID.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeSourceServersPaginator<Result>(
-        _ input: DescribeSourceServersRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeSourceServersResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeSourceServers,
-            inputKey: \DescribeSourceServersRequest.nextToken,
-            outputKey: \DescribeSourceServersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves all SourceServers or multiple SourceServers by ID.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeSourceServersPaginator(
         _ input: DescribeSourceServersRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeSourceServersResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeSourceServersRequest, DescribeSourceServersResponse> {
+        return .init(
             input: input,
             command: self.describeSourceServers,
             inputKey: \DescribeSourceServersRequest.nextToken,
             outputKey: \DescribeSourceServersResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns a list of the installed vCenter clients.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeVcenterClientsPaginator<Result>(
-        _ input: DescribeVcenterClientsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeVcenterClientsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeVcenterClients,
-            inputKey: \DescribeVcenterClientsRequest.nextToken,
-            outputKey: \DescribeVcenterClientsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a list of the installed vCenter clients.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeVcenterClientsPaginator(
         _ input: DescribeVcenterClientsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeVcenterClientsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeVcenterClientsRequest, DescribeVcenterClientsResponse> {
+        return .init(
             input: input,
             command: self.describeVcenterClients,
             inputKey: \DescribeVcenterClientsRequest.nextToken,
             outputKey: \DescribeVcenterClientsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves all applications or multiple applications by ID.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listApplicationsPaginator<Result>(
-        _ input: ListApplicationsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListApplicationsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listApplications,
-            inputKey: \ListApplicationsRequest.nextToken,
-            outputKey: \ListApplicationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves all applications or multiple applications by ID.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listApplicationsPaginator(
         _ input: ListApplicationsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListApplicationsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListApplicationsRequest, ListApplicationsResponse> {
+        return .init(
             input: input,
             command: self.listApplications,
             inputKey: \ListApplicationsRequest.nextToken,
             outputKey: \ListApplicationsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List source server post migration custom actions.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listSourceServerActionsPaginator<Result>(
-        _ input: ListSourceServerActionsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListSourceServerActionsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listSourceServerActions,
-            inputKey: \ListSourceServerActionsRequest.nextToken,
-            outputKey: \ListSourceServerActionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List Connectors.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listConnectorsPaginator(
+        _ input: ListConnectorsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListConnectorsRequest, ListConnectorsResponse> {
+        return .init(
+            input: input,
+            command: self.listConnectors,
+            inputKey: \ListConnectorsRequest.nextToken,
+            outputKey: \ListConnectorsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// List export errors.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listExportErrorsPaginator(
+        _ input: ListExportErrorsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListExportErrorsRequest, ListExportErrorsResponse> {
+        return .init(
+            input: input,
+            command: self.listExportErrors,
+            inputKey: \ListExportErrorsRequest.nextToken,
+            outputKey: \ListExportErrorsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// List exports.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listExportsPaginator(
+        _ input: ListExportsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListExportsRequest, ListExportsResponse> {
+        return .init(
+            input: input,
+            command: self.listExports,
+            inputKey: \ListExportsRequest.nextToken,
+            outputKey: \ListExportsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// List import errors.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listImportErrorsPaginator(
+        _ input: ListImportErrorsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListImportErrorsRequest, ListImportErrorsResponse> {
+        return .init(
+            input: input,
+            command: self.listImportErrors,
+            inputKey: \ListImportErrorsRequest.nextToken,
+            outputKey: \ListImportErrorsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// List imports.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listImportsPaginator(
+        _ input: ListImportsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListImportsRequest, ListImportsResponse> {
+        return .init(
+            input: input,
+            command: self.listImports,
+            inputKey: \ListImportsRequest.nextToken,
+            outputKey: \ListImportsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// List Managed Accounts.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listManagedAccountsPaginator(
+        _ input: ListManagedAccountsRequest,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListManagedAccountsRequest, ListManagedAccountsResponse> {
+        return .init(
+            input: input,
+            command: self.listManagedAccounts,
+            inputKey: \ListManagedAccountsRequest.nextToken,
+            outputKey: \ListManagedAccountsResponse.nextToken,
+            logger: logger
+        )
+    }
+
+    /// List source server post migration custom actions.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listSourceServerActionsPaginator(
         _ input: ListSourceServerActionsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListSourceServerActionsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListSourceServerActionsRequest, ListSourceServerActionsResponse> {
+        return .init(
             input: input,
             command: self.listSourceServerActions,
             inputKey: \ListSourceServerActionsRequest.nextToken,
             outputKey: \ListSourceServerActionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  List template post migration custom actions.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listTemplateActionsPaginator<Result>(
-        _ input: ListTemplateActionsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListTemplateActionsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listTemplateActions,
-            inputKey: \ListTemplateActionsRequest.nextToken,
-            outputKey: \ListTemplateActionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// List template post migration custom actions.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listTemplateActionsPaginator(
         _ input: ListTemplateActionsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListTemplateActionsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListTemplateActionsRequest, ListTemplateActionsResponse> {
+        return .init(
             input: input,
             command: self.listTemplateActions,
             inputKey: \ListTemplateActionsRequest.nextToken,
             outputKey: \ListTemplateActionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Retrieves all waves or multiple waves by ID.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listWavesPaginator<Result>(
-        _ input: ListWavesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListWavesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listWaves,
-            inputKey: \ListWavesRequest.nextToken,
-            outputKey: \ListWavesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Retrieves all waves or multiple waves by ID.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listWavesPaginator(
         _ input: ListWavesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListWavesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListWavesRequest, ListWavesResponse> {
+        return .init(
             input: input,
             command: self.listWaves,
             inputKey: \ListWavesRequest.nextToken,
             outputKey: \ListWavesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
@@ -893,6 +1317,7 @@ extension Mgn {
 extension Mgn.DescribeJobLogItemsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Mgn.DescribeJobLogItemsRequest {
         return .init(
+            accountID: self.accountID,
             jobID: self.jobID,
             maxResults: self.maxResults,
             nextToken: token
@@ -903,6 +1328,7 @@ extension Mgn.DescribeJobLogItemsRequest: AWSPaginateToken {
 extension Mgn.DescribeJobsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Mgn.DescribeJobsRequest {
         return .init(
+            accountID: self.accountID,
             filters: self.filters,
             maxResults: self.maxResults,
             nextToken: token
@@ -933,6 +1359,7 @@ extension Mgn.DescribeReplicationConfigurationTemplatesRequest: AWSPaginateToken
 extension Mgn.DescribeSourceServersRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Mgn.DescribeSourceServersRequest {
         return .init(
+            accountID: self.accountID,
             filters: self.filters,
             maxResults: self.maxResults,
             nextToken: token
@@ -952,7 +1379,67 @@ extension Mgn.DescribeVcenterClientsRequest: AWSPaginateToken {
 extension Mgn.ListApplicationsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Mgn.ListApplicationsRequest {
         return .init(
+            accountID: self.accountID,
             filters: self.filters,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Mgn.ListConnectorsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Mgn.ListConnectorsRequest {
+        return .init(
+            filters: self.filters,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Mgn.ListExportErrorsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Mgn.ListExportErrorsRequest {
+        return .init(
+            exportID: self.exportID,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Mgn.ListExportsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Mgn.ListExportsRequest {
+        return .init(
+            filters: self.filters,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Mgn.ListImportErrorsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Mgn.ListImportErrorsRequest {
+        return .init(
+            importID: self.importID,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Mgn.ListImportsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Mgn.ListImportsRequest {
+        return .init(
+            filters: self.filters,
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension Mgn.ListManagedAccountsRequest: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> Mgn.ListManagedAccountsRequest {
+        return .init(
             maxResults: self.maxResults,
             nextToken: token
         )
@@ -962,6 +1449,7 @@ extension Mgn.ListApplicationsRequest: AWSPaginateToken {
 extension Mgn.ListSourceServerActionsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Mgn.ListSourceServerActionsRequest {
         return .init(
+            accountID: self.accountID,
             filters: self.filters,
             maxResults: self.maxResults,
             nextToken: token,
@@ -984,6 +1472,7 @@ extension Mgn.ListTemplateActionsRequest: AWSPaginateToken {
 extension Mgn.ListWavesRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> Mgn.ListWavesRequest {
         return .init(
+            accountID: self.accountID,
             filters: self.filters,
             maxResults: self.maxResults,
             nextToken: token

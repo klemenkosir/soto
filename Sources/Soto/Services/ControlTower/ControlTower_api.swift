@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,8 +19,7 @@
 
 /// Service object for interacting with AWS ControlTower service.
 ///
-/// These interfaces allow you to apply the AWS library of pre-defined controls to your
-/// organizational units, programmatically. In this context, controls are the same as AWS Control Tower guardrails.    To call these APIs, you'll need to know:   the ControlARN for the control--that is, the guardrail--you are targeting,   and the ARN associated with the target organizational unit (OU).    To get the ControlARN for your AWS Control Tower guardrail:  The ControlARN contains the control name which is specified in each guardrail. For a list of control names for Strongly recommended and Elective guardrails, see Resource identifiers for APIs and guardrails in the Automating tasks section of the AWS Control Tower User Guide. Remember that Mandatory guardrails cannot be added or removed.   ARN format:  arn:aws:controltower:{REGION}::control/{CONTROL_NAME}   Example:   arn:aws:controltower:us-west-2::control/AWS-GR_AUTOSCALING_LAUNCH_CONFIG_PUBLIC_IP_DISABLED    To get the ARN for an OU:  In the AWS Organizations console, you can find the ARN for the OU on the Organizational unit details page associated with that OU.   OU ARN format:   arn:${Partition}:organizations::${MasterAccountId}:ou/o-${OrganizationId}/ou-${OrganizationalUnitId}    Details and examples     List of resource identifiers for APIs and guardrails     Guardrail API examples (CLI)     Enable controls with AWS CloudFormation     Creating AWS Control Tower resources with AWS CloudFormation    To view the open source resource repository on GitHub, see aws-cloudformation/aws-cloudformation-resource-providers-controltower   Recording API Requests  AWS Control Tower supports AWS CloudTrail, a service that records AWS API calls for your AWS account and delivers log files to an Amazon S3 bucket. By using information collected by CloudTrail, you can determine which requests the AWS Control Tower service received, who made the request and when, and so on. For more about AWS Control Tower and its support for CloudTrail, see Logging AWS Control Tower Actions with AWS CloudTrail in the AWS Control Tower User Guide. To learn more about CloudTrail, including how to turn it on and find your log files, see the AWS CloudTrail User Guide.
+/// These interfaces allow you to apply the Amazon Web Services library of pre-defined controls to your organizational units, programmatically. In Amazon Web Services Control Tower, the terms "control" and "guardrail" are synonyms. To call these APIs, you'll need to know:   the controlIdentifier for the control--or guardrail--you are targeting.   the ARN associated with the target organizational unit (OU), which we call the targetIdentifier.   the ARN associated with a resource that you wish to tag or untag.    To get the controlIdentifier for your Amazon Web Services Control Tower control:  The controlIdentifier is an ARN that is specified for each control. You can view the controlIdentifier in the console on the Control details page, as well as in the documentation. The controlIdentifier is unique in each Amazon Web Services Region for each control. You can find the controlIdentifier for each Region and control in the Tables of control metadata in the Amazon Web Services Control Tower User Guide.  A quick-reference list of control identifers for the Amazon Web Services Control Tower legacy Strongly recommended and Elective controls is given in Resource identifiers for APIs and controls in the Controls reference guide section of the Amazon Web Services Control Tower User Guide. Remember that Mandatory controls cannot be added or removed.   ARN format: arn:aws:controltower:{REGION}::control/{CONTROL_NAME}   Example:   arn:aws:controltower:us-west-2::control/AWS-GR_AUTOSCALING_LAUNCH_CONFIG_PUBLIC_IP_DISABLED    To get the targetIdentifier:  The targetIdentifier is the ARN for an OU. In the Amazon Web Services Organizations console, you can find the ARN for the OU on the Organizational unit details page associated with that OU.   OU ARN format:   arn:${Partition}:organizations::${MasterAccountId}:ou/o-${OrganizationId}/ou-${OrganizationalUnitId}    Details and examples     Control API input and output examples with CLI     Enable controls with CloudFormation     Control metadata tables     List of identifiers for legacy controls     Controls reference guide     Controls library groupings     Creating Amazon Web Services Control Tower resources with Amazon Web Services CloudFormation    To view the open source resource repository on GitHub, see aws-cloudformation/aws-cloudformation-resource-providers-controltower   Recording API Requests  Amazon Web Services Control Tower supports Amazon Web Services CloudTrail, a service that records Amazon Web Services API calls for your Amazon Web Services account and delivers log files to an Amazon S3 bucket. By using information collected by CloudTrail, you can determine which requests the Amazon Web Services Control Tower service received, who made the request and when, and so on. For more about Amazon Web Services Control Tower and its support for CloudTrail, see Logging Amazon Web Services Control Tower Actions with Amazon Web Services CloudTrail in the Amazon Web Services Control Tower User Guide. To learn more about CloudTrail, including how to turn it on and find your log files, see the Amazon Web Services CloudTrail User Guide.
 public struct ControlTower: AWSService {
     // MARK: Member variables
 
@@ -37,12 +36,16 @@ public struct ControlTower: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -51,50 +54,364 @@ public struct ControlTower: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "controltower",
+            serviceName: "ControlTower",
+            serviceIdentifier: "controltower",
             serviceProtocol: .restjson,
             apiVersion: "2018-05-10",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "ca-central-1": "controltower-fips.ca-central-1.amazonaws.com",
-                    "us-east-1": "controltower-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "controltower-fips.us-east-2.amazonaws.com",
-                    "us-west-2": "controltower-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: ControlTowerErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "controltower-fips.ca-central-1.amazonaws.com",
+            "us-east-1": "controltower-fips.us-east-1.amazonaws.com",
+            "us-east-2": "controltower-fips.us-east-2.amazonaws.com",
+            "us-west-1": "controltower-fips.us-west-1.amazonaws.com",
+            "us-west-2": "controltower-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
-    /// This API call turns off a control. It starts an asynchronous operation that deletes AWS resources on the specified organizational unit and the accounts it contains. The resources will vary according to the control that you specify.
-    public func disableControl(_ input: DisableControlInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DisableControlOutput> {
-        return self.client.execute(operation: "DisableControl", path: "/disable-control", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a new landing zone. This API call starts an asynchronous operation that creates and configures a landing zone,  based on the parameters specified in the manifest JSON file.
+    @Sendable
+    public func createLandingZone(_ input: CreateLandingZoneInput, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateLandingZoneOutput {
+        return try await self.client.execute(
+            operation: "CreateLandingZone", 
+            path: "/create-landingzone", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// This API call activates a control. It starts an asynchronous operation that creates AWS resources on the specified organizational unit and the accounts it contains. The resources created will vary according to the control that you specify.
-    public func enableControl(_ input: EnableControlInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<EnableControlOutput> {
-        return self.client.execute(operation: "EnableControl", path: "/enable-control", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Decommissions a landing zone. This API call starts an asynchronous operation that deletes Amazon Web Services Control Tower  resources deployed in accounts managed by Amazon Web Services Control Tower.
+    @Sendable
+    public func deleteLandingZone(_ input: DeleteLandingZoneInput, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteLandingZoneOutput {
+        return try await self.client.execute(
+            operation: "DeleteLandingZone", 
+            path: "/delete-landingzone", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns the status of a particular EnableControl or DisableControl operation. Displays a message in case of error. Details for an operation are available for 90 days.
-    public func getControlOperation(_ input: GetControlOperationInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetControlOperationOutput> {
-        return self.client.execute(operation: "GetControlOperation", path: "/get-control-operation", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Disable an EnabledBaseline resource on the specified Target. This API starts an asynchronous operation to remove all resources deployed as part of the baseline enablement. The resource will vary depending on the enabled baseline.
+    @Sendable
+    public func disableBaseline(_ input: DisableBaselineInput, logger: Logger = AWSClient.loggingDisabled) async throws -> DisableBaselineOutput {
+        return try await self.client.execute(
+            operation: "DisableBaseline", 
+            path: "/disable-baseline", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists the controls enabled by AWS Control Tower on the specified organizational unit and the accounts it contains.
-    public func listEnabledControls(_ input: ListEnabledControlsInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListEnabledControlsOutput> {
-        return self.client.execute(operation: "ListEnabledControls", path: "/list-enabled-controls", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// This API call turns off a control. It starts an asynchronous operation that deletes AWS resources on the specified organizational unit and the accounts it contains. The resources will vary according to the control that you specify. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    @Sendable
+    public func disableControl(_ input: DisableControlInput, logger: Logger = AWSClient.loggingDisabled) async throws -> DisableControlOutput {
+        return try await self.client.execute(
+            operation: "DisableControl", 
+            path: "/disable-control", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Enable (apply) a Baseline to a Target. This API starts an asynchronous operation to deploy resources specified by the Baseline to the specified Target.
+    @Sendable
+    public func enableBaseline(_ input: EnableBaselineInput, logger: Logger = AWSClient.loggingDisabled) async throws -> EnableBaselineOutput {
+        return try await self.client.execute(
+            operation: "EnableBaseline", 
+            path: "/enable-baseline", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// This API call activates a control. It starts an asynchronous operation that creates Amazon Web Services resources on the specified organizational unit and the accounts it contains. The resources created will vary according to the control that you specify. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    @Sendable
+    public func enableControl(_ input: EnableControlInput, logger: Logger = AWSClient.loggingDisabled) async throws -> EnableControlOutput {
+        return try await self.client.execute(
+            operation: "EnableControl", 
+            path: "/enable-control", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieve details about an existing Baseline resource by specifying its identifier.
+    @Sendable
+    public func getBaseline(_ input: GetBaselineInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetBaselineOutput {
+        return try await self.client.execute(
+            operation: "GetBaseline", 
+            path: "/get-baseline", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns the details of an asynchronous baseline operation, as initiated by any of these APIs: EnableBaseline, DisableBaseline, UpdateEnabledBaseline, ResetEnabledBaseline. A status message is displayed in case of operation failure.
+    @Sendable
+    public func getBaselineOperation(_ input: GetBaselineOperationInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetBaselineOperationOutput {
+        return try await self.client.execute(
+            operation: "GetBaselineOperation", 
+            path: "/get-baseline-operation", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns the status of a particular EnableControl or DisableControl operation. Displays a message in case of error. Details for an operation are available for 90 days. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    @Sendable
+    public func getControlOperation(_ input: GetControlOperationInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetControlOperationOutput {
+        return try await self.client.execute(
+            operation: "GetControlOperation", 
+            path: "/get-control-operation", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieve details of an EnabledBaseline resource by specifying its identifier.
+    @Sendable
+    public func getEnabledBaseline(_ input: GetEnabledBaselineInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetEnabledBaselineOutput {
+        return try await self.client.execute(
+            operation: "GetEnabledBaseline", 
+            path: "/get-enabled-baseline", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Retrieves details about an enabled control. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    @Sendable
+    public func getEnabledControl(_ input: GetEnabledControlInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetEnabledControlOutput {
+        return try await self.client.execute(
+            operation: "GetEnabledControl", 
+            path: "/get-enabled-control", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns details about the landing zone. Displays a message in case of error.
+    @Sendable
+    public func getLandingZone(_ input: GetLandingZoneInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetLandingZoneOutput {
+        return try await self.client.execute(
+            operation: "GetLandingZone", 
+            path: "/get-landingzone", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns the status of the specified landing zone operation. Details for an operation are available for  60 days.
+    @Sendable
+    public func getLandingZoneOperation(_ input: GetLandingZoneOperationInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetLandingZoneOperationOutput {
+        return try await self.client.execute(
+            operation: "GetLandingZoneOperation", 
+            path: "/get-landingzone-operation", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a summary list of all available baselines.
+    @Sendable
+    public func listBaselines(_ input: ListBaselinesInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListBaselinesOutput {
+        return try await self.client.execute(
+            operation: "ListBaselines", 
+            path: "/list-baselines", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a list of summaries describing EnabledBaseline resources. You can filter the list by the corresponding Baseline or Target of the EnabledBaseline resources.
+    @Sendable
+    public func listEnabledBaselines(_ input: ListEnabledBaselinesInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListEnabledBaselinesOutput {
+        return try await self.client.execute(
+            operation: "ListEnabledBaselines", 
+            path: "/list-enabled-baselines", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists the controls enabled by Amazon Web Services Control Tower on the specified organizational unit and the accounts it contains. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    @Sendable
+    public func listEnabledControls(_ input: ListEnabledControlsInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListEnabledControlsOutput {
+        return try await self.client.execute(
+            operation: "ListEnabledControls", 
+            path: "/list-enabled-controls", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns the landing zone ARN for the landing zone deployed in your managed account. This API also  creates an ARN for existing accounts that do not yet have a landing zone ARN.  Returns one landing zone ARN.
+    @Sendable
+    public func listLandingZones(_ input: ListLandingZonesInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListLandingZonesOutput {
+        return try await self.client.execute(
+            operation: "ListLandingZones", 
+            path: "/list-landingzones", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Returns a list of tags associated with the resource. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceOutput {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Re-enables an EnabledBaseline resource. For example, this API can re-apply the existing Baseline after a new member account is moved to the target OU.
+    @Sendable
+    public func resetEnabledBaseline(_ input: ResetEnabledBaselineInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ResetEnabledBaselineOutput {
+        return try await self.client.execute(
+            operation: "ResetEnabledBaseline", 
+            path: "/reset-enabled-baseline", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// This API call resets a landing zone. It starts an asynchronous operation that resets the  landing zone to the parameters specified in its original configuration.
+    @Sendable
+    public func resetLandingZone(_ input: ResetLandingZoneInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ResetLandingZoneOutput {
+        return try await self.client.execute(
+            operation: "ResetLandingZone", 
+            path: "/reset-landingzone", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Applies tags to a resource. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    @Sendable
+    public func tagResource(_ input: TagResourceInput, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceOutput {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Removes tags from a resource. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    @Sendable
+    public func untagResource(_ input: UntagResourceInput, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceOutput {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Updates an EnabledBaseline resource's applied parameters or version.
+    @Sendable
+    public func updateEnabledBaseline(_ input: UpdateEnabledBaselineInput, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateEnabledBaselineOutput {
+        return try await self.client.execute(
+            operation: "UpdateEnabledBaseline", 
+            path: "/update-enabled-baseline", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    ///  Updates the configuration of an already enabled control. If the enabled control shows an EnablementStatus of SUCCEEDED, supply parameters that are different from the currently configured parameters. Otherwise, Amazon Web Services Control Tower will not accept the request. If the enabled control shows an EnablementStatus of FAILED, Amazon Web Services Control Tower will update the control to match any valid parameters that you supply. If the DriftSummary status for the control shows as DRIFTED, you cannot call this API. Instead, you can update the control by calling DisableControl and again calling EnableControl, or you can run an extending governance operation. For usage examples, see  the Amazon Web Services Control Tower User Guide
+    @Sendable
+    public func updateEnabledControl(_ input: UpdateEnabledControlInput, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateEnabledControlOutput {
+        return try await self.client.execute(
+            operation: "UpdateEnabledControl", 
+            path: "/update-enabled-control", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// This API call updates the landing zone. It starts an asynchronous operation that updates the  landing zone based on the new landing zone version, or on the changed parameters specified in the  updated manifest file.
+    @Sendable
+    public func updateLandingZone(_ input: UpdateLandingZoneInput, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateLandingZoneOutput {
+        return try await self.client.execute(
+            operation: "UpdateLandingZone", 
+            path: "/update-landingzone", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension ControlTower {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: ControlTower, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -104,57 +421,100 @@ extension ControlTower {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension ControlTower {
-    ///  Lists the controls enabled by AWS Control Tower on the specified organizational unit and the accounts it contains.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listEnabledControlsPaginator<Result>(
-        _ input: ListEnabledControlsInput,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListEnabledControlsOutput, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listEnabledControls,
-            inputKey: \ListEnabledControlsInput.nextToken,
-            outputKey: \ListEnabledControlsOutput.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns a summary list of all available baselines.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listBaselinesPaginator(
+        _ input: ListBaselinesInput,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListBaselinesInput, ListBaselinesOutput> {
+        return .init(
+            input: input,
+            command: self.listBaselines,
+            inputKey: \ListBaselinesInput.nextToken,
+            outputKey: \ListBaselinesOutput.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Returns a list of summaries describing EnabledBaseline resources. You can filter the list by the corresponding Baseline or Target of the EnabledBaseline resources.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listEnabledBaselinesPaginator(
+        _ input: ListEnabledBaselinesInput,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListEnabledBaselinesInput, ListEnabledBaselinesOutput> {
+        return .init(
+            input: input,
+            command: self.listEnabledBaselines,
+            inputKey: \ListEnabledBaselinesInput.nextToken,
+            outputKey: \ListEnabledBaselinesOutput.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists the controls enabled by Amazon Web Services Control Tower on the specified organizational unit and the accounts it contains. For usage examples, see  the Amazon Web Services Control Tower User Guide .
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listEnabledControlsPaginator(
         _ input: ListEnabledControlsInput,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListEnabledControlsOutput, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListEnabledControlsInput, ListEnabledControlsOutput> {
+        return .init(
             input: input,
             command: self.listEnabledControls,
             inputKey: \ListEnabledControlsInput.nextToken,
             outputKey: \ListEnabledControlsOutput.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
+        )
+    }
+
+    /// Returns the landing zone ARN for the landing zone deployed in your managed account. This API also  creates an ARN for existing accounts that do not yet have a landing zone ARN.  Returns one landing zone ARN.
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
+    public func listLandingZonesPaginator(
+        _ input: ListLandingZonesInput,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListLandingZonesInput, ListLandingZonesOutput> {
+        return .init(
+            input: input,
+            command: self.listLandingZones,
+            inputKey: \ListLandingZonesInput.nextToken,
+            outputKey: \ListLandingZonesOutput.nextToken,
+            logger: logger
+        )
+    }
+}
+
+extension ControlTower.ListBaselinesInput: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> ControlTower.ListBaselinesInput {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension ControlTower.ListEnabledBaselinesInput: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> ControlTower.ListEnabledBaselinesInput {
+        return .init(
+            filter: self.filter,
+            maxResults: self.maxResults,
+            nextToken: token
         )
     }
 }
@@ -165,6 +525,15 @@ extension ControlTower.ListEnabledControlsInput: AWSPaginateToken {
             maxResults: self.maxResults,
             nextToken: token,
             targetIdentifier: self.targetIdentifier
+        )
+    }
+}
+
+extension ControlTower.ListLandingZonesInput: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> ControlTower.ListLandingZonesInput {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token
         )
     }
 }

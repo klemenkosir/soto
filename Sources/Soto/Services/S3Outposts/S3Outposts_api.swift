@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct S3Outposts: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,53 +54,144 @@ public struct S3Outposts: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "s3-outposts",
+            serviceName: "S3Outposts",
+            serviceIdentifier: "s3-outposts",
             serviceProtocol: .restjson,
             apiVersion: "2017-07-25",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "ca-central-1": "s3-outposts-fips.ca-central-1.amazonaws.com",
-                    "us-east-1": "s3-outposts-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "s3-outposts-fips.us-east-2.amazonaws.com",
-                    "us-gov-east-1": "s3-outposts-fips.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "s3-outposts-fips.us-gov-west-1.amazonaws.com",
-                    "us-west-1": "s3-outposts-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "s3-outposts-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: S3OutpostsErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.dualstack]: .init(endpoints: [
+            "af-south-1": "s3-outposts.af-south-1.api.aws",
+            "ap-east-1": "s3-outposts.ap-east-1.api.aws",
+            "ap-northeast-1": "s3-outposts.ap-northeast-1.api.aws",
+            "ap-northeast-2": "s3-outposts.ap-northeast-2.api.aws",
+            "ap-northeast-3": "s3-outposts.ap-northeast-3.api.aws",
+            "ap-south-1": "s3-outposts.ap-south-1.api.aws",
+            "ap-southeast-1": "s3-outposts.ap-southeast-1.api.aws",
+            "ap-southeast-2": "s3-outposts.ap-southeast-2.api.aws",
+            "ap-southeast-3": "s3-outposts.ap-southeast-3.api.aws",
+            "ca-central-1": "s3-outposts.ca-central-1.api.aws",
+            "eu-central-1": "s3-outposts.eu-central-1.api.aws",
+            "eu-north-1": "s3-outposts.eu-north-1.api.aws",
+            "eu-south-1": "s3-outposts.eu-south-1.api.aws",
+            "eu-west-1": "s3-outposts.eu-west-1.api.aws",
+            "eu-west-2": "s3-outposts.eu-west-2.api.aws",
+            "eu-west-3": "s3-outposts.eu-west-3.api.aws",
+            "il-central-1": "s3-outposts.il-central-1.api.aws",
+            "me-south-1": "s3-outposts.me-south-1.api.aws",
+            "sa-east-1": "s3-outposts.sa-east-1.api.aws",
+            "us-east-1": "s3-outposts.us-east-1.api.aws",
+            "us-east-2": "s3-outposts.us-east-2.api.aws",
+            "us-gov-east-1": "s3-outposts.us-gov-east-1.api.aws",
+            "us-gov-west-1": "s3-outposts.us-gov-west-1.api.aws",
+            "us-west-1": "s3-outposts.us-west-1.api.aws",
+            "us-west-2": "s3-outposts.us-west-2.api.aws"
+        ]),
+        [.dualstack, .fips]: .init(endpoints: [
+            "ca-central-1": "s3-outposts-fips.ca-central-1.api.aws",
+            "us-east-1": "s3-outposts-fips.us-east-1.api.aws",
+            "us-east-2": "s3-outposts-fips.us-east-2.api.aws",
+            "us-gov-east-1": "s3-outposts-fips.us-gov-east-1.api.aws",
+            "us-gov-west-1": "s3-outposts-fips.us-gov-west-1.api.aws",
+            "us-west-1": "s3-outposts-fips.us-west-1.api.aws",
+            "us-west-2": "s3-outposts-fips.us-west-2.api.aws"
+        ]),
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "s3-outposts-fips.ca-central-1.amazonaws.com",
+            "us-east-1": "s3-outposts-fips.us-east-1.amazonaws.com",
+            "us-east-2": "s3-outposts-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "s3-outposts-fips.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "s3-outposts-fips.us-gov-west-1.amazonaws.com",
+            "us-iso-east-1": "s3-outposts-fips.us-iso-east-1.c2s.ic.gov",
+            "us-isob-east-1": "s3-outposts-fips.us-isob-east-1.sc2s.sgov.gov",
+            "us-west-1": "s3-outposts-fips.us-west-1.amazonaws.com",
+            "us-west-2": "s3-outposts-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
-    /// Creates an endpoint and associates it with the specified Outpost.  It can take up to 5 minutes for this action to finish.    Related actions include:    DeleteEndpoint     ListEndpoints
-    public func createEndpoint(_ input: CreateEndpointRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateEndpointResult> {
-        return self.client.execute(operation: "CreateEndpoint", path: "/S3Outposts/CreateEndpoint", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates an endpoint and associates it with the specified Outpost.  It can take up to 5 minutes for this action to finish.   Related actions include:    DeleteEndpoint     ListEndpoints
+    @Sendable
+    public func createEndpoint(_ input: CreateEndpointRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateEndpointResult {
+        return try await self.client.execute(
+            operation: "CreateEndpoint", 
+            path: "/S3Outposts/CreateEndpoint", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes an endpoint.  It can take up to 5 minutes for this action to finish.    Related actions include:    CreateEndpoint     ListEndpoints
-    @discardableResult public func deleteEndpoint(_ input: DeleteEndpointRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<Void> {
-        return self.client.execute(operation: "DeleteEndpoint", path: "/S3Outposts/DeleteEndpoint", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes an endpoint.  It can take up to 5 minutes for this action to finish.   Related actions include:    CreateEndpoint     ListEndpoints
+    @Sendable
+    public func deleteEndpoint(_ input: DeleteEndpointRequest, logger: Logger = AWSClient.loggingDisabled) async throws {
+        return try await self.client.execute(
+            operation: "DeleteEndpoint", 
+            path: "/S3Outposts/DeleteEndpoint", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists endpoints associated with the specified Outpost.  Related actions include:    CreateEndpoint     DeleteEndpoint
-    public func listEndpoints(_ input: ListEndpointsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListEndpointsResult> {
-        return self.client.execute(operation: "ListEndpoints", path: "/S3Outposts/ListEndpoints", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listEndpoints(_ input: ListEndpointsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListEndpointsResult {
+        return try await self.client.execute(
+            operation: "ListEndpoints", 
+            path: "/S3Outposts/ListEndpoints", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Lists the Outposts with S3 on Outposts capacity for your Amazon Web Services account. Includes S3 on Outposts that you have access to as the Outposts owner, or as a shared user from Resource Access Manager (RAM).
+    @Sendable
+    public func listOutpostsWithS3(_ input: ListOutpostsWithS3Request, logger: Logger = AWSClient.loggingDisabled) async throws -> ListOutpostsWithS3Result {
+        return try await self.client.execute(
+            operation: "ListOutpostsWithS3", 
+            path: "/S3Outposts/ListOutpostsWithS3", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists all endpoints associated with an Outpost that has been shared by Amazon Web Services Resource Access Manager (RAM). Related actions include:    CreateEndpoint     DeleteEndpoint
-    public func listSharedEndpoints(_ input: ListSharedEndpointsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListSharedEndpointsResult> {
-        return self.client.execute(operation: "ListSharedEndpoints", path: "/S3Outposts/ListSharedEndpoints", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listSharedEndpoints(_ input: ListSharedEndpointsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListSharedEndpointsResult {
+        return try await self.client.execute(
+            operation: "ListSharedEndpoints", 
+            path: "/S3Outposts/ListSharedEndpoints", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension S3Outposts {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: S3Outposts, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -106,116 +201,77 @@ extension S3Outposts {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension S3Outposts {
-    ///  Lists endpoints associated with the specified Outpost.  Related actions include:    CreateEndpoint     DeleteEndpoint
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listEndpointsPaginator<Result>(
-        _ input: ListEndpointsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListEndpointsResult, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listEndpoints,
-            inputKey: \ListEndpointsRequest.nextToken,
-            outputKey: \ListEndpointsResult.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists endpoints associated with the specified Outpost.  Related actions include:    CreateEndpoint     DeleteEndpoint
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listEndpointsPaginator(
         _ input: ListEndpointsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListEndpointsResult, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListEndpointsRequest, ListEndpointsResult> {
+        return .init(
             input: input,
             command: self.listEndpoints,
             inputKey: \ListEndpointsRequest.nextToken,
             outputKey: \ListEndpointsResult.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists all endpoints associated with an Outpost that has been shared by Amazon Web Services Resource Access Manager (RAM). Related actions include:    CreateEndpoint     DeleteEndpoint
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listSharedEndpointsPaginator<Result>(
-        _ input: ListSharedEndpointsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListSharedEndpointsResult, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listSharedEndpoints,
-            inputKey: \ListSharedEndpointsRequest.nextToken,
-            outputKey: \ListSharedEndpointsResult.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the Outposts with S3 on Outposts capacity for your Amazon Web Services account. Includes S3 on Outposts that you have access to as the Outposts owner, or as a shared user from Resource Access Manager (RAM).
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
+    public func listOutpostsWithS3Paginator(
+        _ input: ListOutpostsWithS3Request,
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListOutpostsWithS3Request, ListOutpostsWithS3Result> {
+        return .init(
+            input: input,
+            command: self.listOutpostsWithS3,
+            inputKey: \ListOutpostsWithS3Request.nextToken,
+            outputKey: \ListOutpostsWithS3Result.nextToken,
+            logger: logger
+        )
+    }
+
+    /// Lists all endpoints associated with an Outpost that has been shared by Amazon Web Services Resource Access Manager (RAM). Related actions include:    CreateEndpoint     DeleteEndpoint
+    /// Return PaginatorSequence for operation.
+    ///
+    /// - Parameters:
+    ///   - input: Input for request
+    ///   - logger: Logger used flot logging
     public func listSharedEndpointsPaginator(
         _ input: ListSharedEndpointsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListSharedEndpointsResult, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListSharedEndpointsRequest, ListSharedEndpointsResult> {
+        return .init(
             input: input,
             command: self.listSharedEndpoints,
             inputKey: \ListSharedEndpointsRequest.nextToken,
             outputKey: \ListSharedEndpointsResult.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
 
 extension S3Outposts.ListEndpointsRequest: AWSPaginateToken {
     public func usingPaginationToken(_ token: String) -> S3Outposts.ListEndpointsRequest {
+        return .init(
+            maxResults: self.maxResults,
+            nextToken: token
+        )
+    }
+}
+
+extension S3Outposts.ListOutpostsWithS3Request: AWSPaginateToken {
+    public func usingPaginationToken(_ token: String) -> S3Outposts.ListOutpostsWithS3Request {
         return .init(
             maxResults: self.maxResults,
             nextToken: token

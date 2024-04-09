@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS ElasticInference service.
 ///
-///  Elastic Inference public APIs.
+///  Elastic Inference public APIs.   February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
 public struct ElasticInference: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct ElasticInference: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,61 +54,117 @@ public struct ElasticInference: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "api.elastic-inference",
+            serviceName: "ElasticInference",
+            serviceIdentifier: "api.elastic-inference",
             signingName: "elastic-inference",
             serviceProtocol: .restjson,
             apiVersion: "2017-07-25",
             endpoint: endpoint,
-            serviceEndpoints: [
-                "ap-northeast-1": "api.elastic-inference.ap-northeast-1.amazonaws.com",
-                "ap-northeast-2": "api.elastic-inference.ap-northeast-2.amazonaws.com",
-                "eu-west-1": "api.elastic-inference.eu-west-1.amazonaws.com",
-                "us-east-1": "api.elastic-inference.us-east-1.amazonaws.com",
-                "us-east-2": "api.elastic-inference.us-east-2.amazonaws.com",
-                "us-west-2": "api.elastic-inference.us-west-2.amazonaws.com"
-            ],
+            serviceEndpoints: Self.serviceEndpoints,
             errorType: ElasticInferenceErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+    /// custom endpoints for regions
+    static var serviceEndpoints: [String: String] {[
+        "ap-northeast-1": "api.elastic-inference.ap-northeast-1.amazonaws.com",
+        "ap-northeast-2": "api.elastic-inference.ap-northeast-2.amazonaws.com",
+        "eu-west-1": "api.elastic-inference.eu-west-1.amazonaws.com",
+        "us-east-1": "api.elastic-inference.us-east-1.amazonaws.com",
+        "us-east-2": "api.elastic-inference.us-east-2.amazonaws.com",
+        "us-west-2": "api.elastic-inference.us-west-2.amazonaws.com"
+    ]}
+
+
+
     // MARK: API Calls
 
-    ///  Describes the locations in which a given accelerator type or set of types is present in a given region.
-    public func describeAcceleratorOfferings(_ input: DescribeAcceleratorOfferingsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeAcceleratorOfferingsResponse> {
-        return self.client.execute(operation: "DescribeAcceleratorOfferings", path: "/describe-accelerator-offerings", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    ///  Describes the locations in which a given accelerator type or set of types is present in a given region.   February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
+    @Sendable
+    public func describeAcceleratorOfferings(_ input: DescribeAcceleratorOfferingsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeAcceleratorOfferingsResponse {
+        return try await self.client.execute(
+            operation: "DescribeAcceleratorOfferings", 
+            path: "/describe-accelerator-offerings", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Describes the accelerator types available in a given region, as well as their characteristics, such as memory and throughput.
-    public func describeAcceleratorTypes(_ input: DescribeAcceleratorTypesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeAcceleratorTypesResponse> {
-        return self.client.execute(operation: "DescribeAcceleratorTypes", path: "/describe-accelerator-types", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    ///  Describes the accelerator types available in a given region, as well as their characteristics, such as memory and throughput.   February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
+    @Sendable
+    public func describeAcceleratorTypes(_ input: DescribeAcceleratorTypesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeAcceleratorTypesResponse {
+        return try await self.client.execute(
+            operation: "DescribeAcceleratorTypes", 
+            path: "/describe-accelerator-types", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Describes information over a provided set of accelerators belonging to an account.
-    public func describeAccelerators(_ input: DescribeAcceleratorsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeAcceleratorsResponse> {
-        return self.client.execute(operation: "DescribeAccelerators", path: "/describe-accelerators", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    ///  Describes information over a provided set of accelerators belonging to an account.   February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
+    @Sendable
+    public func describeAccelerators(_ input: DescribeAcceleratorsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeAcceleratorsResponse {
+        return try await self.client.execute(
+            operation: "DescribeAccelerators", 
+            path: "/describe-accelerators", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Returns all tags of an Elastic Inference Accelerator.
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResult> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{resourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    ///  Returns all tags of an Elastic Inference Accelerator.   February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResult {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Adds the specified tags to an Elastic Inference Accelerator.
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResult> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{resourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    ///  Adds the specified tags to an Elastic Inference Accelerator.   February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResult {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    ///  Removes the specified tags from an Elastic Inference Accelerator.
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResult> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{resourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    ///  Removes the specified tags from an Elastic Inference Accelerator.   February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResult {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension ElasticInference {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: ElasticInference, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -114,57 +174,24 @@ extension ElasticInference {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension ElasticInference {
-    ///   Describes information over a provided set of accelerators belonging to an account.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeAcceleratorsPaginator<Result>(
-        _ input: DescribeAcceleratorsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeAcceleratorsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeAccelerators,
-            inputKey: \DescribeAcceleratorsRequest.nextToken,
-            outputKey: \DescribeAcceleratorsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    ///  Describes information over a provided set of accelerators belonging to an account.   February 15, 2023: Starting April 15, 2023, AWS will not onboard new customers to Amazon Elastic Inference (EI), and will help current customers migrate their workloads to options that offer better price and performance. After April 15, 2023, new customers will not be able to launch instances with Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers who have used Amazon EI at least once during the past 30-day period are considered current customers and will be able to continue using the service.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeAcceleratorsPaginator(
         _ input: DescribeAcceleratorsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeAcceleratorsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeAcceleratorsRequest, DescribeAcceleratorsResponse> {
+        return .init(
             input: input,
             command: self.describeAccelerators,
             inputKey: \DescribeAcceleratorsRequest.nextToken,
             outputKey: \DescribeAcceleratorsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }

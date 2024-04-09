@@ -1,5 +1,5 @@
 {
-    "smithy": "1.0",
+    "smithy": "2.0",
     "shapes": {
         "com.amazonaws.ivs#AccessDeniedException": {
             "type": "structure",
@@ -19,39 +19,6 @@
         },
         "com.amazonaws.ivs#AmazonInteractiveVideoService": {
             "type": "service",
-            "traits": {
-                "aws.api#service": {
-                    "sdkId": "ivs",
-                    "arnNamespace": "ivs",
-                    "cloudFormationName": "IVS",
-                    "cloudTrailEventSource": "REPLACE_WITH_EVENT_SOURCE",
-                    "endpointPrefix": "ivs"
-                },
-                "aws.auth#sigv4": {
-                    "name": "ivs"
-                },
-                "aws.protocols#restJson1": {},
-                "smithy.api#cors": {
-                    "additionalAllowedHeaders": [
-                        "amz-sdk-invocation-id",
-                        "amz-sdk-request",
-                        "X-Api-Key",
-                        "X-Amz-Content-Sha256",
-                        "Content-Type",
-                        "X-Amz-User-Agent"
-                    ],
-                    "additionalExposedHeaders": [
-                        "date",
-                        "x-amz-apigw-id",
-                        "x-amzn-trace-id",
-                        "x-amzn-errortype",
-                        "x-amzn-requestid",
-                        "x-amzn-errormessage"
-                    ]
-                },
-                "smithy.api#documentation": "<p>\n            <b>Introduction</b>\n         </p>\n         <p>The Amazon Interactive Video Service (IVS) API is REST compatible, using a standard HTTP\n      API and an Amazon Web Services EventBridge event stream for responses. JSON is used for both\n      requests and responses, including errors.</p>\n         <p>The API is an Amazon Web Services regional service. For a list of supported regions and\n      Amazon IVS HTTPS service endpoints, see the <a href=\"https://docs.aws.amazon.com/general/latest/gr/ivs.html\">Amazon IVS page</a> in the\n          <i>Amazon Web Services General Reference</i>.</p>\n         <p>\n            <i>\n               <b>All API request parameters and URLs are case sensitive.\n        </b>\n            </i>\n         </p>\n         <p>For a summary of notable documentation changes in each release, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/doc-history.html\"> Document\n      History</a>.</p>\n         <p>\n            <b>Allowed Header Values</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <code>\n                     <b>Accept:</b>\n                  </code> application/json</p>\n            </li>\n            <li>\n               <p>\n                  <code>\n                     <b>Accept-Encoding:</b>\n                  </code> gzip, deflate</p>\n            </li>\n            <li>\n               <p>\n                  <code>\n                     <b>Content-Type:</b>\n                  </code>application/json</p>\n            </li>\n         </ul>\n         <p>\n            <b>Resources</b>\n         </p>\n         <p>The following resources contain information about your IVS live stream (see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/getting-started.html\"> Getting Started with\n        Amazon IVS</a>):</p>\n         <ul>\n            <li>\n               <p>Channel — Stores configuration data related to your live stream. You first create a\n          channel and then use the channel’s stream key to start your live stream. See the Channel\n          endpoints for more information. </p>\n            </li>\n            <li>\n               <p>Stream key — An identifier assigned by Amazon IVS when you create a channel, which is\n          then used to authorize streaming. See the StreamKey endpoints for more information.\n              <i>\n                     <b>Treat the stream key like a secret, since it allows\n              anyone to stream to the channel.</b>\n                  </i>\n               </p>\n            </li>\n            <li>\n               <p>Playback key pair — Video playback may be restricted using playback-authorization\n          tokens, which use public-key encryption. A playback key pair is the public-private pair of\n          keys used to sign and validate the playback-authorization token. See the PlaybackKeyPair\n          endpoints for more information.</p>\n            </li>\n            <li>\n               <p>Recording configuration — Stores configuration related to recording a live stream and\n          where to store the recorded content. Multiple channels can reference the same recording\n          configuration. See the Recording Configuration endpoints for more information.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Tagging</b>\n         </p>\n         <p>A <i>tag</i> is a metadata label that you assign to an Amazon Web Services\n      resource. A tag comprises a <i>key</i> and a <i>value</i>, both\n      set by you. For example, you might set a tag as <code>topic:nature</code> to label a\n      particular video category. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>\n         <p>Tags can help you identify and organize your Amazon Web Services resources. For example,\n      you can use the same tag for different resources to indicate that they are related. You can\n      also use tags to manage access (see <a href=\"https://docs.aws.amazon.com/IAM/latest/UserGuide/access_tags.html\"> Access Tags</a>). </p>\n         <p>The Amazon IVS API has these tag-related endpoints: <a>TagResource</a>, <a>UntagResource</a>, and <a>ListTagsForResource</a>. The following\n      resources support tagging: Channels, Stream Keys, Playback Key Pairs, and Recording\n      Configurations.</p>\n         <p>At most 50 tags can be applied to a resource. </p>\n         <p>\n            <b>Authentication versus Authorization</b>\n         </p>\n         <p>Note the differences between these concepts:</p>\n         <ul>\n            <li>\n               <p>\n                  <i>Authentication</i> is about verifying identity. You need to be\n          authenticated to sign Amazon IVS API requests.</p>\n            </li>\n            <li>\n               <p>\n                  <i>Authorization</i> is about granting permissions. Your IAM roles need\n          to have permissions for Amazon IVS API requests. In addition, authorization is needed to\n          view <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Amazon\n            IVS private channels</a>. (Private channels are channels that are enabled for\n          \"playback authorization.\")</p>\n            </li>\n         </ul>\n         <p>\n            <b>Authentication</b>\n         </p>\n         <p>All Amazon IVS API requests must be authenticated with a signature. The Amazon Web Services\n      Command-Line Interface (CLI) and Amazon IVS Player SDKs take care of signing the underlying\n      API calls for you. However, if your application calls the Amazon IVS API directly, it’s your\n      responsibility to sign the requests.</p>\n         <p>You generate a signature using valid Amazon Web Services credentials that have permission\n      to perform the requested action. For example, you must sign PutMetadata requests with a\n      signature generated from an IAM user account that has the <code>ivs:PutMetadata</code>\n      permission.</p>\n         <p>For more information:</p>\n         <ul>\n            <li>\n               <p>Authentication and generating signatures — See <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html\">Authenticating Requests\n              (Amazon Web Services Signature Version 4)</a> in the <i>Amazon Web Services\n            General Reference</i>.</p>\n            </li>\n            <li>\n               <p>Managing Amazon IVS permissions — See <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/security-iam.html\">Identity and Access Management</a> on\n          the Security page of the <i>Amazon IVS User Guide</i>.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Amazon Resource Names (ARNs)</b>\n         </p>\n         <p>ARNs uniquely identify AWS resources. An ARN is required when you need to specify a\n      resource unambiguously across all of AWS, such as in IAM policies and API calls. For more\n      information, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html\">Amazon Resource Names</a> in the <i>AWS General\n      Reference</i>.</p>\n         <p>\n            <b>Channel Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>CreateChannel</a> — Creates a new channel and an associated stream\n          key to start streaming.</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetChannel</a> — Gets the channel configuration for the specified\n          channel ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>BatchGetChannel</a> — Performs <a>GetChannel</a> on\n          multiple ARNs simultaneously.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListChannels</a> — Gets summary information about all channels in\n          your account, in the Amazon Web Services region where the API request is processed. This\n          list can be filtered to match a specified name or recording-configuration ARN. Filters are\n          mutually exclusive and cannot be used together. If you try to use both filters, you will\n          get an error (409 Conflict Exception).</p>\n            </li>\n            <li>\n               <p>\n                  <a>UpdateChannel</a> — Updates a channel's configuration. This does\n          not affect an ongoing stream of this channel. You must stop and restart the stream for the\n          changes to take effect.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeleteChannel</a> — Deletes the specified channel.</p>\n            </li>\n         </ul>\n         <p>\n            <b>StreamKey Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>CreateStreamKey</a> — Creates a stream key, used to initiate a\n          stream, for the specified channel ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetStreamKey</a> — Gets stream key information for the specified\n          ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>BatchGetStreamKey</a> — Performs <a>GetStreamKey</a> on\n          multiple ARNs simultaneously.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListStreamKeys</a> — Gets summary information about stream keys\n          for the specified channel.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeleteStreamKey</a> — Deletes the stream key for the specified\n          ARN, so it can no longer be used to stream.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Stream Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>GetStream</a> — Gets information about the active (live) stream on\n          a specified channel.</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetStreamSession</a> — Gets metadata on a specified stream.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListStreams</a> — Gets summary information about live streams in\n          your account, in the Amazon Web Services region where the API request is processed.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListStreamSessions</a> — Gets a summary of current and previous\n          streams for a specified channel in your account, in the AWS region where the API request\n          is processed.</p>\n            </li>\n            <li>\n               <p>\n                  <a>StopStream</a> — Disconnects the incoming RTMPS stream for the\n          specified channel. Can be used in conjunction with <a>DeleteStreamKey</a> to\n          prevent further streaming to a channel.</p>\n            </li>\n            <li>\n               <p>\n                  <a>PutMetadata</a> — Inserts metadata into the active stream of the\n          specified channel. At most 5 requests per second per channel are allowed, each with a\n          maximum 1 KB payload. (If 5 TPS is not sufficient for your needs, we recommend batching\n          your data into a single PutMetadata call.) At most 155 requests per second per account are\n          allowed.</p>\n            </li>\n         </ul>\n         <p>\n            <b>PlaybackKeyPair Endpoints</b>\n         </p>\n         <p>For more information, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Setting Up Private Channels</a> in the\n        <i>Amazon IVS User Guide</i>.</p>\n         <ul>\n            <li>\n               <p>\n                  <a>ImportPlaybackKeyPair</a> — Imports the public portion of a new\n          key pair and returns its <code>arn</code> and <code>fingerprint</code>. The\n            <code>privateKey</code> can then be used to generate viewer authorization tokens, to\n          grant viewers access to private channels (channels enabled for playback\n          authorization).</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetPlaybackKeyPair</a> — Gets a specified playback authorization\n          key pair and returns the <code>arn</code> and <code>fingerprint</code>. The\n            <code>privateKey</code> held by the caller can be used to generate viewer authorization\n          tokens, to grant viewers access to private channels.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListPlaybackKeyPairs</a> — Gets summary information about playback\n          key pairs.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeletePlaybackKeyPair</a> — Deletes a specified authorization key\n          pair. This invalidates future viewer tokens generated using the key pair’s\n            <code>privateKey</code>.</p>\n            </li>\n         </ul>\n         <p>\n            <b>RecordingConfiguration Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>CreateRecordingConfiguration</a> — Creates a new recording\n          configuration, used to enable recording to Amazon S3.</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetRecordingConfiguration</a> — Gets the recording-configuration\n          metadata for the specified ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListRecordingConfigurations</a> — Gets summary information about\n          all recording configurations in your account, in the Amazon Web Services region where the\n          API request is processed.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeleteRecordingConfiguration</a> — Deletes the recording\n          configuration for the specified ARN.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Amazon Web Services Tags Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>TagResource</a> — Adds or updates tags for the Amazon Web Services\n          resource with the specified ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>UntagResource</a> — Removes tags from the resource with the\n          specified ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListTagsForResource</a> — Gets information about Amazon Web Services tags for the specified ARN.</p>\n            </li>\n         </ul>",
-                "smithy.api#title": "Amazon Interactive Video Service"
-            },
             "version": "2020-07-14",
             "operations": [
                 {
@@ -61,7 +28,13 @@
                     "target": "com.amazonaws.ivs#BatchGetStreamKey"
                 },
                 {
+                    "target": "com.amazonaws.ivs#BatchStartViewerSessionRevocation"
+                },
+                {
                     "target": "com.amazonaws.ivs#CreateChannel"
+                },
+                {
+                    "target": "com.amazonaws.ivs#CreatePlaybackRestrictionPolicy"
                 },
                 {
                     "target": "com.amazonaws.ivs#CreateRecordingConfiguration"
@@ -76,6 +49,9 @@
                     "target": "com.amazonaws.ivs#DeletePlaybackKeyPair"
                 },
                 {
+                    "target": "com.amazonaws.ivs#DeletePlaybackRestrictionPolicy"
+                },
+                {
                     "target": "com.amazonaws.ivs#DeleteRecordingConfiguration"
                 },
                 {
@@ -86,6 +62,9 @@
                 },
                 {
                     "target": "com.amazonaws.ivs#GetPlaybackKeyPair"
+                },
+                {
+                    "target": "com.amazonaws.ivs#GetPlaybackRestrictionPolicy"
                 },
                 {
                     "target": "com.amazonaws.ivs#GetRecordingConfiguration"
@@ -109,6 +88,9 @@
                     "target": "com.amazonaws.ivs#ListPlaybackKeyPairs"
                 },
                 {
+                    "target": "com.amazonaws.ivs#ListPlaybackRestrictionPolicies"
+                },
+                {
                     "target": "com.amazonaws.ivs#ListRecordingConfigurations"
                 },
                 {
@@ -127,6 +109,9 @@
                     "target": "com.amazonaws.ivs#PutMetadata"
                 },
                 {
+                    "target": "com.amazonaws.ivs#StartViewerSessionRevocation"
+                },
+                {
                     "target": "com.amazonaws.ivs#StopStream"
                 },
                 {
@@ -137,8 +122,750 @@
                 },
                 {
                     "target": "com.amazonaws.ivs#UpdateChannel"
+                },
+                {
+                    "target": "com.amazonaws.ivs#UpdatePlaybackRestrictionPolicy"
                 }
-            ]
+            ],
+            "traits": {
+                "aws.api#service": {
+                    "sdkId": "ivs",
+                    "arnNamespace": "ivs",
+                    "cloudFormationName": "IVS",
+                    "cloudTrailEventSource": "REPLACE_WITH_EVENT_SOURCE"
+                },
+                "aws.auth#sigv4": {
+                    "name": "ivs"
+                },
+                "aws.protocols#restJson1": {},
+                "smithy.api#cors": {
+                    "additionalAllowedHeaders": [
+                        "Content-Type",
+                        "X-Api-Key",
+                        "X-Amz-Content-Sha256",
+                        "X-Amz-User-Agent",
+                        "amz-sdk-invocation-id",
+                        "amz-sdk-request"
+                    ],
+                    "additionalExposedHeaders": [
+                        "x-amzn-errortype",
+                        "x-amzn-requestid",
+                        "x-amzn-errormessage",
+                        "x-amzn-trace-id",
+                        "x-amzn-requestid",
+                        "x-amz-apigw-id",
+                        "date"
+                    ]
+                },
+                "smithy.api#documentation": "<p>\n            <b>Introduction</b>\n         </p>\n         <p>The Amazon Interactive Video Service (IVS) API is REST compatible, using a standard HTTP\n      API and an Amazon Web Services EventBridge event stream for responses. JSON is used for both\n      requests and responses, including errors.</p>\n         <p>The API is an Amazon Web Services regional service. For a list of supported regions and\n      Amazon IVS HTTPS service endpoints, see the <a href=\"https://docs.aws.amazon.com/general/latest/gr/ivs.html\">Amazon IVS page</a> in the\n          <i>Amazon Web Services General Reference</i>.</p>\n         <p>\n            <i>\n               <b>All API request parameters and URLs are case sensitive.\n        </b>\n            </i>\n         </p>\n         <p>For a summary of notable documentation changes in each release, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/doc-history.html\"> Document\n      History</a>.</p>\n         <p>\n            <b>Allowed Header Values</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <code>\n                     <b>Accept:</b>\n                  </code> application/json</p>\n            </li>\n            <li>\n               <p>\n                  <code>\n                     <b>Accept-Encoding:</b>\n                  </code> gzip, deflate</p>\n            </li>\n            <li>\n               <p>\n                  <code>\n                     <b>Content-Type:</b>\n                  </code>application/json</p>\n            </li>\n         </ul>\n         <p>\n            <b>Key Concepts</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <b>Channel</b> — Stores configuration data related to your live stream. You first create a channel and then use the channel’s stream key to start your live stream.</p>\n            </li>\n            <li>\n               <p>\n                  <b>Stream key</b> — An identifier assigned by Amazon IVS when you create a channel, which is then used to authorize streaming. <i>\n                     <b>Treat the stream key like a secret, since it allows anyone to stream to the channel.</b>\n                  </i>\n               </p>\n            </li>\n            <li>\n               <p>\n                  <b>Playback key pair</b> — Video playback may be restricted using playback-authorization tokens, which use public-key encryption. A playback key pair is the public-private pair of keys used to sign and validate the playback-authorization token.</p>\n            </li>\n            <li>\n               <p>\n                  <b>Recording configuration</b> — Stores configuration related to recording a live stream and where to store the recorded content. Multiple channels can reference the same recording configuration.</p>\n            </li>\n            <li>\n               <p>\n                  <b>Playback restriction policy</b> — Restricts playback by countries and/or origin sites.</p>\n            </li>\n         </ul>\n         <p>For more information about your IVS live stream, also see <a href=\"https://docs.aws.amazon.com/ivs/latest/LowLatencyUserGuide/getting-started.html\">Getting Started with IVS Low-Latency Streaming</a>.</p>\n         <p>\n            <b>Tagging</b>\n         </p>\n         <p>A <i>tag</i> is a metadata label that you assign to an Amazon Web Services\n      resource. A tag comprises a <i>key</i> and a <i>value</i>, both\n      set by you. For example, you might set a tag as <code>topic:nature</code> to label a\n      particular video category. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>\n         <p>Tags can help you identify and organize your Amazon Web Services resources. For example,\n      you can use the same tag for different resources to indicate that they are related. You can\n      also use tags to manage access (see <a href=\"https://docs.aws.amazon.com/IAM/latest/UserGuide/access_tags.html\"> Access Tags</a>). </p>\n         <p>The Amazon IVS API has these tag-related endpoints: <a>TagResource</a>, <a>UntagResource</a>, and <a>ListTagsForResource</a>. The following\n      resources support tagging: Channels, Stream Keys, Playback Key Pairs, and Recording\n      Configurations.</p>\n         <p>At most 50 tags can be applied to a resource. </p>\n         <p>\n            <b>Authentication versus Authorization</b>\n         </p>\n         <p>Note the differences between these concepts:</p>\n         <ul>\n            <li>\n               <p>\n                  <i>Authentication</i> is about verifying identity. You need to be\n          authenticated to sign Amazon IVS API requests.</p>\n            </li>\n            <li>\n               <p>\n                  <i>Authorization</i> is about granting permissions. Your IAM roles need to have permissions for Amazon IVS API requests. In addition,\n          authorization is needed to view <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Amazon IVS private channels</a>.\n          (Private channels are channels that are enabled for \"playback authorization.\")</p>\n            </li>\n         </ul>\n         <p>\n            <b>Authentication</b>\n         </p>\n         <p>All Amazon IVS API requests must be authenticated with a signature. The Amazon Web Services\n      Command-Line Interface (CLI) and Amazon IVS Player SDKs take care of signing the underlying\n      API calls for you. However, if your application calls the Amazon IVS API directly, it’s your\n      responsibility to sign the requests.</p>\n         <p>You generate a signature using valid Amazon Web Services credentials that have permission\n      to perform the requested action. For example, you must sign PutMetadata requests with a\n      signature generated from a user account that has the <code>ivs:PutMetadata</code>\n      permission.</p>\n         <p>For more information:</p>\n         <ul>\n            <li>\n               <p>Authentication and generating signatures — See <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html\">Authenticating Requests\n              (Amazon Web Services Signature Version 4)</a> in the <i>Amazon Web Services\n            General Reference</i>.</p>\n            </li>\n            <li>\n               <p>Managing Amazon IVS permissions — See <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/security-iam.html\">Identity and Access Management</a> on\n          the Security page of the <i>Amazon IVS User Guide</i>.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Amazon Resource Names (ARNs)</b>\n         </p>\n         <p>ARNs uniquely identify AWS resources. An ARN is required when you need to specify a\n      resource unambiguously across all of AWS, such as in IAM policies and API\n      calls. For more information, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html\">Amazon\n        Resource Names</a> in the <i>AWS General Reference</i>.</p>\n         <p>\n            <b>Channel Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>CreateChannel</a> — Creates a new channel and an associated stream\n          key to start streaming.</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetChannel</a> — Gets the channel configuration for the specified\n          channel ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>BatchGetChannel</a> — Performs <a>GetChannel</a> on\n          multiple ARNs simultaneously.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListChannels</a> — Gets summary information about all channels in\n          your account, in the Amazon Web Services region where the API request is processed. This\n          list can be filtered to match a specified name or recording-configuration ARN. Filters are\n          mutually exclusive and cannot be used together. If you try to use both filters, you will\n          get an error (409 Conflict Exception).</p>\n            </li>\n            <li>\n               <p>\n                  <a>UpdateChannel</a> — Updates a channel's configuration. This does\n          not affect an ongoing stream of this channel. You must stop and restart the stream for the\n          changes to take effect.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeleteChannel</a> — Deletes the specified channel.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Playback Restriction Policy Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>CreatePlaybackRestrictionPolicy</a> — Creates a new playback\n          restriction policy, for constraining playback by countries and/or origins.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeletePlaybackRestrictionPolicy</a> — Deletes the specified\n          playback restriction policy</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetPlaybackRestrictionPolicy</a> — Gets the specified playback\n          restriction policy.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListPlaybackRestrictionPolicies</a> — Gets summary information\n          about playback restriction policies.</p>\n            </li>\n            <li>\n               <p>\n                  <a>UpdatePlaybackRestrictionPolicy</a> — Updates a specified playback\n          restriction policy.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Private Channel Endpoints</b>\n         </p>\n         <p>For more information, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Setting Up Private Channels</a> in the\n        <i>Amazon IVS User Guide</i>.</p>\n         <ul>\n            <li>\n               <p>\n                  <a>ImportPlaybackKeyPair</a> — Imports the public portion of a new\n          key pair and returns its <code>arn</code> and <code>fingerprint</code>. The\n            <code>privateKey</code> can then be used to generate viewer authorization tokens, to\n          grant viewers access to private channels (channels enabled for playback\n          authorization).</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetPlaybackKeyPair</a> — Gets a specified playback authorization\n          key pair and returns the <code>arn</code> and <code>fingerprint</code>. The\n            <code>privateKey</code> held by the caller can be used to generate viewer authorization\n          tokens, to grant viewers access to private channels.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListPlaybackKeyPairs</a> — Gets summary information about playback\n          key pairs.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeletePlaybackKeyPair</a> — Deletes a specified authorization key\n          pair. This invalidates future viewer tokens generated using the key pair’s\n            <code>privateKey</code>.</p>\n            </li>\n            <li>\n               <p>\n                  <a>StartViewerSessionRevocation</a> — Starts the process of revoking\n          the viewer session associated with a specified channel ARN and viewer ID. Optionally, you\n          can provide a version to revoke viewer sessions less than and including that\n          version.</p>\n            </li>\n            <li>\n               <p>\n                  <a>BatchStartViewerSessionRevocation</a> — Performs <a>StartViewerSessionRevocation</a> on multiple channel ARN and viewer ID pairs\n          simultaneously.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Recording Configuration Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>CreateRecordingConfiguration</a> — Creates a new recording\n          configuration, used to enable recording to Amazon S3.</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetRecordingConfiguration</a> — Gets the recording-configuration\n          metadata for the specified ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListRecordingConfigurations</a> — Gets summary information about\n          all recording configurations in your account, in the Amazon Web Services region where the\n          API request is processed.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeleteRecordingConfiguration</a> — Deletes the recording\n          configuration for the specified ARN.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Stream Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>GetStream</a> — Gets information about the active (live) stream on\n          a specified channel.</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetStreamSession</a> — Gets metadata on a specified stream.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListStreams</a> — Gets summary information about live streams in\n          your account, in the Amazon Web Services region where the API request is processed.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListStreamSessions</a> — Gets a summary of current and previous\n          streams for a specified channel in your account, in the AWS region where the API request\n          is processed.</p>\n            </li>\n            <li>\n               <p>\n                  <a>StopStream</a> — Disconnects the incoming RTMPS stream for the\n          specified channel. Can be used in conjunction with <a>DeleteStreamKey</a> to\n          prevent further streaming to a channel.</p>\n            </li>\n            <li>\n               <p>\n                  <a>PutMetadata</a> — Inserts metadata into the active stream of the\n          specified channel. At most 5 requests per second per channel are allowed, each with a\n          maximum 1 KB payload. (If 5 TPS is not sufficient for your needs, we recommend batching\n          your data into a single PutMetadata call.) At most 155 requests per second per account are\n          allowed.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Stream Key Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>CreateStreamKey</a> — Creates a stream key, used to initiate a\n          stream, for the specified channel ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>GetStreamKey</a> — Gets stream key information for the specified\n          ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>BatchGetStreamKey</a> — Performs <a>GetStreamKey</a> on\n          multiple ARNs simultaneously.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListStreamKeys</a> — Gets summary information about stream keys\n          for the specified channel.</p>\n            </li>\n            <li>\n               <p>\n                  <a>DeleteStreamKey</a> — Deletes the stream key for the specified\n          ARN, so it can no longer be used to stream.</p>\n            </li>\n         </ul>\n         <p>\n            <b>Amazon Web Services Tags Endpoints</b>\n         </p>\n         <ul>\n            <li>\n               <p>\n                  <a>TagResource</a> — Adds or updates tags for the Amazon Web Services\n          resource with the specified ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>UntagResource</a> — Removes tags from the resource with the\n          specified ARN.</p>\n            </li>\n            <li>\n               <p>\n                  <a>ListTagsForResource</a> — Gets information about Amazon Web Services tags for the specified ARN.</p>\n            </li>\n         </ul>",
+                "smithy.api#title": "Amazon Interactive Video Service",
+                "smithy.rules#endpointRuleSet": {
+                    "version": "1.0",
+                    "parameters": {
+                        "Region": {
+                            "builtIn": "AWS::Region",
+                            "required": false,
+                            "documentation": "The AWS region used to dispatch the request.",
+                            "type": "String"
+                        },
+                        "UseDualStack": {
+                            "builtIn": "AWS::UseDualStack",
+                            "required": true,
+                            "default": false,
+                            "documentation": "When true, use the dual-stack endpoint. If the configured endpoint does not support dual-stack, dispatching the request MAY return an error.",
+                            "type": "Boolean"
+                        },
+                        "UseFIPS": {
+                            "builtIn": "AWS::UseFIPS",
+                            "required": true,
+                            "default": false,
+                            "documentation": "When true, send this request to the FIPS-compliant regional endpoint. If the configured endpoint does not have a FIPS compliant endpoint, dispatching the request will return an error.",
+                            "type": "Boolean"
+                        },
+                        "Endpoint": {
+                            "builtIn": "SDK::Endpoint",
+                            "required": false,
+                            "documentation": "Override the endpoint used to send this request",
+                            "type": "String"
+                        }
+                    },
+                    "rules": [
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Endpoint"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseFIPS"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: FIPS and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "booleanEquals",
+                                            "argv": [
+                                                {
+                                                    "ref": "UseDualStack"
+                                                },
+                                                true
+                                            ]
+                                        }
+                                    ],
+                                    "error": "Invalid Configuration: Dualstack and custom endpoint are not supported",
+                                    "type": "error"
+                                },
+                                {
+                                    "conditions": [],
+                                    "endpoint": {
+                                        "url": {
+                                            "ref": "Endpoint"
+                                        },
+                                        "properties": {},
+                                        "headers": {}
+                                    },
+                                    "type": "endpoint"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [
+                                {
+                                    "fn": "isSet",
+                                    "argv": [
+                                        {
+                                            "ref": "Region"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "conditions": [
+                                        {
+                                            "fn": "aws.partition",
+                                            "argv": [
+                                                {
+                                                    "ref": "Region"
+                                                }
+                                            ],
+                                            "assign": "PartitionResult"
+                                        }
+                                    ],
+                                    "rules": [
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                },
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://ivs-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS and DualStack are enabled, but this partition does not support one or both",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseFIPS"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsFIPS"
+                                                                    ]
+                                                                },
+                                                                true
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://ivs-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "FIPS is enabled but this partition does not support FIPS",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [
+                                                {
+                                                    "fn": "booleanEquals",
+                                                    "argv": [
+                                                        {
+                                                            "ref": "UseDualStack"
+                                                        },
+                                                        true
+                                                    ]
+                                                }
+                                            ],
+                                            "rules": [
+                                                {
+                                                    "conditions": [
+                                                        {
+                                                            "fn": "booleanEquals",
+                                                            "argv": [
+                                                                true,
+                                                                {
+                                                                    "fn": "getAttr",
+                                                                    "argv": [
+                                                                        {
+                                                                            "ref": "PartitionResult"
+                                                                        },
+                                                                        "supportsDualStack"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "rules": [
+                                                        {
+                                                            "conditions": [],
+                                                            "endpoint": {
+                                                                "url": "https://ivs.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                                "properties": {},
+                                                                "headers": {}
+                                                            },
+                                                            "type": "endpoint"
+                                                        }
+                                                    ],
+                                                    "type": "tree"
+                                                },
+                                                {
+                                                    "conditions": [],
+                                                    "error": "DualStack is enabled but this partition does not support DualStack",
+                                                    "type": "error"
+                                                }
+                                            ],
+                                            "type": "tree"
+                                        },
+                                        {
+                                            "conditions": [],
+                                            "endpoint": {
+                                                "url": "https://ivs.{Region}.{PartitionResult#dnsSuffix}",
+                                                "properties": {},
+                                                "headers": {}
+                                            },
+                                            "type": "endpoint"
+                                        }
+                                    ],
+                                    "type": "tree"
+                                }
+                            ],
+                            "type": "tree"
+                        },
+                        {
+                            "conditions": [],
+                            "error": "Invalid Configuration: Missing Region",
+                            "type": "error"
+                        }
+                    ]
+                },
+                "smithy.rules#endpointTests": {
+                    "testCases": [
+                        {
+                            "documentation": "For region ap-northeast-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.ap-northeast-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-northeast-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-northeast-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.ap-northeast-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-northeast-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region ap-south-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.ap-south-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "ap-south-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-central-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.eu-central-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-central-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region eu-west-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.eu-west-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "eu-west-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.us-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-west-2 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.us-west-2.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-west-2",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs-fips.us-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs-fips.us-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.us-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs-fips.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs-fips.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.cn-north-1.api.amazonwebservices.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region cn-north-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.cn-north-1.amazonaws.com.cn"
+                                }
+                            },
+                            "params": {
+                                "Region": "cn-north-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs-fips.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs-fips.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.us-gov-east-1.api.aws"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.us-gov-east-1.amazonaws.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-gov-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs-fips.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.us-iso-east-1.c2s.ic.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-iso-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+                            "expect": {
+                                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs-fips.us-isob-east-1.sc2s.sgov.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+                            "expect": {
+                                "error": "DualStack is enabled but this partition does not support DualStack"
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true
+                            }
+                        },
+                        {
+                            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://ivs.us-isob-east-1.sc2s.sgov.gov"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-isob-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with region not set and fips disabled and dualstack disabled",
+                            "expect": {
+                                "endpoint": {
+                                    "url": "https://example.com"
+                                }
+                            },
+                            "params": {
+                                "UseFIPS": false,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with fips enabled and dualstack disabled",
+                            "expect": {
+                                "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": true,
+                                "UseDualStack": false,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "For custom endpoint with fips disabled and dualstack enabled",
+                            "expect": {
+                                "error": "Invalid Configuration: Dualstack and custom endpoint are not supported"
+                            },
+                            "params": {
+                                "Region": "us-east-1",
+                                "UseFIPS": false,
+                                "UseDualStack": true,
+                                "Endpoint": "https://example.com"
+                            }
+                        },
+                        {
+                            "documentation": "Missing region",
+                            "expect": {
+                                "error": "Invalid Configuration: Missing Region"
+                            }
+                        }
+                    ],
+                    "version": "1.0"
+                }
+            }
         },
         "com.amazonaws.ivs#AudioConfiguration": {
             "type": "structure",
@@ -152,18 +879,21 @@
                 "targetBitrate": {
                     "target": "com.amazonaws.ivs#Integer",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The expected ingest bitrate (bits per second). This is configured in the encoder.</p>"
                     }
                 },
                 "sampleRate": {
                     "target": "com.amazonaws.ivs#Integer",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Number of audio samples recorded per second.</p>"
                     }
                 },
                 "channels": {
                     "target": "com.amazonaws.ivs#Integer",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Number of audio channels.</p>"
                     }
                 }
@@ -216,8 +946,7 @@
                 "smithy.api#documentation": "<p>Performs <a>GetChannel</a> on multiple ARNs simultaneously.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/BatchGetChannel",
-                    "code": 200
+                    "uri": "/BatchGetChannel"
                 },
                 "smithy.api#readonly": {}
             }
@@ -263,8 +992,7 @@
                 "smithy.api#documentation": "<p>Performs <a>GetStreamKey</a> on multiple ARNs simultaneously.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/BatchGetStreamKey",
-                    "code": 200
+                    "uri": "/BatchGetStreamKey"
                 },
                 "smithy.api#readonly": {}
             }
@@ -275,7 +1003,7 @@
                 "arns": {
                     "target": "com.amazonaws.ivs#StreamKeyArnList",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of ARNs, one per channel.</p>",
+                        "smithy.api#documentation": "<p>Array of ARNs, one per stream key.</p>",
                         "smithy.api#required": {}
                     }
                 }
@@ -298,8 +1026,146 @@
                 }
             }
         },
+        "com.amazonaws.ivs#BatchStartViewerSessionRevocation": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.ivs#BatchStartViewerSessionRevocationRequest"
+            },
+            "output": {
+                "target": "com.amazonaws.ivs#BatchStartViewerSessionRevocationResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.ivs#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#PendingVerification"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ThrottlingException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>Performs <a>StartViewerSessionRevocation</a> on multiple channel ARN and viewer\n      ID pairs simultaneously.</p>",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/BatchStartViewerSessionRevocation"
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.amazonaws.ivs#BatchStartViewerSessionRevocationError": {
+            "type": "structure",
+            "members": {
+                "channelArn": {
+                    "target": "com.amazonaws.ivs#ChannelArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Channel ARN.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "viewerId": {
+                    "target": "com.amazonaws.ivs#ViewerId",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The ID of the viewer session to revoke.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "code": {
+                    "target": "com.amazonaws.ivs#errorCode",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Error code.</p>"
+                    }
+                },
+                "message": {
+                    "target": "com.amazonaws.ivs#errorMessage",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Error message, determined by the application.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Error for a request in the batch for BatchStartViewerSessionRevocation. Each error is\n      related to a specific channel-ARN and viewer-ID pair.</p>"
+            }
+        },
+        "com.amazonaws.ivs#BatchStartViewerSessionRevocationErrors": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.ivs#BatchStartViewerSessionRevocationError"
+            }
+        },
+        "com.amazonaws.ivs#BatchStartViewerSessionRevocationRequest": {
+            "type": "structure",
+            "members": {
+                "viewerSessions": {
+                    "target": "com.amazonaws.ivs#BatchStartViewerSessionRevocationViewerSessionList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Array of viewer sessions, one per channel-ARN and viewer-ID pair.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazonaws.ivs#BatchStartViewerSessionRevocationResponse": {
+            "type": "structure",
+            "members": {
+                "errors": {
+                    "target": "com.amazonaws.ivs#BatchStartViewerSessionRevocationErrors",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Each error object is related to a specific <code>channelArn</code> and\n        <code>viewerId</code> pair in the request.</p>"
+                    }
+                }
+            }
+        },
+        "com.amazonaws.ivs#BatchStartViewerSessionRevocationViewerSession": {
+            "type": "structure",
+            "members": {
+                "channelArn": {
+                    "target": "com.amazonaws.ivs#ChannelArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The ARN of the channel associated with the viewer session to revoke.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "viewerId": {
+                    "target": "com.amazonaws.ivs#ViewerId",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The ID of the viewer associated with the viewer session to revoke. Do not use this field\n      for personally identifying, confidential, or sensitive information.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "viewerSessionVersionsLessThanOrEqualTo": {
+                    "target": "com.amazonaws.ivs#ViewerSessionVersion",
+                    "traits": {
+                        "smithy.api#default": 0,
+                        "smithy.api#documentation": "<p>An optional filter on which versions of the viewer session to revoke. All versions less\n      than or equal to the specified version will be revoked. Default: 0.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>A viewer session to revoke in the call to <a>BatchStartViewerSessionRevocation</a>.</p>"
+            }
+        },
+        "com.amazonaws.ivs#BatchStartViewerSessionRevocationViewerSessionList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.ivs#BatchStartViewerSessionRevocationViewerSession"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 20
+                }
+            }
+        },
         "com.amazonaws.ivs#Boolean": {
-            "type": "boolean"
+            "type": "boolean",
+            "traits": {
+                "smithy.api#default": false
+            }
         },
         "com.amazonaws.ivs#Channel": {
             "type": "structure",
@@ -319,19 +1185,19 @@
                 "latencyMode": {
                     "target": "com.amazonaws.ivs#ChannelLatencyMode",
                     "traits": {
-                        "smithy.api#documentation": "<p>Channel latency mode. Use <code>NORMAL</code> to broadcast and deliver live video up to\n      Full HD. Use <code>LOW</code> for near-real-time interaction with viewers. Default:\n        <code>LOW</code>. (Note: In the Amazon IVS console, <code>LOW</code> and <code>NORMAL</code>\n      correspond to Ultra-low and Standard, respectively.)</p>"
+                        "smithy.api#documentation": "<p>Channel latency mode. Use <code>NORMAL</code> to broadcast and deliver live video up to\n      Full HD. Use <code>LOW</code> for near-real-time interaction with viewers. Default:\n        <code>LOW</code>.</p>"
                     }
                 },
                 "type": {
                     "target": "com.amazonaws.ivs#ChannelType",
                     "traits": {
-                        "smithy.api#documentation": "<p>Channel type, which determines the allowable resolution and bitrate. <i>If you\n        exceed the allowable resolution or bitrate, the stream probably will disconnect\n        immediately.</i> Default: <code>STANDARD</code>. Valid values:</p>\n         <ul>\n            <li>\n               <p>\n                  <code>STANDARD</code>: Video is transcoded: multiple qualities are generated from the\n          original input, to automatically give viewers the best experience for their devices and\n          network conditions. Transcoding allows higher playback quality across a range of download\n          speeds. Resolution can be up to 1080p and bitrate can be up to 8.5 Mbps. Audio is\n          transcoded only for renditions 360p and below; above that, audio is passed through. This\n          is the default.</p>\n            </li>\n            <li>\n               <p>\n                  <code>BASIC</code>: Video is transmuxed: Amazon IVS delivers the original input to\n          viewers. The viewer’s video-quality choice is limited to the original input. Resolution\n          can be up to 1080p and bitrate can be up to 1.5 Mbps for 480p and up to 3.5 Mbps for\n          resolutions between 480p and 1080p.</p>\n            </li>\n         </ul>"
+                        "smithy.api#documentation": "<p>Channel type, which determines the allowable resolution and bitrate. <i>If you\n        exceed the allowable input resolution or bitrate, the stream probably will disconnect\n        immediately.</i> Default: <code>STANDARD</code>. For details, see <a href=\"https://docs.aws.amazon.com/ivs/latest/LowLatencyAPIReference/channel-types.html\">Channel\n        Types</a>.</p>"
                     }
                 },
                 "recordingConfigurationArn": {
                     "target": "com.amazonaws.ivs#ChannelRecordingConfigurationArn",
                     "traits": {
-                        "smithy.api#documentation": "<p>Recording-configuration ARN. A value other than an empty string indicates that recording\n      is enabled. Default: \"\" (empty string, recording is disabled).</p>"
+                        "smithy.api#documentation": "<p>Recording-configuration ARN. A valid ARN value here both specifies the ARN and enables\n      recording. Default: \"\" (empty string, recording is disabled).</p>"
                     }
                 },
                 "ingestEndpoint": {
@@ -349,13 +1215,39 @@
                 "authorized": {
                     "target": "com.amazonaws.ivs#IsAuthorized",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "<p>Whether the channel is private (enabled for playback authorization). Default:\n        <code>false</code>.</p>"
                     }
                 },
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
+                    }
+                },
+                "insecureIngest": {
+                    "target": "com.amazonaws.ivs#InsecureIngest",
+                    "traits": {
+                        "smithy.api#default": false,
+                        "smithy.api#documentation": "<p>Whether the channel allows insecure RTMP ingest. Default: <code>false</code>.</p>"
+                    }
+                },
+                "preset": {
+                    "target": "com.amazonaws.ivs#TranscodePreset",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Optional transcode preset for the channel. This is selectable only for\n        <code>ADVANCED_HD</code> and <code>ADVANCED_SD</code> channel types. For those channel\n      types, the default <code>preset</code> is <code>HIGHER_BANDWIDTH_DELIVERY</code>. For other\n      channel types (<code>BASIC</code> and <code>STANDARD</code>), <code>preset</code> is the empty\n      string (<code>\"\"</code>).</p>"
+                    }
+                },
+                "srt": {
+                    "target": "com.amazonaws.ivs#Srt",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Specifies the endpoint and optional passphrase for streaming with the SRT protocol.</p>"
+                    }
+                },
+                "playbackRestrictionPolicyArn": {
+                    "target": "com.amazonaws.ivs#ChannelPlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy ARN. A valid ARN value here both specifies the ARN and enables\n      playback restriction. Default: \"\" (empty string, no playback restriction policy is\n      applied).</p>"
                     }
                 }
             },
@@ -432,6 +1324,16 @@
                 "smithy.api#httpError": 404
             }
         },
+        "com.amazonaws.ivs#ChannelPlaybackRestrictionPolicyArn": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 128
+                },
+                "smithy.api#pattern": "^$|^arn:aws:ivs:[a-z0-9-]+:[0-9]+:playback-restriction-policy/[a-zA-Z0-9-]+$"
+            }
+        },
         "com.amazonaws.ivs#ChannelRecordingConfigurationArn": {
             "type": "string",
             "traits": {
@@ -460,25 +1362,51 @@
                 "latencyMode": {
                     "target": "com.amazonaws.ivs#ChannelLatencyMode",
                     "traits": {
-                        "smithy.api#documentation": "<p>Channel latency mode. Use <code>NORMAL</code> to broadcast and deliver live video up to\n      Full HD. Use <code>LOW</code> for near-real-time interaction with viewers. Default:\n        <code>LOW</code>. (Note: In the Amazon IVS console, <code>LOW</code> and <code>NORMAL</code>\n      correspond to Ultra-low and Standard, respectively.)</p>"
+                        "smithy.api#documentation": "<p>Channel latency mode. Use <code>NORMAL</code> to broadcast and deliver live video up to\n      Full HD. Use <code>LOW</code> for near-real-time interaction with viewers. Default:\n        <code>LOW</code>.</p>"
                     }
                 },
                 "authorized": {
                     "target": "com.amazonaws.ivs#IsAuthorized",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "<p>Whether the channel is private (enabled for playback authorization). Default:\n        <code>false</code>.</p>"
                     }
                 },
                 "recordingConfigurationArn": {
                     "target": "com.amazonaws.ivs#ChannelRecordingConfigurationArn",
                     "traits": {
-                        "smithy.api#documentation": "<p>Recording-configuration ARN. A value other than an empty string indicates that recording\n      is enabled. Default: \"\" (empty string, recording is disabled).</p>"
+                        "smithy.api#documentation": "<p>Recording-configuration ARN. A valid ARN value here both specifies the ARN and enables\n      recording. Default: \"\" (empty string, recording is disabled).</p>"
                     }
                 },
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
+                    }
+                },
+                "insecureIngest": {
+                    "target": "com.amazonaws.ivs#InsecureIngest",
+                    "traits": {
+                        "smithy.api#default": false,
+                        "smithy.api#documentation": "<p>Whether the channel allows insecure RTMP ingest. Default: <code>false</code>.</p>"
+                    }
+                },
+                "type": {
+                    "target": "com.amazonaws.ivs#ChannelType",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Channel type, which determines the allowable resolution and bitrate. <i>If you\n        exceed the allowable input resolution or bitrate, the stream probably will disconnect\n        immediately.</i> Default: <code>STANDARD</code>. For details, see <a href=\"https://docs.aws.amazon.com/ivs/latest/LowLatencyAPIReference/channel-types.html\">Channel\n        Types</a>.</p>"
+                    }
+                },
+                "preset": {
+                    "target": "com.amazonaws.ivs#TranscodePreset",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Optional transcode preset for the channel. This is selectable only for\n        <code>ADVANCED_HD</code> and <code>ADVANCED_SD</code> channel types. For those channel\n      types, the default <code>preset</code> is <code>HIGHER_BANDWIDTH_DELIVERY</code>. For other\n      channel types (<code>BASIC</code> and <code>STANDARD</code>), <code>preset</code> is the empty\n      string (<code>\"\"</code>).</p>"
+                    }
+                },
+                "playbackRestrictionPolicyArn": {
+                    "target": "com.amazonaws.ivs#ChannelPlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy ARN. A valid ARN value here both specifies the ARN and enables\n      playback restriction. Default: \"\" (empty string, no playback restriction policy is\n      applied).</p>"
                     }
                 }
             },
@@ -487,18 +1415,32 @@
             }
         },
         "com.amazonaws.ivs#ChannelType": {
-            "type": "string",
-            "traits": {
-                "smithy.api#enum": [
-                    {
-                        "value": "BASIC",
-                        "name": "BasicChannelType"
-                    },
-                    {
-                        "value": "STANDARD",
-                        "name": "StandardChannelType"
+            "type": "enum",
+            "members": {
+                "BasicChannelType": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "BASIC"
                     }
-                ]
+                },
+                "StandardChannelType": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "STANDARD"
+                    }
+                },
+                "AdvancedSDChannelType": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "ADVANCED_SD"
+                    }
+                },
+                "AdvancedHDChannelType": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "ADVANCED_HD"
+                    }
+                }
             }
         },
         "com.amazonaws.ivs#Channels": {
@@ -552,8 +1494,7 @@
                 "smithy.api#documentation": "<p>Creates a new channel and an associated stream key to start streaming.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/CreateChannel",
-                    "code": 200
+                    "uri": "/CreateChannel"
                 }
             }
         },
@@ -569,31 +1510,51 @@
                 "latencyMode": {
                     "target": "com.amazonaws.ivs#ChannelLatencyMode",
                     "traits": {
-                        "smithy.api#documentation": "<p>Channel latency mode. Use <code>NORMAL</code> to broadcast and deliver live video up to\n      Full HD. Use <code>LOW</code> for near-real-time interaction with viewers. (Note: In the\n      Amazon IVS console, <code>LOW</code> and <code>NORMAL</code> correspond to Ultra-low and\n      Standard, respectively.) Default: <code>LOW</code>.</p>"
+                        "smithy.api#documentation": "<p>Channel latency mode. Use <code>NORMAL</code> to broadcast and deliver live video up to\n      Full HD. Use <code>LOW</code> for near-real-time interaction with viewers. Default: <code>LOW</code>.</p>"
                     }
                 },
                 "type": {
                     "target": "com.amazonaws.ivs#ChannelType",
                     "traits": {
-                        "smithy.api#documentation": "<p>Channel type, which determines the allowable resolution and bitrate. <i>If you\n        exceed the allowable resolution or bitrate, the stream probably will disconnect\n        immediately.</i> Default: <code>STANDARD</code>. Valid values:</p>\n         <ul>\n            <li>\n               <p>\n                  <code>STANDARD</code>: Video is transcoded: multiple qualities are generated from the\n          original input, to automatically give viewers the best experience for their devices and\n          network conditions. Transcoding allows higher playback quality across a range of download\n          speeds. Resolution can be up to 1080p and bitrate can be up to 8.5 Mbps. Audio is\n          transcoded only for renditions 360p and below; above that, audio is passed through. This\n          is the default.</p>\n            </li>\n            <li>\n               <p>\n                  <code>BASIC</code>: Video is transmuxed: Amazon IVS delivers the original input to\n          viewers. The viewer’s video-quality choice is limited to the original input. Resolution\n          can be up to 1080p and bitrate can be up to 1.5 Mbps for 480p and up to 3.5 Mbps for\n          resolutions between 480p and 1080p.</p>\n            </li>\n         </ul>"
+                        "smithy.api#documentation": "<p>Channel type, which determines the allowable resolution and bitrate. <i>If you\n        exceed the allowable input resolution or bitrate, the stream probably will disconnect\n        immediately.</i> Default: <code>STANDARD</code>. For details, see <a href=\"https://docs.aws.amazon.com/ivs/latest/LowLatencyAPIReference/channel-types.html\">Channel\n        Types</a>.</p>"
                     }
                 },
                 "authorized": {
                     "target": "com.amazonaws.ivs#Boolean",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "<p>Whether the channel is private (enabled for playback authorization). Default:\n        <code>false</code>.</p>"
                     }
                 },
                 "recordingConfigurationArn": {
                     "target": "com.amazonaws.ivs#ChannelRecordingConfigurationArn",
                     "traits": {
-                        "smithy.api#documentation": "<p>Recording-configuration ARN. Default: \"\" (empty string, recording is disabled).</p>"
+                        "smithy.api#documentation": "<p>Recording-configuration ARN. A valid ARN value here both specifies the ARN and enables recording.\n     Default: \"\" (empty string, recording is disabled).</p>"
                     }
                 },
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services\n        Resources</a> for more information, including restrictions that apply to tags and \"Tag\n      naming limits and requirements\"; Amazon IVS has no service-specific constraints beyond what is\n      documented there.</p>"
+                    }
+                },
+                "insecureIngest": {
+                    "target": "com.amazonaws.ivs#Boolean",
+                    "traits": {
+                        "smithy.api#default": false,
+                        "smithy.api#documentation": "<p>Whether the channel allows insecure RTMP and SRT ingest. Default: <code>false</code>.</p>"
+                    }
+                },
+                "preset": {
+                    "target": "com.amazonaws.ivs#TranscodePreset",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Optional transcode preset for the channel. This is selectable only for\n        <code>ADVANCED_HD</code> and <code>ADVANCED_SD</code> channel types. For those channel\n      types, the default <code>preset</code> is <code>HIGHER_BANDWIDTH_DELIVERY</code>. For other\n      channel types (<code>BASIC</code> and <code>STANDARD</code>), <code>preset</code> is the empty\n      string (<code>\"\"</code>).</p>"
+                    }
+                },
+                "playbackRestrictionPolicyArn": {
+                    "target": "com.amazonaws.ivs#ChannelPlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy ARN. A valid ARN value here both specifies the ARN and enables playback restriction.\n    Default: \"\" (empty string, no playback restriction policy is applied).</p>"
                     }
                 }
             }
@@ -613,6 +1574,91 @@
                         "smithy.api#documentation": "<p/>"
                     }
                 }
+            }
+        },
+        "com.amazonaws.ivs#CreatePlaybackRestrictionPolicy": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.ivs#CreatePlaybackRestrictionPolicyRequest"
+            },
+            "output": {
+                "target": "com.amazonaws.ivs#CreatePlaybackRestrictionPolicyResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.ivs#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#PendingVerification"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ServiceQuotaExceededException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ThrottlingException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>Creates a new playback restriction policy, for constraining playback by countries and/or\n      origins.</p>",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/CreatePlaybackRestrictionPolicy"
+                }
+            }
+        },
+        "com.amazonaws.ivs#CreatePlaybackRestrictionPolicyRequest": {
+            "type": "structure",
+            "members": {
+                "allowedCountries": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedCountryList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A list of country codes that control geoblocking restriction. Allowed values are the\n      officially assigned <a href=\"https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2\">ISO 3166-1\n        alpha-2</a> codes. Default: All countries (an empty array).</p>"
+                    }
+                },
+                "allowedOrigins": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedOriginList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A list of origin sites that control CORS restriction. Allowed values are the same as valid\n      values of the Origin header defined at <a href=\"https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin\">https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin</a>. Default: All\n      origins (an empty array).</p>"
+                    }
+                },
+                "enableStrictOriginEnforcement": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyEnableStrictOriginEnforcement",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Whether channel playback is constrained by origin site. Default:\n      <code>false</code>.</p>"
+                    }
+                },
+                "name": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy name. The value does not need to be unique.</p>"
+                    }
+                },
+                "tags": {
+                    "target": "com.amazonaws.ivs#Tags",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services\n        Resources</a> for more information, including restrictions that apply to tags and \"Tag\n      naming limits and requirements\"; Amazon IVS has no service-specific constraints beyond what is\n      documented there.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#input": {}
+            }
+        },
+        "com.amazonaws.ivs#CreatePlaybackRestrictionPolicyResponse": {
+            "type": "structure",
+            "members": {
+                "playbackRestrictionPolicy": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicy",
+                    "traits": {
+                        "smithy.api#documentation": "<p/>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.ivs#CreateRecordingConfiguration": {
@@ -647,8 +1693,7 @@
                 "smithy.api#documentation": "<p>Creates a new recording configuration, used to enable recording to Amazon S3.</p>\n         <p>\n            <b>Known issue:</b> In the us-east-1 region, if you use the\n        Amazon Web Services CLI to create a recording configuration, it returns success even if the\n      S3 bucket is in a different region. In this case, the <code>state</code> of the recording\n      configuration is <code>CREATE_FAILED</code> (instead of <code>ACTIVE</code>). (In other\n      regions, the CLI correctly returns failure if the bucket is in a different region.)</p>\n         <p>\n            <b>Workaround:</b> Ensure that your S3 bucket is in the same\n      region as the recording configuration. If you create a recording configuration in a different\n      region as your S3 bucket, delete that recording configuration and create a new one with an S3\n      bucket from the correct region.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/CreateRecordingConfiguration",
-                    "code": 200
+                    "uri": "/CreateRecordingConfiguration"
                 }
             }
         },
@@ -671,7 +1716,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services\n        Resources</a> for more information, including restrictions that apply to tags and \"Tag\n      naming limits and requirements\"; Amazon IVS has no service-specific constraints beyond what is\n      documented there.</p>"
                     }
                 },
                 "thumbnailConfiguration": {
@@ -683,7 +1728,14 @@
                 "recordingReconnectWindowSeconds": {
                     "target": "com.amazonaws.ivs#RecordingReconnectWindowSeconds",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>If a broadcast disconnects and then reconnects within the specified interval, the multiple\n      streams will be considered a single broadcast and merged together. Default: 0.</p>"
+                    }
+                },
+                "renditionConfiguration": {
+                    "target": "com.amazonaws.ivs#RenditionConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Object that describes which renditions should be recorded for a stream.</p>"
                     }
                 }
             }
@@ -728,8 +1780,7 @@
                 "smithy.api#documentation": "<p>Creates a stream key, used to initiate a stream, for the specified channel ARN.</p>\n         <p>Note that <a>CreateChannel</a> creates a stream key. If you subsequently use\n      CreateStreamKey on the same channel, it will fail because a stream key already exists and\n      there is a limit of 1 stream key per channel. To reset the stream key on a channel, use <a>DeleteStreamKey</a> and then CreateStreamKey.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/CreateStreamKey",
-                    "code": 200
+                    "uri": "/CreateStreamKey"
                 }
             }
         },
@@ -746,7 +1797,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services\n        Resources</a> for more information, including restrictions that apply to tags and \"Tag\n      naming limits and requirements\"; Amazon IVS has no service-specific constraints beyond what is\n      documented there.</p>"
                     }
                 }
             }
@@ -788,7 +1839,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes the specified channel and its associated stream keys.</p>\n         <p>If you try to delete a live channel, you will get an error (409 ConflictException). To\n      delete a channel that is live, call <a>StopStream</a>, wait for the Amazon\n      EventBridge \"Stream End\" event (to verify that the stream's state was changed from Live to\n      Offline), then call DeleteChannel. (See <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/eventbridge.html\"> Using EventBridge with Amazon IVS</a>.)\n    </p>",
+                "smithy.api#documentation": "<p>Deletes the specified channel and its associated stream keys.</p>\n         <p>If you try to delete a live channel, you will get an error (409 ConflictException). To\n      delete a channel that is live, call <a>StopStream</a>, wait for the Amazon\n      EventBridge \"Stream End\" event (to verify that the stream's state is no longer Live), then\n      call DeleteChannel. (See <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/eventbridge.html\"> Using EventBridge with Amazon IVS</a>.)\n    </p>",
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/DeleteChannel",
@@ -834,8 +1885,7 @@
                 "smithy.api#documentation": "<p>Deletes a specified authorization key pair. This invalidates future viewer tokens\n      generated using the key pair’s <code>privateKey</code>. For more information, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Setting Up Private\n        Channels</a> in the <i>Amazon IVS User Guide</i>.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/DeletePlaybackKeyPair",
-                    "code": 200
+                    "uri": "/DeletePlaybackKeyPair"
                 }
             }
         },
@@ -854,6 +1904,55 @@
         "com.amazonaws.ivs#DeletePlaybackKeyPairResponse": {
             "type": "structure",
             "members": {}
+        },
+        "com.amazonaws.ivs#DeletePlaybackRestrictionPolicy": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.ivs#DeletePlaybackRestrictionPolicyRequest"
+            },
+            "output": {
+                "target": "smithy.api#Unit"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.ivs#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ConflictException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#PendingVerification"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>Deletes the specified playback restriction policy.</p>",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/DeletePlaybackRestrictionPolicy",
+                    "code": 204
+                }
+            }
+        },
+        "com.amazonaws.ivs#DeletePlaybackRestrictionPolicyRequest": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>ARN of the playback restriction policy to be deleted.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#input": {}
+            }
         },
         "com.amazonaws.ivs#DeleteRecordingConfiguration": {
             "type": "operation",
@@ -885,7 +1984,7 @@
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/DeleteRecordingConfiguration",
-                    "code": 200
+                    "code": 204
                 }
             }
         },
@@ -981,8 +2080,7 @@
                 "smithy.api#documentation": "<p>Gets the channel configuration for the specified channel ARN. See also <a>BatchGetChannel</a>.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/GetChannel",
-                    "code": 200
+                    "uri": "/GetChannel"
                 },
                 "smithy.api#readonly": {}
             }
@@ -1033,8 +2131,7 @@
                 "smithy.api#documentation": "<p>Gets a specified playback authorization key pair and returns the <code>arn</code> and\n        <code>fingerprint</code>. The <code>privateKey</code> held by the caller can be used to\n      generate viewer authorization tokens, to grant viewers access to private channels. For more\n      information, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Setting Up Private Channels</a> in the <i>Amazon IVS User\n      Guide</i>.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/GetPlaybackKeyPair",
-                    "code": 200
+                    "uri": "/GetPlaybackKeyPair"
                 },
                 "smithy.api#readonly": {}
             }
@@ -1060,6 +2157,66 @@
                         "smithy.api#documentation": ""
                     }
                 }
+            }
+        },
+        "com.amazonaws.ivs#GetPlaybackRestrictionPolicy": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.ivs#GetPlaybackRestrictionPolicyRequest"
+            },
+            "output": {
+                "target": "com.amazonaws.ivs#GetPlaybackRestrictionPolicyResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.ivs#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#PendingVerification"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>Gets the specified playback restriction policy.</p>",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/GetPlaybackRestrictionPolicy"
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.amazonaws.ivs#GetPlaybackRestrictionPolicyRequest": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>ARN of the playback restriction policy to be returned.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#input": {}
+            }
+        },
+        "com.amazonaws.ivs#GetPlaybackRestrictionPolicyResponse": {
+            "type": "structure",
+            "members": {
+                "playbackRestrictionPolicy": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicy",
+                    "traits": {
+                        "smithy.api#documentation": "<p/>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.ivs#GetRecordingConfiguration": {
@@ -1088,8 +2245,7 @@
                 "smithy.api#documentation": "<p>Gets the recording configuration for the specified ARN.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/GetRecordingConfiguration",
-                    "code": 200
+                    "uri": "/GetRecordingConfiguration"
                 },
                 "smithy.api#readonly": {}
             }
@@ -1143,8 +2299,7 @@
                 "smithy.api#documentation": "<p>Gets information about the active (live) stream on a specified channel.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/GetStream",
-                    "code": 200
+                    "uri": "/GetStream"
                 },
                 "smithy.api#readonly": {}
             }
@@ -1172,8 +2327,7 @@
                 "smithy.api#documentation": "<p>Gets stream-key information for a specified ARN.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/GetStreamKey",
-                    "code": 200
+                    "uri": "/GetStreamKey"
                 },
                 "smithy.api#readonly": {}
             }
@@ -1247,8 +2401,7 @@
                 "smithy.api#documentation": "<p>Gets metadata on a specified stream.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/GetStreamSession",
-                    "code": 200
+                    "uri": "/GetStreamSession"
                 },
                 "smithy.api#readonly": {}
             }
@@ -1311,8 +2464,7 @@
                 "smithy.api#documentation": "<p>Imports the public portion of a new key pair and returns its <code>arn</code> and\n        <code>fingerprint</code>. The <code>privateKey</code> can then be used to generate viewer\n      authorization tokens, to grant viewers access to private channels. For more information, see\n        <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Setting Up\n        Private Channels</a> in the <i>Amazon IVS User Guide</i>.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/ImportPlaybackKeyPair",
-                    "code": 200
+                    "uri": "/ImportPlaybackKeyPair"
                 }
             }
         },
@@ -1335,7 +2487,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Any tags provided with the request are added to the playback key pair tags. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Any tags provided with the request are added to the playback key pair tags. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services\n        Resources</a> for more information, including restrictions that apply to tags and \"Tag\n      naming limits and requirements\"; Amazon IVS has no service-specific constraints beyond what is\n      documented there.</p>"
                     }
                 }
             }
@@ -1374,8 +2526,17 @@
         "com.amazonaws.ivs#IngestEndpoint": {
             "type": "string"
         },
+        "com.amazonaws.ivs#InsecureIngest": {
+            "type": "boolean",
+            "traits": {
+                "smithy.api#default": false
+            }
+        },
         "com.amazonaws.ivs#Integer": {
-            "type": "long"
+            "type": "long",
+            "traits": {
+                "smithy.api#default": 0
+            }
         },
         "com.amazonaws.ivs#InternalServerException": {
             "type": "structure",
@@ -1394,7 +2555,10 @@
             }
         },
         "com.amazonaws.ivs#IsAuthorized": {
-            "type": "boolean"
+            "type": "boolean",
+            "traits": {
+                "smithy.api#default": false
+            }
         },
         "com.amazonaws.ivs#ListChannels": {
             "type": "operation",
@@ -1419,8 +2583,7 @@
                 "smithy.api#documentation": "<p>Gets summary information about all channels in your account, in the Amazon Web Services\n      region where the API request is processed. This list can be filtered to match a specified name\n      or recording-configuration ARN. Filters are mutually exclusive and cannot be used together. If\n      you try to use both filters, you will get an error (409 ConflictException).</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/ListChannels",
-                    "code": 200
+                    "uri": "/ListChannels"
                 },
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
@@ -1443,6 +2606,12 @@
                     "target": "com.amazonaws.ivs#ChannelRecordingConfigurationArn",
                     "traits": {
                         "smithy.api#documentation": "<p>Filters the channel list to match the specified recording-configuration ARN.</p>"
+                    }
+                },
+                "filterByPlaybackRestrictionPolicyArn": {
+                    "target": "com.amazonaws.ivs#ChannelPlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Filters the channel list to match the specified policy.</p>"
                     }
                 },
                 "nextToken": {
@@ -1497,8 +2666,7 @@
                 "smithy.api#documentation": "<p>Gets summary information about playback key pairs. For more information, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Setting Up Private\n        Channels</a> in the <i>Amazon IVS User Guide</i>.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/ListPlaybackKeyPairs",
-                    "code": 200
+                    "uri": "/ListPlaybackKeyPairs"
                 },
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
@@ -1543,6 +2711,83 @@
                 }
             }
         },
+        "com.amazonaws.ivs#ListPlaybackRestrictionPolicies": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.ivs#ListPlaybackRestrictionPoliciesRequest"
+            },
+            "output": {
+                "target": "com.amazonaws.ivs#ListPlaybackRestrictionPoliciesResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.ivs#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ConflictException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#PendingVerification"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>Gets summary information about playback restriction policies.</p>",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/ListPlaybackRestrictionPolicies"
+                },
+                "smithy.api#paginated": {
+                    "inputToken": "nextToken",
+                    "outputToken": "nextToken",
+                    "pageSize": "maxResults"
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.amazonaws.ivs#ListPlaybackRestrictionPoliciesRequest": {
+            "type": "structure",
+            "members": {
+                "nextToken": {
+                    "target": "com.amazonaws.ivs#PaginationToken",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The first policy to retrieve. This is used for pagination; see the <code>nextToken</code>\n      response field.</p>"
+                    }
+                },
+                "maxResults": {
+                    "target": "com.amazonaws.ivs#MaxPlaybackRestrictionPolicyResults",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Maximum number of policies to return. Default: 1.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#input": {}
+            }
+        },
+        "com.amazonaws.ivs#ListPlaybackRestrictionPoliciesResponse": {
+            "type": "structure",
+            "members": {
+                "playbackRestrictionPolicies": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>List of the matching policies.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazonaws.ivs#PaginationToken",
+                    "traits": {
+                        "smithy.api#documentation": "<p>If there are more channels than <code>maxResults</code>, use <code>nextToken</code> in the\n      request to get the next set.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#output": {}
+            }
+        },
         "com.amazonaws.ivs#ListRecordingConfigurations": {
             "type": "operation",
             "input": {
@@ -1566,8 +2811,7 @@
                 "smithy.api#documentation": "<p>Gets summary information about all recording configurations in your account, in the\n        Amazon Web Services region where the API request is processed.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/ListRecordingConfigurations",
-                    "code": 200
+                    "uri": "/ListRecordingConfigurations"
                 },
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
@@ -1635,8 +2879,7 @@
                 "smithy.api#documentation": "<p>Gets summary information about stream keys for the specified channel.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/ListStreamKeys",
-                    "code": 200
+                    "uri": "/ListStreamKeys"
                 },
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
@@ -1711,8 +2954,7 @@
                 "smithy.api#documentation": "<p>Gets a summary of current and previous streams for a specified channel in your account, in\n      the AWS region where the API request is processed.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/ListStreamSessions",
-                    "code": 200
+                    "uri": "/ListStreamSessions"
                 },
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
@@ -1784,8 +3026,7 @@
                 "smithy.api#documentation": "<p>Gets summary information about live streams in your account, in the Amazon Web Services\n      region where the API request is processed.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/ListStreams",
-                    "code": 200
+                    "uri": "/ListStreams"
                 },
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
@@ -1859,8 +3100,7 @@
                 "smithy.api#documentation": "<p>Gets information about Amazon Web Services tags for the specified ARN.</p>",
                 "smithy.api#http": {
                     "method": "GET",
-                    "uri": "/tags/{resourceArn}",
-                    "code": 200
+                    "uri": "/tags/{resourceArn}"
                 },
                 "smithy.api#readonly": {}
             }
@@ -1884,7 +3124,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p/>",
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of maps, each of the form <code>string:string\n        (key:value)</code>.</p>",
                         "smithy.api#required": {}
                     }
                 }
@@ -1900,6 +3140,15 @@
             }
         },
         "com.amazonaws.ivs#MaxPlaybackKeyPairResults": {
+            "type": "integer",
+            "traits": {
+                "smithy.api#range": {
+                    "min": 1,
+                    "max": 100
+                }
+            }
+        },
+        "com.amazonaws.ivs#MaxPlaybackRestrictionPolicyResults": {
             "type": "integer",
             "traits": {
                 "smithy.api#range": {
@@ -1941,7 +3190,8 @@
                 "smithy.api#length": {
                     "min": 0,
                     "max": 1024
-                }
+                },
+                "smithy.api#pattern": "^[a-zA-Z0-9+/=_-]*$"
             }
         },
         "com.amazonaws.ivs#PendingVerification": {
@@ -1984,7 +3234,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
                     }
                 }
             },
@@ -2039,7 +3289,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
                     }
                 }
             },
@@ -2049,6 +3299,159 @@
         },
         "com.amazonaws.ivs#PlaybackPublicKeyMaterial": {
             "type": "string"
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicy": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy ARN</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "allowedCountries": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedCountryList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A list of country codes that control geoblocking restriction. Allowed values are the\n      officially assigned <a href=\"https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2\">ISO 3166-1\n        alpha-2</a> codes. Default: All countries (an empty array).</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "allowedOrigins": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedOriginList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A list of origin sites that control CORS restriction. Allowed values are the same as valid\n      values of the Origin header defined at <a href=\"https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin\">https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin</a>. Default: All\n      origins (an empty array).</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "enableStrictOriginEnforcement": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyEnableStrictOriginEnforcement",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Whether channel playback is constrained by origin site. Default:\n      <code>false</code>.</p>"
+                    }
+                },
+                "name": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy name. The value does not need to be unique.</p>"
+                    }
+                },
+                "tags": {
+                    "target": "com.amazonaws.ivs#Tags",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>An object representing a policy to constrain playback by country and/or origin\n      sites.</p>"
+            }
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedCountry": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 2,
+                    "max": 2
+                }
+            }
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedCountryList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedCountry"
+            }
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedOrigin": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 128
+                }
+            }
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedOriginList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedOrigin"
+            }
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicyArn": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 128
+                },
+                "smithy.api#pattern": "^arn:aws:ivs:[a-z0-9-]+:[0-9]+:playback-restriction-policy/[a-zA-Z0-9-]+$"
+            }
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicyEnableStrictOriginEnforcement": {
+            "type": "boolean"
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicyList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.ivs#PlaybackRestrictionPolicySummary"
+            }
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicyName": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 128
+                },
+                "smithy.api#pattern": "^[a-zA-Z0-9-_]*$"
+            }
+        },
+        "com.amazonaws.ivs#PlaybackRestrictionPolicySummary": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy ARN</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "allowedCountries": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedCountryList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A list of country codes that control geoblocking restriction. Allowed values are the\n      officially assigned <a href=\"https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2\">ISO 3166-1\n        alpha-2</a> codes. Default: All countries (an empty array).</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "allowedOrigins": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedOriginList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A list of origin sites that control CORS restriction. Allowed values are the same as valid\n      values of the Origin header defined at <a href=\"https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin\">https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin</a>. Default: All\n      origins (an empty array).</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "enableStrictOriginEnforcement": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyEnableStrictOriginEnforcement",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Whether channel playback is constrained by origin site. Default:\n      <code>false</code>.</p>"
+                    }
+                },
+                "name": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy name. The value does not need to be unique.</p>"
+                    }
+                },
+                "tags": {
+                    "target": "com.amazonaws.ivs#Tags",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Summary information about a PlaybackRestrictionPolicy.</p>"
+            }
         },
         "com.amazonaws.ivs#PlaybackURL": {
             "type": "string"
@@ -2083,7 +3486,7 @@
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/PutMetadata",
-                    "code": 200
+                    "code": 204
                 }
             }
         },
@@ -2139,7 +3542,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
                     }
                 },
                 "thumbnailConfiguration": {
@@ -2151,7 +3554,14 @@
                 "recordingReconnectWindowSeconds": {
                     "target": "com.amazonaws.ivs#RecordingReconnectWindowSeconds",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>If a broadcast disconnects and then reconnects within the specified interval, the multiple\n      streams will be considered a single broadcast and merged together. Default: 0.</p>"
+                    }
+                },
+                "renditionConfiguration": {
+                    "target": "com.amazonaws.ivs#RenditionConfiguration",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Object that describes which renditions should be recorded for a stream.</p>"
                     }
                 }
             },
@@ -2237,7 +3647,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
                     }
                 }
             },
@@ -2263,10 +3673,79 @@
         "com.amazonaws.ivs#RecordingReconnectWindowSeconds": {
             "type": "integer",
             "traits": {
+                "smithy.api#default": 0,
                 "smithy.api#range": {
                     "min": 0,
                     "max": 300
                 }
+            }
+        },
+        "com.amazonaws.ivs#RenditionConfiguration": {
+            "type": "structure",
+            "members": {
+                "renditionSelection": {
+                    "target": "com.amazonaws.ivs#RenditionConfigurationRenditionSelection",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Indicates which set of renditions are recorded for a stream. For <code>BASIC</code>\n      channels, the <code>CUSTOM</code> value has no effect. If <code>CUSTOM</code> is specified, a\n      set of renditions must be specified in the <code>renditions</code> field. Default:\n        <code>ALL</code>.</p>"
+                    }
+                },
+                "renditions": {
+                    "target": "com.amazonaws.ivs#RenditionConfigurationRenditionList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Indicates which renditions are recorded for a stream, if <code>renditionSelection</code>\n      is <code>CUSTOM</code>; otherwise, this field is irrelevant. The selected renditions are\n      recorded if they are available during the stream. If a selected rendition is unavailable, the\n      best available rendition is recorded. For details on the resolution dimensions of each\n      rendition, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/record-to-s3.html\">Auto-Record to Amazon S3</a>.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Object that describes which renditions should be recorded for a stream.</p>"
+            }
+        },
+        "com.amazonaws.ivs#RenditionConfigurationRendition": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "FULL_HD",
+                        "name": "FULL_HD"
+                    },
+                    {
+                        "value": "HD",
+                        "name": "HD"
+                    },
+                    {
+                        "value": "SD",
+                        "name": "SD"
+                    },
+                    {
+                        "value": "LOWEST_RESOLUTION",
+                        "name": "LOWEST_RESOLUTION"
+                    }
+                ]
+            }
+        },
+        "com.amazonaws.ivs#RenditionConfigurationRenditionList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.ivs#RenditionConfigurationRendition"
+            }
+        },
+        "com.amazonaws.ivs#RenditionConfigurationRenditionSelection": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "ALL",
+                        "name": "ALL"
+                    },
+                    {
+                        "value": "NONE",
+                        "name": "NONE"
+                    },
+                    {
+                        "value": "CUSTOM",
+                        "name": "CUSTOM"
+                    }
+                ]
             }
         },
         "com.amazonaws.ivs#ResourceArn": {
@@ -2336,6 +3815,102 @@
                 "smithy.api#httpError": 402
             }
         },
+        "com.amazonaws.ivs#Srt": {
+            "type": "structure",
+            "members": {
+                "endpoint": {
+                    "target": "com.amazonaws.ivs#SrtEndpoint",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The endpoint to be used when streaming with IVS using the SRT protocol.</p>"
+                    }
+                },
+                "passphrase": {
+                    "target": "com.amazonaws.ivs#SrtPassphrase",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Auto-generated passphrase to enable encryption. This field is applicable only if the end\n      user has <i>not</i> enabled the <code>insecureIngest</code> option for the\n      channel.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Specifies information needed to stream using the SRT protocol.</p>"
+            }
+        },
+        "com.amazonaws.ivs#SrtEndpoint": {
+            "type": "string"
+        },
+        "com.amazonaws.ivs#SrtPassphrase": {
+            "type": "string",
+            "traits": {
+                "smithy.api#sensitive": {}
+            }
+        },
+        "com.amazonaws.ivs#StartViewerSessionRevocation": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.ivs#StartViewerSessionRevocationRequest"
+            },
+            "output": {
+                "target": "com.amazonaws.ivs#StartViewerSessionRevocationResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.ivs#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#InternalServerException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#PendingVerification"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ThrottlingException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>Starts the process of revoking the viewer session associated with a specified channel ARN\n      and viewer ID. Optionally, you can provide a version to revoke viewer sessions less than and\n      including that version. For instructions on associating a viewer ID with a viewer session, see\n        <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/private-channels.html\">Setting Up\n        Private Channels</a>.</p>",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/StartViewerSessionRevocation"
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.amazonaws.ivs#StartViewerSessionRevocationRequest": {
+            "type": "structure",
+            "members": {
+                "channelArn": {
+                    "target": "com.amazonaws.ivs#ChannelArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The ARN of the channel associated with the viewer session to revoke.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "viewerId": {
+                    "target": "com.amazonaws.ivs#ViewerId",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The ID of the viewer associated with the viewer session to revoke. Do not use this field\n      for personally identifying, confidential, or sensitive information.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "viewerSessionVersionsLessThanOrEqualTo": {
+                    "target": "com.amazonaws.ivs#ViewerSessionVersion",
+                    "traits": {
+                        "smithy.api#default": 0,
+                        "smithy.api#documentation": "<p>An optional filter on which versions of the viewer session to revoke. All versions less\n      than or equal to the specified version will be revoked. Default: 0.</p>"
+                    }
+                }
+            }
+        },
+        "com.amazonaws.ivs#StartViewerSessionRevocationResponse": {
+            "type": "structure",
+            "members": {}
+        },
         "com.amazonaws.ivs#StopStream": {
             "type": "operation",
             "input": {
@@ -2365,8 +3940,7 @@
                 "smithy.api#documentation": "<p>Disconnects the incoming RTMPS stream for the specified channel. Can be used in\n      conjunction with <a>DeleteStreamKey</a> to prevent further streaming to a\n      channel.</p>\n         <note>\n            <p>Many streaming client-software libraries automatically reconnect a dropped RTMPS\n        session, so to stop the stream permanently, you may want to first revoke the\n          <code>streamKey</code> attached to the channel.</p>\n         </note>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/StopStream",
-                    "code": 200
+                    "uri": "/StopStream"
                 }
             }
         },
@@ -2416,7 +3990,7 @@
                 "state": {
                     "target": "com.amazonaws.ivs#StreamState",
                     "traits": {
-                        "smithy.api#documentation": "<p>The stream’s state.</p>"
+                        "smithy.api#documentation": "<p>The stream’s state. Do not rely on the <code>OFFLINE</code> state, as the API may not\n      return it; instead, a \"NotBroadcasting\" error will indicate that the stream is not\n      live.</p>"
                     }
                 },
                 "health": {
@@ -2428,6 +4002,7 @@
                 "viewerCount": {
                     "target": "com.amazonaws.ivs#StreamViewerCount",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>A count of concurrent views of the stream. Typically, a new view appears in\n        <code>viewerCount</code> within 15 seconds of when video playback starts and a view is\n      removed from <code>viewerCount</code> within 1 minute of when video playback ends. A value of\n      -1 indicates that the request timed out; in this case, retry.</p>"
                     }
                 }
@@ -2540,7 +4115,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
                     }
                 }
             },
@@ -2594,7 +4169,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of 1-50 maps, each of the form <code>string:string (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>"
+                        "smithy.api#documentation": "<p>Tags attached to the resource. Array of 1-50 maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>"
                     }
                 }
             },
@@ -2709,6 +4284,7 @@
                 "hasErrorEvent": {
                     "target": "com.amazonaws.ivs#Boolean",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "<p>If <code>true</code>, this stream encountered a quota breach or failure.</p>"
                     }
                 }
@@ -2756,7 +4332,7 @@
                 "state": {
                     "target": "com.amazonaws.ivs#StreamState",
                     "traits": {
-                        "smithy.api#documentation": "<p>The stream’s state.</p>"
+                        "smithy.api#documentation": "<p>The stream’s state. Do not rely on the <code>OFFLINE</code> state, as the API may not\n      return it; instead, a \"NotBroadcasting\" error will indicate that the stream is not\n      live.</p>"
                     }
                 },
                 "health": {
@@ -2768,6 +4344,7 @@
                 "viewerCount": {
                     "target": "com.amazonaws.ivs#StreamViewerCount",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>A count of concurrent views of the stream. Typically, a new view appears in\n        <code>viewerCount</code> within 15 seconds of when video playback starts and a view is\n      removed from <code>viewerCount</code> within 1 minute of when video playback ends. A value of\n      -1 indicates that the request timed out; in this case, retry.</p>"
                     }
                 },
@@ -2799,7 +4376,10 @@
             }
         },
         "com.amazonaws.ivs#StreamViewerCount": {
-            "type": "long"
+            "type": "long",
+            "traits": {
+                "smithy.api#default": 0
+            }
         },
         "com.amazonaws.ivs#String": {
             "type": "string"
@@ -2848,8 +4428,7 @@
                 "smithy.api#documentation": "<p>Adds or updates tags for the Amazon Web Services resource with the specified ARN.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/tags/{resourceArn}",
-                    "code": 200
+                    "uri": "/tags/{resourceArn}"
                 }
             }
         },
@@ -2867,7 +4446,7 @@
                 "tags": {
                     "target": "com.amazonaws.ivs#Tags",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of tags to be added or updated. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>",
+                        "smithy.api#documentation": "<p>Array of tags to be added or updated. Array of maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>",
                         "smithy.api#required": {}
                     }
                 }
@@ -2904,7 +4483,7 @@
             "type": "long",
             "traits": {
                 "smithy.api#range": {
-                    "min": 5,
+                    "min": 1,
                     "max": 60
                 }
             }
@@ -2937,7 +4516,19 @@
                 "targetIntervalSeconds": {
                     "target": "com.amazonaws.ivs#TargetIntervalSeconds",
                     "traits": {
-                        "smithy.api#documentation": "<p>The targeted thumbnail-generation interval in seconds. This is configurable (and required)\n      only if <code>recordingMode</code> is <code>INTERVAL</code>. Default: 60.</p>\n         <p>\n            <b>Important:</b> Setting a value for\n        <code>targetIntervalSeconds</code> does not guarantee that thumbnails are generated at the\n      specified interval. For thumbnails to be generated at the <code>targetIntervalSeconds</code>\n      interval, the <code>IDR/Keyframe</code> value for the input video must be less than the\n        <code>targetIntervalSeconds</code> value. See <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/streaming-config.html\"> Amazon IVS Streaming Configuration</a>\n      for information on setting <code>IDR/Keyframe</code> to the recommended value in video-encoder\n      settings.</p>"
+                        "smithy.api#documentation": "<p>The targeted thumbnail-generation interval in seconds. This is configurable (and required)\n      only if <code>recordingMode</code> is <code>INTERVAL</code>. Default: 60.</p>\n         <p>\n            <b>Important:</b> For the <code>BASIC</code> channel type,\n      setting a value for <code>targetIntervalSeconds</code> does not guarantee that thumbnails are\n      generated at the specified interval. For thumbnails to be generated at the\n        <code>targetIntervalSeconds</code> interval, the <code>IDR/Keyframe</code> value for the\n      input video must be less than the <code>targetIntervalSeconds</code> value. See <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/streaming-config.html\"> Amazon IVS Streaming\n        Configuration</a> for information on setting <code>IDR/Keyframe</code> to the\n      recommended value in video-encoder settings.</p>"
+                    }
+                },
+                "resolution": {
+                    "target": "com.amazonaws.ivs#ThumbnailConfigurationResolution",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Indicates the desired resolution of recorded thumbnails. Thumbnails are recorded at the\n      selected resolution if the corresponding rendition is available during the stream; otherwise,\n      they are recorded at source resolution. For more information about resolution values and their\n      corresponding height and width dimensions, see <a href=\"https://docs.aws.amazon.com/ivs/latest/userguide/record-to-s3.html\">Auto-Record to Amazon S3</a>. Default:\n      Null (source resolution is returned).</p>"
+                    }
+                },
+                "storage": {
+                    "target": "com.amazonaws.ivs#ThumbnailConfigurationStorageList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Indicates the format in which thumbnails are recorded. <code>SEQUENTIAL</code> records all\n      generated thumbnails in a serial manner, to the media/thumbnails directory.\n        <code>LATEST</code> saves the latest thumbnail in media/latest_thumbnail/thumb.jpg and\n      overwrites it at the interval specified by <code>targetIntervalSeconds</code>. You can enable\n      both <code>SEQUENTIAL</code> and <code>LATEST</code>. Default: <code>SEQUENTIAL</code>.</p>"
                     }
                 }
             },
@@ -2945,10 +4536,71 @@
                 "smithy.api#documentation": "<p>An object representing a configuration of thumbnails for recorded video.</p>"
             }
         },
+        "com.amazonaws.ivs#ThumbnailConfigurationResolution": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "FULL_HD",
+                        "name": "FULL_HD"
+                    },
+                    {
+                        "value": "HD",
+                        "name": "HD"
+                    },
+                    {
+                        "value": "SD",
+                        "name": "SD"
+                    },
+                    {
+                        "value": "LOWEST_RESOLUTION",
+                        "name": "LOWEST_RESOLUTION"
+                    }
+                ]
+            }
+        },
+        "com.amazonaws.ivs#ThumbnailConfigurationStorage": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "SEQUENTIAL",
+                        "name": "SEQUENTIAL"
+                    },
+                    {
+                        "value": "LATEST",
+                        "name": "LATEST"
+                    }
+                ]
+            }
+        },
+        "com.amazonaws.ivs#ThumbnailConfigurationStorageList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.ivs#ThumbnailConfigurationStorage"
+            }
+        },
         "com.amazonaws.ivs#Time": {
             "type": "timestamp",
             "traits": {
                 "smithy.api#timestampFormat": "date-time"
+            }
+        },
+        "com.amazonaws.ivs#TranscodePreset": {
+            "type": "enum",
+            "members": {
+                "HigherBandwidthTranscodePreset": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "HIGHER_BANDWIDTH_DELIVERY"
+                    }
+                },
+                "ConstrainedBandwidthTranscodePreset": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "CONSTRAINED_BANDWIDTH_DELIVERY"
+                    }
+                }
             }
         },
         "com.amazonaws.ivs#UntagResource": {
@@ -2974,8 +4626,7 @@
                 "smithy.api#documentation": "<p>Removes tags from the resource with the specified ARN.</p>",
                 "smithy.api#http": {
                     "method": "DELETE",
-                    "uri": "/tags/{resourceArn}",
-                    "code": 200
+                    "uri": "/tags/{resourceArn}"
                 },
                 "smithy.api#idempotent": {}
             }
@@ -2994,7 +4645,7 @@
                 "tagKeys": {
                     "target": "com.amazonaws.ivs#TagKeyList",
                     "traits": {
-                        "smithy.api#documentation": "<p>Array of tags to be removed. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for\n      more information, including restrictions that apply to tags and \"Tag naming limits and\n      requirements\"; Amazon IVS has no service-specific constraints beyond what is documented\n      there.</p>",
+                        "smithy.api#documentation": "<p>Array of tags to be removed. Array of maps, each of the form <code>string:string\n        (key:value)</code>. See <a href=\"https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html\">Tagging Amazon Web Services Resources</a> for more information, including restrictions\n      that apply to tags and \"Tag naming limits and requirements\"; Amazon IVS has no\n      service-specific constraints beyond what is documented there.</p>",
                         "smithy.api#httpQuery": "tagKeys",
                         "smithy.api#required": {}
                     }
@@ -3031,11 +4682,10 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Updates a channel's configuration. This does not affect an ongoing stream of this channel.\n      You must stop and restart the stream for the changes to take effect.</p>",
+                "smithy.api#documentation": "<p>Updates a channel's configuration. Live channels cannot be updated. You must stop the\n      ongoing stream, update the channel, and restart the stream for the changes to take\n      effect.</p>",
                 "smithy.api#http": {
                     "method": "POST",
-                    "uri": "/UpdateChannel",
-                    "code": 200
+                    "uri": "/UpdateChannel"
                 }
             }
         },
@@ -3058,25 +4708,45 @@
                 "latencyMode": {
                     "target": "com.amazonaws.ivs#ChannelLatencyMode",
                     "traits": {
-                        "smithy.api#documentation": "<p>Channel latency mode. Use <code>NORMAL</code> to broadcast and deliver live video up to\n      Full HD. Use <code>LOW</code> for near-real-time interaction with viewers. (Note: In the\n      Amazon IVS console, <code>LOW</code> and <code>NORMAL</code> correspond to Ultra-low and\n      Standard, respectively.)</p>"
+                        "smithy.api#documentation": "<p>Channel latency mode. Use <code>NORMAL</code> to broadcast and deliver live video up to\n      Full HD. Use <code>LOW</code> for near-real-time interaction with viewers.</p>"
                     }
                 },
                 "type": {
                     "target": "com.amazonaws.ivs#ChannelType",
                     "traits": {
-                        "smithy.api#documentation": "<p>Channel type, which determines the allowable resolution and bitrate. <i>If you\n        exceed the allowable resolution or bitrate, the stream probably will disconnect\n        immediately</i>. Valid values:</p>\n         <ul>\n            <li>\n               <p>\n                  <code>STANDARD</code>: Video is transcoded: multiple qualities are generated from the\n          original input, to automatically give viewers the best experience for their devices and\n          network conditions. Transcoding allows higher playback quality across a range of download\n          speeds. Resolution can be up to 1080p and bitrate can be up to 8.5 Mbps. Audio is\n          transcoded only for renditions 360p and below; above that, audio is passed through. This\n          is the default.</p>\n            </li>\n            <li>\n               <p>\n                  <code>BASIC</code>: Video is transmuxed: Amazon IVS delivers the original input to\n          viewers. The viewer’s video-quality choice is limited to the original input. Resolution\n          can be up to 1080p and bitrate can be up to 1.5 Mbps for 480p and up to 3.5 Mbps for\n          resolutions between 480p and 1080p.</p>\n            </li>\n         </ul>"
+                        "smithy.api#documentation": "<p>Channel type, which determines the allowable resolution and bitrate. <i>If you\n        exceed the allowable input resolution or bitrate, the stream probably will disconnect\n        immediately.</i> Default: <code>STANDARD</code>. For details, see <a href=\"https://docs.aws.amazon.com/ivs/latest/LowLatencyAPIReference/channel-types.html\">Channel\n        Types</a>.</p>"
                     }
                 },
                 "authorized": {
                     "target": "com.amazonaws.ivs#Boolean",
                     "traits": {
+                        "smithy.api#default": false,
                         "smithy.api#documentation": "<p>Whether the channel is private (enabled for playback authorization).</p>"
                     }
                 },
                 "recordingConfigurationArn": {
                     "target": "com.amazonaws.ivs#ChannelRecordingConfigurationArn",
                     "traits": {
-                        "smithy.api#documentation": "<p>Recording-configuration ARN. If this is set to an empty string, recording is disabled. A\n      value other than an empty string indicates that recording is enabled</p>"
+                        "smithy.api#documentation": "<p>Recording-configuration ARN. A valid ARN value here both specifies the ARN and enables recording.\n    If this is set to an empty string, recording is disabled.</p>"
+                    }
+                },
+                "insecureIngest": {
+                    "target": "com.amazonaws.ivs#Boolean",
+                    "traits": {
+                        "smithy.api#default": false,
+                        "smithy.api#documentation": "<p>Whether the channel allows insecure RTMP and SRT ingest. Default: <code>false</code>.</p>"
+                    }
+                },
+                "preset": {
+                    "target": "com.amazonaws.ivs#TranscodePreset",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Optional transcode preset for the channel. This is selectable only for\n        <code>ADVANCED_HD</code> and <code>ADVANCED_SD</code> channel types. For those channel\n      types, the default <code>preset</code> is <code>HIGHER_BANDWIDTH_DELIVERY</code>. For other\n      channel types (<code>BASIC</code> and <code>STANDARD</code>), <code>preset</code> is the empty\n      string (<code>\"\"</code>).</p>"
+                    }
+                },
+                "playbackRestrictionPolicyArn": {
+                    "target": "com.amazonaws.ivs#ChannelPlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy ARN. A valid ARN value here both specifies the ARN and enables playback restriction.\n     If this is set to an empty string, playback restriction policy is disabled.</p>"
                     }
                 }
             }
@@ -3085,8 +4755,97 @@
             "type": "structure",
             "members": {
                 "channel": {
-                    "target": "com.amazonaws.ivs#Channel"
+                    "target": "com.amazonaws.ivs#Channel",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Object specifying the updated channel.</p>"
+                    }
                 }
+            }
+        },
+        "com.amazonaws.ivs#UpdatePlaybackRestrictionPolicy": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazonaws.ivs#UpdatePlaybackRestrictionPolicyRequest"
+            },
+            "output": {
+                "target": "com.amazonaws.ivs#UpdatePlaybackRestrictionPolicyResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazonaws.ivs#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ConflictException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#PendingVerification"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazonaws.ivs#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "<p>Updates a specified playback restriction policy.</p>",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/UpdatePlaybackRestrictionPolicy"
+                }
+            }
+        },
+        "com.amazonaws.ivs#UpdatePlaybackRestrictionPolicyRequest": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyArn",
+                    "traits": {
+                        "smithy.api#documentation": "<p>ARN of the playback-restriction-policy to be updated.</p>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "allowedCountries": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedCountryList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A list of country codes that control geoblocking restriction. Allowed values are the\n      officially assigned <a href=\"https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2\">ISO 3166-1\n        alpha-2</a> codes. Default: All countries (an empty array).</p>"
+                    }
+                },
+                "allowedOrigins": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyAllowedOriginList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A list of origin sites that control CORS restriction. Allowed values are the same as valid\n      values of the Origin header defined at <a href=\"https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin\">https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin</a>. Default: All\n      origins (an empty array).</p>"
+                    }
+                },
+                "enableStrictOriginEnforcement": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyEnableStrictOriginEnforcement",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Whether channel playback is constrained by origin site. Default:\n      <code>false</code>.</p>"
+                    }
+                },
+                "name": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicyName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Playback-restriction-policy name. The value does not need to be unique.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#input": {}
+            }
+        },
+        "com.amazonaws.ivs#UpdatePlaybackRestrictionPolicyResponse": {
+            "type": "structure",
+            "members": {
+                "playbackRestrictionPolicy": {
+                    "target": "com.amazonaws.ivs#PlaybackRestrictionPolicy",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Object specifying the updated policy.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#output": {}
             }
         },
         "com.amazonaws.ivs#ValidationException": {
@@ -3135,30 +4894,52 @@
                 "targetBitrate": {
                     "target": "com.amazonaws.ivs#Integer",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The expected ingest bitrate (bits per second). This is configured in the encoder.</p>"
                     }
                 },
                 "targetFramerate": {
                     "target": "com.amazonaws.ivs#Integer",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>The expected ingest framerate. This is configured in the encoder.</p>"
                     }
                 },
                 "videoHeight": {
                     "target": "com.amazonaws.ivs#Integer",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Video-resolution height in pixels.</p>"
                     }
                 },
                 "videoWidth": {
                     "target": "com.amazonaws.ivs#Integer",
                     "traits": {
+                        "smithy.api#default": 0,
                         "smithy.api#documentation": "<p>Video-resolution width in pixels.</p>"
                     }
                 }
             },
             "traits": {
                 "smithy.api#documentation": "<p>Object specifying a stream’s video configuration, as set up by the broadcaster (usually in\n      an encoder). This is part of the <a>IngestConfiguration</a> object and used for\n      monitoring stream health.</p>"
+            }
+        },
+        "com.amazonaws.ivs#ViewerId": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 40
+                }
+            }
+        },
+        "com.amazonaws.ivs#ViewerSessionVersion": {
+            "type": "integer",
+            "traits": {
+                "smithy.api#default": 0,
+                "smithy.api#range": {
+                    "min": 0
+                }
             }
         },
         "com.amazonaws.ivs#errorCode": {

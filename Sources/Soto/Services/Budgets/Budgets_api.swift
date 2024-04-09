@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,33 +19,7 @@
 
 /// Service object for interacting with AWS Budgets service.
 ///
-/// Use the Amazon Web Services Budgets API to plan your service usage, service costs, and instance reservations. This API reference provides descriptions, syntax, and usage examples for each of the actions and data types for the Amazon Web Services Budgets feature.
-/// 		       Budgets provide you with a way to see the following information:
-///
-/// 				           How close your plan is to your budgeted amount or to the free tier limits
-///
-/// 				           Your usage-to-date, including how much you've used of your Reserved Instances (RIs)
-///
-/// 				           Your current estimated charges from Amazon Web Services, and how much your predicted usage will accrue in charges by the end of the month
-///
-/// 				           How much of your budget has been used
-///
-/// 		       Amazon Web Services updates your budget status several times a day. Budgets track your unblended costs, subscriptions, refunds, and RIs. You can create the following types of budgets:
-///
-/// 				            Cost budgets - Plan how much you want to spend on a service.
-///
-/// 				            Usage budgets - Plan how much you want to use one or more services.
-///
-/// 				            RI utilization budgets - Define a utilization threshold, and receive alerts when your RI usage falls below that threshold. This lets you see if your RIs are unused or under-utilized.
-///
-/// 				            RI coverage budgets - Define a coverage threshold, and receive alerts when the number of your instance hours that are covered by RIs fall below that threshold. This lets you see how much of your instance usage is covered by a reservation.
-///
-/// 		       Service Endpoint
-/// 	        The Amazon Web Services Budgets API provides the following endpoint:
-///
-/// 				           https://budgets.amazonaws.com
-///
-/// 	        For information about costs that are associated with the Amazon Web Services Budgets API, see Amazon Web Services Cost Management Pricing.
+/// Use the Amazon Web Services Budgets API to plan your service usage, service costs, and instance reservations. This API reference provides descriptions, syntax, and usage examples for each of the actions and data types for the Amazon Web Services Budgets feature.  Budgets provide you with a way to see the following information:   How close your plan is to your budgeted amount or to the free tier limits   Your usage-to-date, including how much you've used of your Reserved Instances (RIs)   Your current estimated charges from Amazon Web Services, and how much your predicted usage will accrue in charges by the end of the month   How much of your budget has been used   Amazon Web Services updates your budget status several times a day. Budgets track your unblended costs, subscriptions, refunds, and RIs. You can create the following types of budgets:    Cost budgets - Plan how much you want to spend on a service.    Usage budgets - Plan how much you want to use one or more services.    RI utilization budgets - Define a utilization threshold, and receive alerts when your RI usage falls below that threshold. This lets you see if your RIs are unused or under-utilized.    RI coverage budgets - Define a coverage threshold, and receive alerts when the number of your instance hours that are covered by RIs fall below that threshold. This lets you see how much of your instance usage is covered by a reservation.   Service Endpoint The Amazon Web Services Budgets API provides the following endpoint:   https://budgets.amazonaws.com   For information about costs that are associated with the Amazon Web Services Budgets API, see Amazon Web Services Cost Management Pricing.
 public struct Budgets: AWSService {
     // MARK: Member variables
 
@@ -61,11 +35,15 @@ public struct Budgets: AWSService {
     ///     - client: AWSClient used to process requests
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -75,167 +53,340 @@ public struct Budgets: AWSService {
             region: nil,
             partition: partition,
             amzTarget: "AWSBudgetServiceGateway",
-            service: "budgets",
+            serviceName: "Budgets",
+            serviceIdentifier: "budgets",
             serviceProtocol: .json(version: "1.1"),
             apiVersion: "2016-10-20",
             endpoint: endpoint,
-            serviceEndpoints: [
-                "aws-cn-global": "budgets.amazonaws.com.cn",
-                "aws-global": "budgets.amazonaws.com"
-            ],
-            partitionEndpoints: [
-                .aws: (endpoint: "aws-global", region: .useast1),
-                .awscn: (endpoint: "aws-cn-global", region: .cnnorthwest1)
-            ],
+            serviceEndpoints: Self.serviceEndpoints,
+            partitionEndpoints: Self.partitionEndpoints,
             errorType: BudgetsErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+    /// custom endpoints for regions
+    static var serviceEndpoints: [String: String] {[
+        "aws-cn-global": "budgets.amazonaws.com.cn",
+        "aws-global": "budgets.amazonaws.com"
+    ]}
+
+    /// Default endpoint and region to use for each partition
+    static var partitionEndpoints: [AWSPartition: (endpoint: String, region: SotoCore.Region)] {[
+        .aws: (endpoint: "aws-global", region: .useast1),
+        .awscn: (endpoint: "aws-cn-global", region: .cnnorthwest1)
+    ]}
+
+
     // MARK: API Calls
 
-    /// Creates a budget and, if included, notifications and subscribers.
-    ///
-    /// 			         Only one of BudgetLimit or PlannedBudgetLimits can be present in the syntax at one time. Use the syntax that matches your case. The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
-    ///
-    public func createBudget(_ input: CreateBudgetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateBudgetResponse> {
-        return self.client.execute(operation: "CreateBudget", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a budget and, if included, notifications and subscribers.   Only one of BudgetLimit or PlannedBudgetLimits can be present in the syntax at one time. Use the syntax that matches your case. The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
+    @Sendable
+    public func createBudget(_ input: CreateBudgetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateBudgetResponse {
+        return try await self.client.execute(
+            operation: "CreateBudget", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Creates a budget action.
-    public func createBudgetAction(_ input: CreateBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateBudgetActionResponse> {
-        return self.client.execute(operation: "CreateBudgetAction", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createBudgetAction(_ input: CreateBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateBudgetActionResponse {
+        return try await self.client.execute(
+            operation: "CreateBudgetAction", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a notification. You must create the budget before you create the associated notification.
-    public func createNotification(_ input: CreateNotificationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateNotificationResponse> {
-        return self.client.execute(operation: "CreateNotification", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createNotification(_ input: CreateNotificationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateNotificationResponse {
+        return try await self.client.execute(
+            operation: "CreateNotification", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Creates a subscriber. You must create the associated budget and notification before you create the subscriber.
-    public func createSubscriber(_ input: CreateSubscriberRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateSubscriberResponse> {
-        return self.client.execute(operation: "CreateSubscriber", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func createSubscriber(_ input: CreateSubscriberRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateSubscriberResponse {
+        return try await self.client.execute(
+            operation: "CreateSubscriber", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes a budget. You can delete your budget at any time.
-    ///
-    /// 			         Deleting a budget also deletes the notifications and subscribers that are associated with that budget.
-    ///
-    public func deleteBudget(_ input: DeleteBudgetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteBudgetResponse> {
-        return self.client.execute(operation: "DeleteBudget", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes a budget. You can delete your budget at any time.  Deleting a budget also deletes the notifications and subscribers that are associated with that budget.
+    @Sendable
+    public func deleteBudget(_ input: DeleteBudgetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteBudgetResponse {
+        return try await self.client.execute(
+            operation: "DeleteBudget", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Deletes a budget action.
-    public func deleteBudgetAction(_ input: DeleteBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteBudgetActionResponse> {
-        return self.client.execute(operation: "DeleteBudgetAction", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func deleteBudgetAction(_ input: DeleteBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteBudgetActionResponse {
+        return try await self.client.execute(
+            operation: "DeleteBudgetAction", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes a notification.
-    ///
-    /// 			         Deleting a notification also deletes the subscribers that are associated with the notification.
-    ///
-    public func deleteNotification(_ input: DeleteNotificationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteNotificationResponse> {
-        return self.client.execute(operation: "DeleteNotification", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes a notification.  Deleting a notification also deletes the subscribers that are associated with the notification.
+    @Sendable
+    public func deleteNotification(_ input: DeleteNotificationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteNotificationResponse {
+        return try await self.client.execute(
+            operation: "DeleteNotification", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Deletes a subscriber.
-    ///
-    /// 			         Deleting the last subscriber to a notification also deletes the notification.
-    ///
-    public func deleteSubscriber(_ input: DeleteSubscriberRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteSubscriberResponse> {
-        return self.client.execute(operation: "DeleteSubscriber", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Deletes a subscriber.  Deleting the last subscriber to a notification also deletes the notification.
+    @Sendable
+    public func deleteSubscriber(_ input: DeleteSubscriberRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteSubscriberResponse {
+        return try await self.client.execute(
+            operation: "DeleteSubscriber", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Describes a budget.
-    ///
-    /// 			         The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
-    ///
-    public func describeBudget(_ input: DescribeBudgetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeBudgetResponse> {
-        return self.client.execute(operation: "DescribeBudget", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Describes a budget.  The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
+    @Sendable
+    public func describeBudget(_ input: DescribeBudgetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeBudgetResponse {
+        return try await self.client.execute(
+            operation: "DescribeBudget", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Describes a budget action detail.
-    public func describeBudgetAction(_ input: DescribeBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeBudgetActionResponse> {
-        return self.client.execute(operation: "DescribeBudgetAction", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeBudgetAction(_ input: DescribeBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeBudgetActionResponse {
+        return try await self.client.execute(
+            operation: "DescribeBudgetAction", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Describes a budget action history detail.
-    public func describeBudgetActionHistories(_ input: DescribeBudgetActionHistoriesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeBudgetActionHistoriesResponse> {
-        return self.client.execute(operation: "DescribeBudgetActionHistories", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeBudgetActionHistories(_ input: DescribeBudgetActionHistoriesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeBudgetActionHistoriesResponse {
+        return try await self.client.execute(
+            operation: "DescribeBudgetActionHistories", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Describes all of the budget actions for an account.
-    public func describeBudgetActionsForAccount(_ input: DescribeBudgetActionsForAccountRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeBudgetActionsForAccountResponse> {
-        return self.client.execute(operation: "DescribeBudgetActionsForAccount", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeBudgetActionsForAccount(_ input: DescribeBudgetActionsForAccountRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeBudgetActionsForAccountResponse {
+        return try await self.client.execute(
+            operation: "DescribeBudgetActionsForAccount", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Describes all of the budget actions for a budget.
-    public func describeBudgetActionsForBudget(_ input: DescribeBudgetActionsForBudgetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeBudgetActionsForBudgetResponse> {
-        return self.client.execute(operation: "DescribeBudgetActionsForBudget", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeBudgetActionsForBudget(_ input: DescribeBudgetActionsForBudgetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeBudgetActionsForBudgetResponse {
+        return try await self.client.execute(
+            operation: "DescribeBudgetActionsForBudget", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// 			Lists the budget names and notifications that are associated with an account.
     ///
-    public func describeBudgetNotificationsForAccount(_ input: DescribeBudgetNotificationsForAccountRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeBudgetNotificationsForAccountResponse> {
-        return self.client.execute(operation: "DescribeBudgetNotificationsForAccount", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeBudgetNotificationsForAccount(_ input: DescribeBudgetNotificationsForAccountRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeBudgetNotificationsForAccountResponse {
+        return try await self.client.execute(
+            operation: "DescribeBudgetNotificationsForAccount", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Describes the history for DAILY, MONTHLY, and QUARTERLY budgets. Budget history isn't available for ANNUAL budgets.
-    public func describeBudgetPerformanceHistory(_ input: DescribeBudgetPerformanceHistoryRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeBudgetPerformanceHistoryResponse> {
-        return self.client.execute(operation: "DescribeBudgetPerformanceHistory", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeBudgetPerformanceHistory(_ input: DescribeBudgetPerformanceHistoryRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeBudgetPerformanceHistoryResponse {
+        return try await self.client.execute(
+            operation: "DescribeBudgetPerformanceHistory", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists the budgets that are associated with an account.
-    ///
-    /// 			         The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
-    ///
-    public func describeBudgets(_ input: DescribeBudgetsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeBudgetsResponse> {
-        return self.client.execute(operation: "DescribeBudgets", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Lists the budgets that are associated with an account.  The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
+    @Sendable
+    public func describeBudgets(_ input: DescribeBudgetsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeBudgetsResponse {
+        return try await self.client.execute(
+            operation: "DescribeBudgets", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the notifications that are associated with a budget.
-    public func describeNotificationsForBudget(_ input: DescribeNotificationsForBudgetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeNotificationsForBudgetResponse> {
-        return self.client.execute(operation: "DescribeNotificationsForBudget", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeNotificationsForBudget(_ input: DescribeNotificationsForBudgetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeNotificationsForBudgetResponse {
+        return try await self.client.execute(
+            operation: "DescribeNotificationsForBudget", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the subscribers that are associated with a notification.
-    public func describeSubscribersForNotification(_ input: DescribeSubscribersForNotificationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeSubscribersForNotificationResponse> {
-        return self.client.execute(operation: "DescribeSubscribersForNotification", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeSubscribersForNotification(_ input: DescribeSubscribersForNotificationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeSubscribersForNotificationResponse {
+        return try await self.client.execute(
+            operation: "DescribeSubscribersForNotification", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Executes a budget action.
-    public func executeBudgetAction(_ input: ExecuteBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ExecuteBudgetActionResponse> {
-        return self.client.execute(operation: "ExecuteBudgetAction", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func executeBudgetAction(_ input: ExecuteBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ExecuteBudgetActionResponse {
+        return try await self.client.execute(
+            operation: "ExecuteBudgetAction", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Updates a budget. You can change every part of a budget except for the budgetName and the calculatedSpend. When you modify a budget, the calculatedSpend drops to zero until Amazon Web Services has new usage data to use for forecasting.
-    ///
-    /// 			         Only one of BudgetLimit or PlannedBudgetLimits can be present in the syntax at one time. Use the syntax that matches your case. The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
-    ///
-    public func updateBudget(_ input: UpdateBudgetRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateBudgetResponse> {
-        return self.client.execute(operation: "UpdateBudget", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Updates a budget. You can change every part of a budget except for the budgetName and the calculatedSpend. When you modify a budget, the calculatedSpend drops to zero until Amazon Web Services has new usage data to use for forecasting.  Only one of BudgetLimit or PlannedBudgetLimits can be present in the syntax at one time. Use the syntax that matches your case. The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
+    @Sendable
+    public func updateBudget(_ input: UpdateBudgetRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateBudgetResponse {
+        return try await self.client.execute(
+            operation: "UpdateBudget", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     ///  Updates a budget action.
-    public func updateBudgetAction(_ input: UpdateBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateBudgetActionResponse> {
-        return self.client.execute(operation: "UpdateBudgetAction", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateBudgetAction(_ input: UpdateBudgetActionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateBudgetActionResponse {
+        return try await self.client.execute(
+            operation: "UpdateBudgetAction", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates a notification.
-    public func updateNotification(_ input: UpdateNotificationRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateNotificationResponse> {
-        return self.client.execute(operation: "UpdateNotification", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateNotification(_ input: UpdateNotificationRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateNotificationResponse {
+        return try await self.client.execute(
+            operation: "UpdateNotification", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates a subscriber.
-    public func updateSubscriber(_ input: UpdateSubscriberRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateSubscriberResponse> {
-        return self.client.execute(operation: "UpdateSubscriber", path: "/", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateSubscriber(_ input: UpdateSubscriberRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateSubscriberResponse {
+        return try await self.client.execute(
+            operation: "UpdateSubscriber", 
+            path: "/", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension Budgets {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: Budgets, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -245,432 +396,158 @@ extension Budgets {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension Budgets {
-    ///   Describes a budget action history detail.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeBudgetActionHistoriesPaginator<Result>(
-        _ input: DescribeBudgetActionHistoriesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeBudgetActionHistoriesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeBudgetActionHistories,
-            inputKey: \DescribeBudgetActionHistoriesRequest.nextToken,
-            outputKey: \DescribeBudgetActionHistoriesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    ///  Describes a budget action history detail.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeBudgetActionHistoriesPaginator(
         _ input: DescribeBudgetActionHistoriesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeBudgetActionHistoriesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeBudgetActionHistoriesRequest, DescribeBudgetActionHistoriesResponse> {
+        return .init(
             input: input,
             command: self.describeBudgetActionHistories,
             inputKey: \DescribeBudgetActionHistoriesRequest.nextToken,
             outputKey: \DescribeBudgetActionHistoriesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///   Describes all of the budget actions for an account.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeBudgetActionsForAccountPaginator<Result>(
-        _ input: DescribeBudgetActionsForAccountRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeBudgetActionsForAccountResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeBudgetActionsForAccount,
-            inputKey: \DescribeBudgetActionsForAccountRequest.nextToken,
-            outputKey: \DescribeBudgetActionsForAccountResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    ///  Describes all of the budget actions for an account.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeBudgetActionsForAccountPaginator(
         _ input: DescribeBudgetActionsForAccountRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeBudgetActionsForAccountResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeBudgetActionsForAccountRequest, DescribeBudgetActionsForAccountResponse> {
+        return .init(
             input: input,
             command: self.describeBudgetActionsForAccount,
             inputKey: \DescribeBudgetActionsForAccountRequest.nextToken,
             outputKey: \DescribeBudgetActionsForAccountResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///   Describes all of the budget actions for a budget.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeBudgetActionsForBudgetPaginator<Result>(
-        _ input: DescribeBudgetActionsForBudgetRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeBudgetActionsForBudgetResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeBudgetActionsForBudget,
-            inputKey: \DescribeBudgetActionsForBudgetRequest.nextToken,
-            outputKey: \DescribeBudgetActionsForBudgetResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    ///  Describes all of the budget actions for a budget.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeBudgetActionsForBudgetPaginator(
         _ input: DescribeBudgetActionsForBudgetRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeBudgetActionsForBudgetResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeBudgetActionsForBudgetRequest, DescribeBudgetActionsForBudgetResponse> {
+        return .init(
             input: input,
             command: self.describeBudgetActionsForBudget,
             inputKey: \DescribeBudgetActionsForBudgetRequest.nextToken,
             outputKey: \DescribeBudgetActionsForBudgetResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  			Lists the budget names and notifications that are associated with an account.
+    /// 			Lists the budget names and notifications that are associated with an account.
     ///
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeBudgetNotificationsForAccountPaginator<Result>(
-        _ input: DescribeBudgetNotificationsForAccountRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeBudgetNotificationsForAccountResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeBudgetNotificationsForAccount,
-            inputKey: \DescribeBudgetNotificationsForAccountRequest.nextToken,
-            outputKey: \DescribeBudgetNotificationsForAccountResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeBudgetNotificationsForAccountPaginator(
         _ input: DescribeBudgetNotificationsForAccountRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeBudgetNotificationsForAccountResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeBudgetNotificationsForAccountRequest, DescribeBudgetNotificationsForAccountResponse> {
+        return .init(
             input: input,
             command: self.describeBudgetNotificationsForAccount,
             inputKey: \DescribeBudgetNotificationsForAccountRequest.nextToken,
             outputKey: \DescribeBudgetNotificationsForAccountResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Describes the history for DAILY, MONTHLY, and QUARTERLY budgets. Budget history isn't available for ANNUAL budgets.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeBudgetPerformanceHistoryPaginator<Result>(
-        _ input: DescribeBudgetPerformanceHistoryRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeBudgetPerformanceHistoryResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeBudgetPerformanceHistory,
-            inputKey: \DescribeBudgetPerformanceHistoryRequest.nextToken,
-            outputKey: \DescribeBudgetPerformanceHistoryResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Describes the history for DAILY, MONTHLY, and QUARTERLY budgets. Budget history isn't available for ANNUAL budgets.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeBudgetPerformanceHistoryPaginator(
         _ input: DescribeBudgetPerformanceHistoryRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeBudgetPerformanceHistoryResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeBudgetPerformanceHistoryRequest, DescribeBudgetPerformanceHistoryResponse> {
+        return .init(
             input: input,
             command: self.describeBudgetPerformanceHistory,
             inputKey: \DescribeBudgetPerformanceHistoryRequest.nextToken,
             outputKey: \DescribeBudgetPerformanceHistoryResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the budgets that are associated with an account.
-    ///
-    ///  			         The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
-    ///
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeBudgetsPaginator<Result>(
-        _ input: DescribeBudgetsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeBudgetsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeBudgets,
-            inputKey: \DescribeBudgetsRequest.nextToken,
-            outputKey: \DescribeBudgetsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the budgets that are associated with an account.  The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits, see the Examples section.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeBudgetsPaginator(
         _ input: DescribeBudgetsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeBudgetsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeBudgetsRequest, DescribeBudgetsResponse> {
+        return .init(
             input: input,
             command: self.describeBudgets,
             inputKey: \DescribeBudgetsRequest.nextToken,
             outputKey: \DescribeBudgetsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the notifications that are associated with a budget.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeNotificationsForBudgetPaginator<Result>(
-        _ input: DescribeNotificationsForBudgetRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeNotificationsForBudgetResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeNotificationsForBudget,
-            inputKey: \DescribeNotificationsForBudgetRequest.nextToken,
-            outputKey: \DescribeNotificationsForBudgetResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the notifications that are associated with a budget.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeNotificationsForBudgetPaginator(
         _ input: DescribeNotificationsForBudgetRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeNotificationsForBudgetResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeNotificationsForBudgetRequest, DescribeNotificationsForBudgetResponse> {
+        return .init(
             input: input,
             command: self.describeNotificationsForBudget,
             inputKey: \DescribeNotificationsForBudgetRequest.nextToken,
             outputKey: \DescribeNotificationsForBudgetResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the subscribers that are associated with a notification.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func describeSubscribersForNotificationPaginator<Result>(
-        _ input: DescribeSubscribersForNotificationRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, DescribeSubscribersForNotificationResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.describeSubscribersForNotification,
-            inputKey: \DescribeSubscribersForNotificationRequest.nextToken,
-            outputKey: \DescribeSubscribersForNotificationResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the subscribers that are associated with a notification.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func describeSubscribersForNotificationPaginator(
         _ input: DescribeSubscribersForNotificationRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (DescribeSubscribersForNotificationResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<DescribeSubscribersForNotificationRequest, DescribeSubscribersForNotificationResponse> {
+        return .init(
             input: input,
             command: self.describeSubscribersForNotification,
             inputKey: \DescribeSubscribersForNotificationRequest.nextToken,
             outputKey: \DescribeSubscribersForNotificationResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }

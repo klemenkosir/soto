@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct IoTJobsDataPlane: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,54 +54,94 @@ public struct IoTJobsDataPlane: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "data.jobs.iot",
+            serviceName: "IoTJobsDataPlane",
+            serviceIdentifier: "data.jobs.iot",
             signingName: "iot-jobs-data",
             serviceProtocol: .restjson,
             apiVersion: "2017-09-29",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "ca-central-1": "data.jobs.iot-fips.ca-central-1.amazonaws.com",
-                    "us-east-1": "data.jobs.iot-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "data.jobs.iot-fips.us-east-2.amazonaws.com",
-                    "us-gov-east-1": "data.jobs.iot-fips.us-gov-east-1.amazonaws.com",
-                    "us-gov-west-1": "data.jobs.iot-fips.us-gov-west-1.amazonaws.com",
-                    "us-west-1": "data.jobs.iot-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "data.jobs.iot-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: IoTJobsDataPlaneErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "ca-central-1": "data.jobs.iot-fips.ca-central-1.amazonaws.com",
+            "us-east-1": "data.jobs.iot-fips.us-east-1.amazonaws.com",
+            "us-east-2": "data.jobs.iot-fips.us-east-2.amazonaws.com",
+            "us-gov-east-1": "data.jobs.iot-fips.us-gov-east-1.amazonaws.com",
+            "us-gov-west-1": "data.jobs.iot-fips.us-gov-west-1.amazonaws.com",
+            "us-west-1": "data.jobs.iot-fips.us-west-1.amazonaws.com",
+            "us-west-2": "data.jobs.iot-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
     /// Gets details of a job execution.
-    public func describeJobExecution(_ input: DescribeJobExecutionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DescribeJobExecutionResponse> {
-        return self.client.execute(operation: "DescribeJobExecution", path: "/things/{thingName}/jobs/{jobId}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func describeJobExecution(_ input: DescribeJobExecutionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> DescribeJobExecutionResponse {
+        return try await self.client.execute(
+            operation: "DescribeJobExecution", 
+            path: "/things/{thingName}/jobs/{jobId}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets the list of all jobs for a thing that are not in a terminal status.
-    public func getPendingJobExecutions(_ input: GetPendingJobExecutionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetPendingJobExecutionsResponse> {
-        return self.client.execute(operation: "GetPendingJobExecutions", path: "/things/{thingName}/jobs", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getPendingJobExecutions(_ input: GetPendingJobExecutionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetPendingJobExecutionsResponse {
+        return try await self.client.execute(
+            operation: "GetPendingJobExecutions", 
+            path: "/things/{thingName}/jobs", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Gets and starts the next pending (status IN_PROGRESS or QUEUED) job execution for a thing.
-    public func startNextPendingJobExecution(_ input: StartNextPendingJobExecutionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<StartNextPendingJobExecutionResponse> {
-        return self.client.execute(operation: "StartNextPendingJobExecution", path: "/things/{thingName}/jobs/$next", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func startNextPendingJobExecution(_ input: StartNextPendingJobExecutionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> StartNextPendingJobExecutionResponse {
+        return try await self.client.execute(
+            operation: "StartNextPendingJobExecution", 
+            path: "/things/{thingName}/jobs/$next", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the status of a job execution.
-    public func updateJobExecution(_ input: UpdateJobExecutionRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateJobExecutionResponse> {
-        return self.client.execute(operation: "UpdateJobExecution", path: "/things/{thingName}/jobs/{jobId}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateJobExecution(_ input: UpdateJobExecutionRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateJobExecutionResponse {
+        return try await self.client.execute(
+            operation: "UpdateJobExecution", 
+            path: "/things/{thingName}/jobs/{jobId}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension IoTJobsDataPlane {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: IoTJobsDataPlane, patch: AWSServiceConfig.Patch) {
         self.client = from.client

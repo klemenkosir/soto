@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -19,7 +19,7 @@
 
 /// Service object for interacting with AWS DocDBElastic service.
 ///
-/// The new Amazon Elastic DocumentDB service endpoint.
+/// Amazon DocumentDB elastic clusters Amazon DocumentDB elastic-clusters support workloads with millions of reads/writes per second and petabytes of storage capacity.  Amazon DocumentDB elastic clusters also simplify how developers interact with Amazon DocumentDB elastic-clusters by eliminating the need to choose, manage or upgrade instances. Amazon DocumentDB elastic-clusters were created to:   provide a solution for customers looking for a database that provides virtually limitless scale with rich query capabilities and MongoDB API compatibility.   give customers higher connection limits, and to reduce downtime from patching.   continue investing in a cloud-native, elastic, and class leading architecture for JSON workloads.
 public struct DocDBElastic: AWSService {
     // MARK: Member variables
 
@@ -36,12 +36,16 @@ public struct DocDBElastic: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,87 +54,236 @@ public struct DocDBElastic: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "docdb-elastic",
+            serviceName: "DocDBElastic",
+            serviceIdentifier: "docdb-elastic",
             serviceProtocol: .restjson,
             apiVersion: "2022-11-28",
             endpoint: endpoint,
             errorType: DocDBElasticErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+
     // MARK: API Calls
 
-    /// Creates a new Elastic DocumentDB cluster and returns its Cluster structure.
-    public func createCluster(_ input: CreateClusterInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateClusterOutput> {
-        return self.client.execute(operation: "CreateCluster", path: "/cluster", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Copies a snapshot of an elastic cluster.
+    @Sendable
+    public func copyClusterSnapshot(_ input: CopyClusterSnapshotInput, logger: Logger = AWSClient.loggingDisabled) async throws -> CopyClusterSnapshotOutput {
+        return try await self.client.execute(
+            operation: "CopyClusterSnapshot", 
+            path: "/cluster-snapshot/{snapshotArn}/copy", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Creates a snapshot of a cluster.
-    public func createClusterSnapshot(_ input: CreateClusterSnapshotInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<CreateClusterSnapshotOutput> {
-        return self.client.execute(operation: "CreateClusterSnapshot", path: "/cluster-snapshot", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a new Amazon DocumentDB elastic cluster and returns its cluster structure.
+    @Sendable
+    public func createCluster(_ input: CreateClusterInput, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateClusterOutput {
+        return try await self.client.execute(
+            operation: "CreateCluster", 
+            path: "/cluster", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Delete a Elastic DocumentDB cluster.
-    public func deleteCluster(_ input: DeleteClusterInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteClusterOutput> {
-        return self.client.execute(operation: "DeleteCluster", path: "/cluster/{clusterArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Creates a snapshot of an elastic cluster.
+    @Sendable
+    public func createClusterSnapshot(_ input: CreateClusterSnapshotInput, logger: Logger = AWSClient.loggingDisabled) async throws -> CreateClusterSnapshotOutput {
+        return try await self.client.execute(
+            operation: "CreateClusterSnapshot", 
+            path: "/cluster-snapshot", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Delete a Elastic DocumentDB snapshot.
-    public func deleteClusterSnapshot(_ input: DeleteClusterSnapshotInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<DeleteClusterSnapshotOutput> {
-        return self.client.execute(operation: "DeleteClusterSnapshot", path: "/cluster-snapshot/{snapshotArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Delete an elastic cluster.
+    @Sendable
+    public func deleteCluster(_ input: DeleteClusterInput, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteClusterOutput {
+        return try await self.client.execute(
+            operation: "DeleteCluster", 
+            path: "/cluster/{clusterArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns information about a specific Elastic DocumentDB cluster.
-    public func getCluster(_ input: GetClusterInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetClusterOutput> {
-        return self.client.execute(operation: "GetCluster", path: "/cluster/{clusterArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Delete an elastic cluster snapshot.
+    @Sendable
+    public func deleteClusterSnapshot(_ input: DeleteClusterSnapshotInput, logger: Logger = AWSClient.loggingDisabled) async throws -> DeleteClusterSnapshotOutput {
+        return try await self.client.execute(
+            operation: "DeleteClusterSnapshot", 
+            path: "/cluster-snapshot/{snapshotArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns information about a specific Elastic DocumentDB snapshot
-    public func getClusterSnapshot(_ input: GetClusterSnapshotInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetClusterSnapshotOutput> {
-        return self.client.execute(operation: "GetClusterSnapshot", path: "/cluster-snapshot/{snapshotArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns information about a specific elastic cluster.
+    @Sendable
+    public func getCluster(_ input: GetClusterInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetClusterOutput {
+        return try await self.client.execute(
+            operation: "GetCluster", 
+            path: "/cluster/{clusterArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns information about Elastic DocumentDB snapshots for a specified cluster.
-    public func listClusterSnapshots(_ input: ListClusterSnapshotsInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListClusterSnapshotsOutput> {
-        return self.client.execute(operation: "ListClusterSnapshots", path: "/cluster-snapshots", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns information about a specific elastic cluster snapshot
+    @Sendable
+    public func getClusterSnapshot(_ input: GetClusterSnapshotInput, logger: Logger = AWSClient.loggingDisabled) async throws -> GetClusterSnapshotOutput {
+        return try await self.client.execute(
+            operation: "GetClusterSnapshot", 
+            path: "/cluster-snapshot/{snapshotArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Returns information about provisioned Elastic DocumentDB clusters.
-    public func listClusters(_ input: ListClustersInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListClustersOutput> {
-        return self.client.execute(operation: "ListClusters", path: "/clusters", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns information about snapshots for a specified elastic cluster.
+    @Sendable
+    public func listClusterSnapshots(_ input: ListClusterSnapshotsInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListClusterSnapshotsOutput {
+        return try await self.client.execute(
+            operation: "ListClusterSnapshots", 
+            path: "/cluster-snapshots", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Lists all tags on a Elastic DocumentDB resource
-    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListTagsForResourceResponse> {
-        return self.client.execute(operation: "ListTagsForResource", path: "/tags/{resourceArn}", httpMethod: .GET, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Returns information about provisioned Amazon DocumentDB elastic clusters.
+    @Sendable
+    public func listClusters(_ input: ListClustersInput, logger: Logger = AWSClient.loggingDisabled) async throws -> ListClustersOutput {
+        return try await self.client.execute(
+            operation: "ListClusters", 
+            path: "/clusters", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Restores a Elastic DocumentDB cluster from a snapshot.
-    public func restoreClusterFromSnapshot(_ input: RestoreClusterFromSnapshotInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<RestoreClusterFromSnapshotOutput> {
-        return self.client.execute(operation: "RestoreClusterFromSnapshot", path: "/cluster-snapshot/{snapshotArn}/restore", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Lists all tags on a elastic cluster resource
+    @Sendable
+    public func listTagsForResource(_ input: ListTagsForResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListTagsForResourceResponse {
+        return try await self.client.execute(
+            operation: "ListTagsForResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .GET, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Adds metadata tags to a Elastic DocumentDB resource
-    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<TagResourceResponse> {
-        return self.client.execute(operation: "TagResource", path: "/tags/{resourceArn}", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Restores an elastic cluster from a snapshot.
+    @Sendable
+    public func restoreClusterFromSnapshot(_ input: RestoreClusterFromSnapshotInput, logger: Logger = AWSClient.loggingDisabled) async throws -> RestoreClusterFromSnapshotOutput {
+        return try await self.client.execute(
+            operation: "RestoreClusterFromSnapshot", 
+            path: "/cluster-snapshot/{snapshotArn}/restore", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Removes metadata tags to a Elastic DocumentDB resource
-    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UntagResourceResponse> {
-        return self.client.execute(operation: "UntagResource", path: "/tags/{resourceArn}", httpMethod: .DELETE, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Restarts the stopped elastic cluster that is specified by clusterARN.
+    @Sendable
+    public func startCluster(_ input: StartClusterInput, logger: Logger = AWSClient.loggingDisabled) async throws -> StartClusterOutput {
+        return try await self.client.execute(
+            operation: "StartCluster", 
+            path: "/cluster/{clusterArn}/start", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
-    /// Modifies a Elastic DocumentDB cluster. This includes updating admin-username/password,  upgrading API version setting up a backup window and maintenance window
-    public func updateCluster(_ input: UpdateClusterInput, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateClusterOutput> {
-        return self.client.execute(operation: "UpdateCluster", path: "/cluster/{clusterArn}", httpMethod: .PUT, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    /// Stops the running elastic cluster that is specified by clusterArn.  The elastic cluster must be in the available state.
+    @Sendable
+    public func stopCluster(_ input: StopClusterInput, logger: Logger = AWSClient.loggingDisabled) async throws -> StopClusterOutput {
+        return try await self.client.execute(
+            operation: "StopCluster", 
+            path: "/cluster/{clusterArn}/stop", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Adds metadata tags to an elastic cluster resource
+    @Sendable
+    public func tagResource(_ input: TagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> TagResourceResponse {
+        return try await self.client.execute(
+            operation: "TagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Removes metadata tags from an elastic cluster resource
+    @Sendable
+    public func untagResource(_ input: UntagResourceRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UntagResourceResponse {
+        return try await self.client.execute(
+            operation: "UntagResource", 
+            path: "/tags/{resourceArn}", 
+            httpMethod: .DELETE, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
+    }
+
+    /// Modifies an elastic cluster. This includes updating admin-username/password,  upgrading the API version, and setting up a backup window and maintenance window
+    @Sendable
+    public func updateCluster(_ input: UpdateClusterInput, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateClusterOutput {
+        return try await self.client.execute(
+            operation: "UpdateCluster", 
+            path: "/cluster/{clusterArn}", 
+            httpMethod: .PUT, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension DocDBElastic {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: DocDBElastic, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -140,110 +293,43 @@ extension DocDBElastic {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension DocDBElastic {
-    ///  Returns information about Elastic DocumentDB snapshots for a specified cluster.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listClusterSnapshotsPaginator<Result>(
-        _ input: ListClusterSnapshotsInput,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListClusterSnapshotsOutput, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listClusterSnapshots,
-            inputKey: \ListClusterSnapshotsInput.nextToken,
-            outputKey: \ListClusterSnapshotsOutput.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information about snapshots for a specified elastic cluster.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listClusterSnapshotsPaginator(
         _ input: ListClusterSnapshotsInput,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListClusterSnapshotsOutput, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListClusterSnapshotsInput, ListClusterSnapshotsOutput> {
+        return .init(
             input: input,
             command: self.listClusterSnapshots,
             inputKey: \ListClusterSnapshotsInput.nextToken,
             outputKey: \ListClusterSnapshotsOutput.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Returns information about provisioned Elastic DocumentDB clusters.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listClustersPaginator<Result>(
-        _ input: ListClustersInput,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListClustersOutput, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listClusters,
-            inputKey: \ListClustersInput.nextToken,
-            outputKey: \ListClustersOutput.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Returns information about provisioned Amazon DocumentDB elastic clusters.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listClustersPaginator(
         _ input: ListClustersInput,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListClustersOutput, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListClustersInput, ListClustersOutput> {
+        return .init(
             input: input,
             command: self.listClusters,
             inputKey: \ListClustersInput.nextToken,
             outputKey: \ListClustersOutput.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
@@ -253,7 +339,8 @@ extension DocDBElastic.ListClusterSnapshotsInput: AWSPaginateToken {
         return .init(
             clusterArn: self.clusterArn,
             maxResults: self.maxResults,
-            nextToken: token
+            nextToken: token,
+            snapshotType: self.snapshotType
         )
     }
 }

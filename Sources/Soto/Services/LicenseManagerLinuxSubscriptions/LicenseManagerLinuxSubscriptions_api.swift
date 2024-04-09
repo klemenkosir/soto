@@ -2,7 +2,7 @@
 //
 // This source file is part of the Soto for AWS open source project
 //
-// Copyright (c) 2017-2022 the Soto project authors
+// Copyright (c) 2017-2023 the Soto project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -36,12 +36,16 @@ public struct LicenseManagerLinuxSubscriptions: AWSService {
     ///     - region: Region of server you want to communicate with. This will override the partition parameter.
     ///     - partition: AWS partition where service resides, standard (.aws), china (.awscn), government (.awsusgov).
     ///     - endpoint: Custom endpoint URL to use instead of standard AWS servers
+    ///     - middleware: Middleware chain used to edit requests before they are sent and responses before they are decoded 
     ///     - timeout: Timeout value for HTTP requests
+    ///     - byteBufferAllocator: Allocator for ByteBuffers
+    ///     - options: Service options
     public init(
         client: AWSClient,
         region: SotoCore.Region? = nil,
         partition: AWSPartition = .aws,
         endpoint: String? = nil,
+        middleware: AWSMiddlewareProtocol? = nil,
         timeout: TimeAmount? = nil,
         byteBufferAllocator: ByteBufferAllocator = ByteBufferAllocator(),
         options: AWSServiceConfig.Options = []
@@ -50,50 +54,90 @@ public struct LicenseManagerLinuxSubscriptions: AWSService {
         self.config = AWSServiceConfig(
             region: region,
             partition: region?.partition ?? partition,
-            service: "license-manager-linux-subscriptions",
+            serviceName: "LicenseManagerLinuxSubscriptions",
+            serviceIdentifier: "license-manager-linux-subscriptions",
             serviceProtocol: .restjson,
             apiVersion: "2018-05-10",
             endpoint: endpoint,
-            variantEndpoints: [
-                [.fips]: .init(endpoints: [
-                    "us-east-1": "license-manager-linux-subscriptions-fips.us-east-1.amazonaws.com",
-                    "us-east-2": "license-manager-linux-subscriptions-fips.us-east-2.amazonaws.com",
-                    "us-west-1": "license-manager-linux-subscriptions-fips.us-west-1.amazonaws.com",
-                    "us-west-2": "license-manager-linux-subscriptions-fips.us-west-2.amazonaws.com"
-                ])
-            ],
+            variantEndpoints: Self.variantEndpoints,
             errorType: LicenseManagerLinuxSubscriptionsErrorType.self,
+            middleware: middleware,
             timeout: timeout,
             byteBufferAllocator: byteBufferAllocator,
             options: options
         )
     }
 
+
+
+
+    /// FIPS and dualstack endpoints
+    static var variantEndpoints: [EndpointVariantType: AWSServiceConfig.EndpointVariant] {[
+        [.fips]: .init(endpoints: [
+            "us-east-1": "license-manager-linux-subscriptions-fips.us-east-1.amazonaws.com",
+            "us-east-2": "license-manager-linux-subscriptions-fips.us-east-2.amazonaws.com",
+            "us-west-1": "license-manager-linux-subscriptions-fips.us-west-1.amazonaws.com",
+            "us-west-2": "license-manager-linux-subscriptions-fips.us-west-2.amazonaws.com"
+        ])
+    ]}
+
     // MARK: API Calls
 
     /// Lists the Linux subscriptions service settings.
-    public func getServiceSettings(_ input: GetServiceSettingsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<GetServiceSettingsResponse> {
-        return self.client.execute(operation: "GetServiceSettings", path: "/subscription/GetServiceSettings", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func getServiceSettings(_ input: GetServiceSettingsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> GetServiceSettingsResponse {
+        return try await self.client.execute(
+            operation: "GetServiceSettings", 
+            path: "/subscription/GetServiceSettings", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the running Amazon EC2 instances that were discovered with commercial Linux subscriptions.
-    public func listLinuxSubscriptionInstances(_ input: ListLinuxSubscriptionInstancesRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListLinuxSubscriptionInstancesResponse> {
-        return self.client.execute(operation: "ListLinuxSubscriptionInstances", path: "/subscription/ListLinuxSubscriptionInstances", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listLinuxSubscriptionInstances(_ input: ListLinuxSubscriptionInstancesRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListLinuxSubscriptionInstancesResponse {
+        return try await self.client.execute(
+            operation: "ListLinuxSubscriptionInstances", 
+            path: "/subscription/ListLinuxSubscriptionInstances", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Lists the Linux subscriptions that have been discovered. If you have linked your organization, the returned results will include data aggregated across your accounts in Organizations.
-    public func listLinuxSubscriptions(_ input: ListLinuxSubscriptionsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<ListLinuxSubscriptionsResponse> {
-        return self.client.execute(operation: "ListLinuxSubscriptions", path: "/subscription/ListLinuxSubscriptions", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func listLinuxSubscriptions(_ input: ListLinuxSubscriptionsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> ListLinuxSubscriptionsResponse {
+        return try await self.client.execute(
+            operation: "ListLinuxSubscriptions", 
+            path: "/subscription/ListLinuxSubscriptions", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 
     /// Updates the service settings for Linux subscriptions.
-    public func updateServiceSettings(_ input: UpdateServiceSettingsRequest, logger: Logger = AWSClient.loggingDisabled, on eventLoop: EventLoop? = nil) -> EventLoopFuture<UpdateServiceSettingsResponse> {
-        return self.client.execute(operation: "UpdateServiceSettings", path: "/subscription/UpdateServiceSettings", httpMethod: .POST, serviceConfig: self.config, input: input, logger: logger, on: eventLoop)
+    @Sendable
+    public func updateServiceSettings(_ input: UpdateServiceSettingsRequest, logger: Logger = AWSClient.loggingDisabled) async throws -> UpdateServiceSettingsResponse {
+        return try await self.client.execute(
+            operation: "UpdateServiceSettings", 
+            path: "/subscription/UpdateServiceSettings", 
+            httpMethod: .POST, 
+            serviceConfig: self.config, 
+            input: input, 
+            logger: logger
+        )
     }
 }
 
 extension LicenseManagerLinuxSubscriptions {
-    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are no public
+    /// Initializer required by `AWSService.with(middlewares:timeout:byteBufferAllocator:options)`. You are not able to use this initializer directly as there are not public
     /// initializers for `AWSServiceConfig.Patch`. Please use `AWSService.with(middlewares:timeout:byteBufferAllocator:options)` instead.
     public init(from: LicenseManagerLinuxSubscriptions, patch: AWSServiceConfig.Patch) {
         self.client = from.client
@@ -103,110 +147,43 @@ extension LicenseManagerLinuxSubscriptions {
 
 // MARK: Paginators
 
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 extension LicenseManagerLinuxSubscriptions {
-    ///  Lists the running Amazon EC2 instances that were discovered with commercial Linux subscriptions.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listLinuxSubscriptionInstancesPaginator<Result>(
-        _ input: ListLinuxSubscriptionInstancesRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListLinuxSubscriptionInstancesResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listLinuxSubscriptionInstances,
-            inputKey: \ListLinuxSubscriptionInstancesRequest.nextToken,
-            outputKey: \ListLinuxSubscriptionInstancesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the running Amazon EC2 instances that were discovered with commercial Linux subscriptions.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listLinuxSubscriptionInstancesPaginator(
         _ input: ListLinuxSubscriptionInstancesRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListLinuxSubscriptionInstancesResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListLinuxSubscriptionInstancesRequest, ListLinuxSubscriptionInstancesResponse> {
+        return .init(
             input: input,
             command: self.listLinuxSubscriptionInstances,
             inputKey: \ListLinuxSubscriptionInstancesRequest.nextToken,
             outputKey: \ListLinuxSubscriptionInstancesResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 
-    ///  Lists the Linux subscriptions that have been discovered. If you have linked your organization, the returned results will include data aggregated across your accounts in Organizations.
-    ///
-    /// Provide paginated results to closure `onPage` for it to combine them into one result.
-    /// This works in a similar manner to `Array.reduce<Result>(_:_:) -> Result`.
-    ///
-    /// Parameters:
-    ///   - input: Input for request
-    ///   - initialValue: The value to use as the initial accumulating value. `initialValue` is passed to `onPage` the first time it is called.
-    ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each paginated response. It combines an accumulating result with the contents of response. This combined result is then returned
-    ///         along with a boolean indicating if the paginate operation should continue.
-    public func listLinuxSubscriptionsPaginator<Result>(
-        _ input: ListLinuxSubscriptionsRequest,
-        _ initialValue: Result,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (Result, ListLinuxSubscriptionsResponse, EventLoop) -> EventLoopFuture<(Bool, Result)>
-    ) -> EventLoopFuture<Result> {
-        return self.client.paginate(
-            input: input,
-            initialValue: initialValue,
-            command: self.listLinuxSubscriptions,
-            inputKey: \ListLinuxSubscriptionsRequest.nextToken,
-            outputKey: \ListLinuxSubscriptionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
-        )
-    }
-
-    /// Provide paginated results to closure `onPage`.
+    /// Lists the Linux subscriptions that have been discovered. If you have linked your organization, the returned results will include data aggregated across your accounts in Organizations.
+    /// Return PaginatorSequence for operation.
     ///
     /// - Parameters:
     ///   - input: Input for request
     ///   - logger: Logger used flot logging
-    ///   - eventLoop: EventLoop to run this process on
-    ///   - onPage: closure called with each block of entries. Returns boolean indicating whether we should continue.
     public func listLinuxSubscriptionsPaginator(
         _ input: ListLinuxSubscriptionsRequest,
-        logger: Logger = AWSClient.loggingDisabled,
-        on eventLoop: EventLoop? = nil,
-        onPage: @escaping (ListLinuxSubscriptionsResponse, EventLoop) -> EventLoopFuture<Bool>
-    ) -> EventLoopFuture<Void> {
-        return self.client.paginate(
+        logger: Logger = AWSClient.loggingDisabled
+    ) -> AWSClient.PaginatorSequence<ListLinuxSubscriptionsRequest, ListLinuxSubscriptionsResponse> {
+        return .init(
             input: input,
             command: self.listLinuxSubscriptions,
             inputKey: \ListLinuxSubscriptionsRequest.nextToken,
             outputKey: \ListLinuxSubscriptionsResponse.nextToken,
-            on: eventLoop,
-            onPage: onPage
+            logger: logger
         )
     }
 }
